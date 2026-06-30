@@ -20,7 +20,7 @@ spring:
       host: ${REDIS_HOST:localhost}
   datasource:
     password: ${DATABASE_PASSWORD:password}
-    url: jdbc:postgresql://${DATABASE_HOST:localhost}:${DATABASE_PORT:5432}/${DATABASE_NAME:api}
+    url: jdbc:postgresql://${DATABASE_HOST:localhost}:${DATABASE_PORT:5432}/${DATABASE_NAME:ims}
     username: ${DATABASE_USER:default}
   kafka:
     producer:
@@ -51,7 +51,7 @@ spring:
         spring:
           json:
             trusted:
-              packages: xyz.catuns.imp.api.*
+              packages: xyz.catuns.ims.api.*
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
   profiles:
     active: dev

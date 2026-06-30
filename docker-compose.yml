@@ -1,0 +1,108 @@
+services:
+#  api:
+#    image: api:latest
+#    ports:
+#      - "8080:8080"
+#    environment:
+#      SPRING_PROFILES_ACTIVE: docker
+#      JWT_SECRET: ${JWT_SECRET}
+#      FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://web:4200}
+#    depends_on:
+#      - postgres
+#      - kafka
+#      - redis
+#    networks:
+#      - microservice
+#      - kafka-net
+#      - redis
+#    restart: unless-stopped
+#
+#  web:
+#    image: web:latest
+#    ports:
+#      - "4200:4200"
+#    networks:
+#      - microservice
+#    restart: unless-stopped
+
+  kafka:
+    image: confluentinc/cp-kafka:8.2.0
+    hostname: kafka-1
+    ports:
+      - "9092:9092"
+    environment:
+      CLUSTER_ID: "WnLkTHhkQaiJbwP8FClPhw"
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka-1:9091
+      KAFKA_LISTENERS: "PLAINTEXT://:9090,CONTROLLER://:9091,EXTERNAL://:9092"
+      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka-1:9090,EXTERNAL://${HOSTNAME:-localhost}:9092"
+      KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT"
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+
+      # single broker properties
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: "1"
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: "1"
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: "1"
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: "0"
+    volumes:
+      - kafka-1-data:/var/lib/kafka/data
+      - ./infra/kafka/server.properties:/opt/kafka/config/server.properties
+    networks:
+      - kafka-net
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:17-alpine3.19
+    environment:
+      POSTGRES_USER: ${DATABASE_USER:-default}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-password}
+      POSTGRES_DB: ${DATABASE_NAME:-ims}
+      PGDATA: /data/postgres
+    volumes:
+      - postgres:/data/postgres
+      - ./infra/postgres:/docker-entrypoint-initdb.d
+    ports:
+      - '${DATABASE_PORT:-5432}:5432'
+    networks:
+      - postgres
+    restart: unless-stopped
+
+  #  pgadmin:
+  #    image: dpage/pgadmin4
+  #    environment:
+  #      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-pgadmin4@pgadmin.org}
+  #      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
+  #      PGADMIN_CONFIG_SERVER_MODE: 'False'
+  #    volumes:
+  #      - pgadmin:/var/lib/pgadmin
+  #    ports:
+  #      - '5050:80'
+  #    networks:
+  #      - postgres
+  #    restart: unless-stopped
+
+  redis:
+    image: redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    networks:
+      - redis
+    restart: unless-stopped
+
+networks:
+  microservice:
+    driver: bridge
+  kafka-net:
+    driver: bridge
+  postgres:
+    driver: bridge
+  redis:
+    driver: bridge
+
+
+volumes:
+  kafka-1-data:
+  postgres:

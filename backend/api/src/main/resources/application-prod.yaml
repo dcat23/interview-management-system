@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: jdbc:postgresql://${DATABASE_HOST:}:${DATABASE_PORT:5432}/${DATABASE_NAME:api}
+    url: jdbc:postgresql://${DATABASE_HOST:}:${DATABASE_PORT:5432}/${DATABASE_NAME:ims}
   jpa:
     hibernate:
       ddl-auto: validate

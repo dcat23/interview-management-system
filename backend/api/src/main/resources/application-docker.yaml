@@ -3,7 +3,7 @@ spring:
     redis:
       host: redis
   datasource:
-    url: jdbc:postgresql://${DATABASE_HOST:postgres}:${DATABASE_PORT:5432}/${DATABASE_NAME:api}
+    url: jdbc:postgresql://${DATABASE_HOST:postgres}:${DATABASE_PORT:5432}/${DATABASE_NAME:ims}
   kafka:
     bootstrap-servers: ${BOOTSTRAP_SERVERS:kafka:9092}
   jpa:
