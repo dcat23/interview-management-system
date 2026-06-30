@@ -1,12 +1,15 @@
 package xyz.catuns.imp.api.client;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import xyz.catuns.imp.api.config.CacheConfig;
 import xyz.catuns.imp.api.client.dto.ClientResponse;
 import xyz.catuns.imp.api.client.dto.CreateClientRequest;
 import xyz.catuns.imp.api.client.dto.UpdateClientRequest;
@@ -26,6 +29,7 @@ public class ClientService {
     private final ClientMapper clientMapper;
 
     @PreAuthorize("hasAnyRole('ADMIN','MARKETER','SUPPORTER')")
+    @Cacheable(value = CacheConfig.CLIENTS, key = "{#isActive, #pageable.pageNumber, #pageable.pageSize}")
     public Page<ClientResponse> list(Boolean isActive, Pageable pageable) {
         Boolean activeFilter = isActive != null ? isActive : true;
         Specification<Client> spec = (root, query, cb) -> cb.equal(root.get("active"), activeFilter);
@@ -34,6 +38,7 @@ public class ClientService {
 
     @PreAuthorize("hasAnyRole('ADMIN','MARKETER')")
     @Transactional
+    @CacheEvict(value = CacheConfig.CLIENTS, allEntries = true)
     public ClientResponse create(CreateClientRequest request) {
         Client client = clientMapper.toEntity(request);
         return clientMapper.toResponse(clientRepository.save(client));
@@ -41,6 +46,7 @@ public class ClientService {
 
     @PreAuthorize("hasAnyRole('ADMIN','MARKETER')")
     @Transactional
+    @CacheEvict(value = CacheConfig.CLIENTS, allEntries = true)
     public ClientResponse update(UUID id, UpdateClientRequest request) {
         Client client = clientRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Client not found"));

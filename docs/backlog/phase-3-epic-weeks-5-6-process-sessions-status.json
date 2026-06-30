@@ -1,0 +1,269 @@
+{
+  "summary": "Process, Sessions, and Status Transitions",
+  "description": "Implement the InterviewProcess and InterviewSession aggregates with full CRUD APIs. Build the status transition engine as an enum state machine with role enforcement, STATUS_HISTORY writes, and 409 on invalid transitions. Publish session.status.changed events to Kafka. Implement the question bank with versioning and SESSION_QUESTION linking. Add the Redis caching layer for session lists, question sets, user roles, and client lists.\n\nKey paths: <apps/api/src/main/java/com/ims/process>, <apps/api/src/main/java/com/ims/session>, <apps/api/src/main/java/com/ims/question>",
+  "labels": ["process", "session", "status-transitions", "kafka", "question", "redis", "phase-3"],
+  "priority": "High",
+  "userType": "marketer",
+  "functionality": "create and manage interview processes and sessions, control status transitions, and link questions to sessions",
+  "benefit": "the core operational workflow of the platform — scheduling and progressing candidate interviews — is fully functional",
+  "stories": [
+    {
+      "summary": "Implement InterviewProcess service and API endpoints",
+      "description": "Implement the InterviewProcess aggregate with full CRUD. Expose endpoints: POST /processes, GET /processes, GET /processes/:id, PATCH /processes/:id. Apply Bean Validation on all request DTOs. Enforce role access: marketer and admin for writes, candidate for own-process reads.\n\nKey paths: <apps/api/src/main/java/com/ims/process/InterviewProcessService.java>, <apps/api/src/main/java/com/ims/process/ProcessController.java>",
+      "labels": ["process", "crud", "validation", "phase-3"],
+      "priority": "High",
+      "storyPoints": 5,
+      "acceptanceCriteria": [
+        {
+          "scenario": "Marketer creates a process",
+          "given": "an authenticated marketer sends a valid POST /processes with a client ID, candidate ID, and technology",
+          "when": "the request is processed",
+          "then": "a new InterviewProcess is persisted with status CREATED and a 201 response is returned"
+        },
+        {
+          "scenario": "Candidate can only see their own processes",
+          "given": "an authenticated candidate calls GET /processes",
+          "when": "the request is processed",
+          "then": "only processes where the candidate ID matches the authenticated user are returned"
+        },
+        {
+          "scenario": "Invalid process creation returns 400",
+          "given": "a POST /processes request is sent with a missing client ID",
+          "when": "Bean Validation runs",
+          "then": "a 400 Bad Request with field-level errors is returned"
+        }
+      ],
+      "tasks": [
+        {
+          "summary": "Implement InterviewProcessEntity, repository, and service",
+          "description": "Create JPA entity mapping to interview_processes table. Add ProcessRepository. Implement ProcessService with create, read, update methods and @PreAuthorize role guards."
+        },
+        {
+          "summary": "Implement ProcessController with request/response DTOs",
+          "description": "Create REST controller with all CRUD endpoints. Add Jakarta Bean Validation annotations on CreateProcessRequest and UpdateProcessRequest DTOs."
+        },
+        {
+          "summary": "Add integration tests for process endpoints",
+          "description": "Use Spring Boot Test + Testcontainers Postgres. Cover CRUD operations and role enforcement for marketer, admin, and candidate."
+        }
+      ]
+    },
+    {
+      "summary": "Implement InterviewSession service and API endpoints",
+      "description": "Implement InterviewSession as a child aggregate of InterviewProcess. Expose endpoints: POST /processes/:id/sessions, GET /processes/:id/sessions, GET /sessions/:id, PATCH /sessions/:id. Session creation is restricted to marketer and admin. Candidates may read sessions belonging to their own processes only.\n\nKey paths: <apps/api/src/main/java/com/ims/session/InterviewSessionService.java>, <apps/api/src/main/java/com/ims/session/SessionController.java>",
+      "labels": ["session", "crud", "validation", "phase-3"],
+      "priority": "High",
+      "storyPoints": 5,
+      "acceptanceCriteria": [
+        {
+          "scenario": "Marketer schedules a session under a process",
+          "given": "an authenticated marketer sends a valid POST /processes/:id/sessions with scheduled_at and round_number",
+          "when": "the request is processed",
+          "then": "a session is persisted with status SCHEDULED and a 201 response is returned"
+        },
+        {
+          "scenario": "Candidate cannot access sessions from another candidate's process",
+          "given": "an authenticated candidate calls GET /sessions/:id for a session in a different candidate's process",
+          "when": "the request is processed",
+          "then": "a 403 Forbidden response is returned"
+        },
+        {
+          "scenario": "Session list for a process is returned correctly",
+          "given": "a process has 3 sessions across different rounds",
+          "when": "GET /processes/:id/sessions is called by an admin",
+          "then": "all 3 sessions are returned ordered by round_number"
+        }
+      ],
+      "tasks": [
+        {
+          "summary": "Implement InterviewSessionEntity, repository, and service",
+          "description": "Create JPA entity with FK to interview_processes. Implement SessionService with CRUD and role-scoped query methods."
+        },
+        {
+          "summary": "Implement SessionController with nested route under processes",
+          "description": "Expose session endpoints with proper parent-process ownership validation. Add Bean Validation on CreateSessionRequest."
+        },
+        {
+          "summary": "Add integration tests for session endpoints",
+          "description": "Cover: session creation under a process, candidate access scoping, non-existent process returns 404, role enforcement."
+        }
+      ]
+    },
+    {
+      "summary": "Build status transition engine with role enforcement and STATUS_HISTORY audit trail",
+      "description": "Implement SessionStatusTransitionService as an enum state machine defining all valid status transitions and which roles may trigger each. On every transition, write a record to STATUS_HISTORY including actor ID, from_status, to_status, changed_at, and change_source. Return 409 Conflict on invalid transitions. Expose PATCH /sessions/:id/status for manual transitions.\n\nValid transitions include: SCHEDULED→IN_REVIEW (background job or supporter), IN_REVIEW→PENDING_FEEDBACK (supporter), PENDING_FEEDBACK→FEEDBACK_SUBMITTED (supporter), FEEDBACK_SUBMITTED→OUTCOME_SET (supporter), and marketer-owned pre-interview transitions.\n\nKey paths: <apps/api/src/main/java/com/ims/session/SessionStatusTransitionService.java>, <apps/api/src/main/java/com/ims/session/SessionStatus.java>",
+      "labels": ["status-transitions", "state-machine", "rbac", "audit", "phase-3"],
+      "priority": "High",
+      "storyPoints": 8,
+      "acceptanceCriteria": [
+        {
+          "scenario": "Valid transition succeeds and writes STATUS_HISTORY",
+          "given": "a session is in SCHEDULED status and a supporter calls PATCH /sessions/:id/status with IN_REVIEW",
+          "when": "the transition service processes the request",
+          "then": "the session status is updated to IN_REVIEW and a STATUS_HISTORY row is written with actor ID, from_status=SCHEDULED, to_status=IN_REVIEW"
+        },
+        {
+          "scenario": "Invalid transition returns 409",
+          "given": "a session is in FEEDBACK_SUBMITTED status",
+          "when": "a PATCH /sessions/:id/status request attempts to transition to SCHEDULED",
+          "then": "a 409 Conflict response is returned and no STATUS_HISTORY row is written"
+        },
+        {
+          "scenario": "Role not permitted for transition returns 403",
+          "given": "a session is in IN_REVIEW status",
+          "when": "a marketer attempts to transition it to PENDING_FEEDBACK",
+          "then": "a 403 Forbidden response is returned"
+        },
+        {
+          "scenario": "Background job transition is recorded with correct change_source",
+          "given": "the background job transitions a session from SCHEDULED to IN_REVIEW",
+          "when": "the transition completes",
+          "then": "the STATUS_HISTORY row has change_source=BACKGROUND_JOB and actor is the system user"
+        }
+      ],
+      "tasks": [
+        {
+          "summary": "Define SessionStatus enum and valid transition map",
+          "description": "Create SessionStatus enum with all states. Build an EnumMap defining permitted (from → to) pairs and the set of roles allowed per transition."
+        },
+        {
+          "summary": "Implement SessionStatusTransitionService",
+          "description": "Validate the requested transition against the state machine. Throw InvalidTransitionException (→ 409) on invalid pairs. Throw AccessDeniedException (→ 403) on role mismatch."
+        },
+        {
+          "summary": "Implement STATUS_HISTORY writer",
+          "description": "After each successful transition, persist a StatusHistory record with actor_id, from_status, to_status, changed_at (UTC), and change_source."
+        },
+        {
+          "summary": "Expose PATCH /sessions/:id/status endpoint",
+          "description": "Wire the transition service into a controller endpoint. Accept target status in the request body. Return 200 with updated session on success."
+        },
+        {
+          "summary": "Add unit and integration tests for transition engine",
+          "description": "Unit test all valid and invalid transition pairs. Integration test: valid transition persists STATUS_HISTORY, invalid returns 409, wrong role returns 403."
+        }
+      ]
+    },
+    {
+      "summary": "Implement Kafka producer for session.status.changed events",
+      "description": "On every successful session status transition, publish a domain event to the Kafka topic session.status.changed. The event payload must include session ID, process ID, from_status, to_status, changed_at, and change_source. Configure the Kafka producer with idempotent delivery and appropriate serialisation.\n\nKey paths: <apps/api/src/main/java/com/ims/session/SessionStatusEventPublisher.java>",
+      "labels": ["kafka", "events", "session", "phase-3"],
+      "priority": "High",
+      "storyPoints": 3,
+      "acceptanceCriteria": [
+        {
+          "scenario": "Status change publishes event to Kafka",
+          "given": "a session transitions from SCHEDULED to IN_REVIEW",
+          "when": "the transition completes successfully",
+          "then": "a message is published to the session.status.changed topic containing session ID, process ID, from_status, to_status, and changed_at"
+        },
+        {
+          "scenario": "Failed transition does not publish event",
+          "given": "a transition attempt is rejected with 409",
+          "when": "the exception is thrown",
+          "then": "no message is published to Kafka"
+        }
+      ],
+      "tasks": [
+        {
+          "summary": "Configure Kafka producer with idempotent delivery",
+          "description": "Add spring-kafka dependency. Configure KafkaTemplate with enable.idempotence=true, acks=all, and JSON value serialiser. Read broker addresses from environment."
+        },
+        {
+          "summary": "Implement SessionStatusEventPublisher",
+          "description": "Create a Spring component that publishes a SessionStatusChangedEvent DTO to session.status.changed after each successful transition. Called from SessionStatusTransitionService."
+        },
+        {
+          "summary": "Add integration test with Testcontainers Kafka",
+          "description": "Use Testcontainers Kafka to verify that a status transition results in a message being consumable from the topic with the correct payload."
+        }
+      ]
+    },
+    {
+      "summary": "Implement Question Bank CRUD with versioning and SESSION_QUESTION linking",
+      "description": "Implement the question bank with create, read, update, and soft-delete endpoints. Each update creates a new version row in question_versions preserving the prior text. Implement SESSION_QUESTION join table management: POST /sessions/:id/questions and DELETE /sessions/:id/questions/:qid to link and unlink questions. Admin can perform all write operations; supporter can link/unlink questions on their assigned sessions.\n\nKey paths: <apps/api/src/main/java/com/ims/question>",
+      "labels": ["question", "versioning", "session-question", "crud", "phase-3"],
+      "priority": "High",
+      "storyPoints": 5,
+      "acceptanceCriteria": [
+        {
+          "scenario": "Updating a question creates a version record",
+          "given": "an admin sends PATCH /questions/:id with updated question text",
+          "when": "the update is processed",
+          "then": "the question row is updated and a new row is written to question_versions with the previous text and version number"
+        },
+        {
+          "scenario": "Supporter can link a question to their session",
+          "given": "an authenticated supporter is assigned to a session",
+          "when": "POST /sessions/:id/questions is called with a valid question ID",
+          "then": "a SESSION_QUESTION row is created and a 201 response is returned"
+        },
+        {
+          "scenario": "Supporter cannot link questions to another supporter's session",
+          "given": "a supporter who is not assigned to a session",
+          "when": "they attempt POST /sessions/:id/questions",
+          "then": "a 403 Forbidden response is returned"
+        }
+      ],
+      "tasks": [
+        {
+          "summary": "Implement QuestionEntity, versioning, and repository",
+          "description": "Create JPA entity for questions table. Implement version-on-update logic in QuestionService: before update, copy current values to question_versions."
+        },
+        {
+          "summary": "Implement Question CRUD controller and DTOs",
+          "description": "Expose POST /questions, GET /questions/:id, PATCH /questions/:id, DELETE /questions/:id (soft delete). Add Bean Validation on DTOs. Admin-only for write operations."
+        },
+        {
+          "summary": "Implement SESSION_QUESTION link and unlink endpoints",
+          "description": "Create SessionQuestionService and expose POST /sessions/:id/questions and DELETE /sessions/:id/questions/:qid. Validate session assignment ownership for supporters."
+        },
+        {
+          "summary": "Add integration tests for question bank and session linking",
+          "description": "Cover: create question, update creates version, link question to session, unlink, role enforcement, and linking to non-owned session returns 403."
+        }
+      ]
+    },
+    {
+      "summary": "Implement Redis caching layer for session lists, question sets, user roles, and client lists",
+      "description": "Add Spring Cache with Redis as the cache provider. Apply caching to high-read entities: session list per process (5min TTL), question set per session (10min TTL), user role by user ID (15min TTL), and end client list (30min TTL). Configure cache eviction on relevant write operations.\n\nCached operations and TTLs:\n- session list per process: 5 min, evict on session create/update\n- question set per session: 10 min, evict on SESSION_QUESTION change\n- user role by user ID: 15 min, evict on user role update\n- end client list: 30 min, evict on client create/update\n\nKey paths: <apps/api/src/main/java/com/ims/config/CacheConfig.java>",
+      "labels": ["redis", "caching", "performance", "phase-3"],
+      "priority": "Medium",
+      "storyPoints": 3,
+      "acceptanceCriteria": [
+        {
+          "scenario": "Session list is served from cache on repeated reads",
+          "given": "GET /processes/:id/sessions has been called once",
+          "when": "the same endpoint is called a second time within 5 minutes",
+          "then": "the database is not queried on the second call and the response is returned from Redis"
+        },
+        {
+          "scenario": "Cache is evicted on session update",
+          "given": "a cached session list exists for a process",
+          "when": "a session under that process is updated",
+          "then": "the cache entry is evicted and the next read hits the database"
+        },
+        {
+          "scenario": "Redis unavailability does not crash the application",
+          "given": "the Redis instance is unavailable",
+          "when": "any cached endpoint is called",
+          "then": "the request falls through to the database and returns a correct response"
+        }
+      ],
+      "tasks": [
+        {
+          "summary": "Configure Spring Cache with Redis and RedisCacheManager",
+          "description": "Add spring-boot-starter-data-redis and spring-boot-starter-cache. Configure RedisCacheManager with per-cache TTL settings. Read Redis host from environment."
+        },
+        {
+          "summary": "Apply @Cacheable and @CacheEvict annotations to service methods",
+          "description": "Annotate session list, question set, user role, and client list read methods with @Cacheable. Add @CacheEvict on corresponding write methods."
+        },
+        {
+          "summary": "Add integration tests for cache behaviour with Testcontainers Redis",
+          "description": "Verify cache hit (no DB call on second read) and cache eviction (DB called after write) using Testcontainers Redis."
+        }
+      ]
+    }
+  ]
+}

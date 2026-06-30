@@ -1,6 +1,8 @@
 package xyz.catuns.imp.api.user;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -11,6 +13,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import xyz.catuns.imp.api.config.CacheConfig;
 import xyz.catuns.imp.api.user.dto.CreateUserRequest;
 import xyz.catuns.imp.api.user.dto.UpdateUserRequest;
 import xyz.catuns.imp.api.user.dto.UserResponse;
@@ -61,6 +64,7 @@ public class UserService implements UserDetailsService {
     }
 
     @PreAuthorize("hasRole('ADMIN') or @userService.isSelf(#id, authentication.name)")
+    @Cacheable(value = CacheConfig.USER_ROLES, key = "#id")
     public UserResponse getById(UUID id) {
         return userRepository.findById(id)
                 .map(userMapper::toResponse)
@@ -69,6 +73,7 @@ public class UserService implements UserDetailsService {
 
     @PreAuthorize("hasRole('ADMIN')")
     @Transactional
+    @CacheEvict(value = CacheConfig.USER_ROLES, key = "#id")
     public UserResponse update(UUID id, UpdateUserRequest request) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("User not found"));

@@ -1,11 +1,16 @@
 package xyz.catuns.imp.api.session;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import xyz.catuns.imp.api.config.CacheConfig;
 import xyz.catuns.imp.api.process.repository.InterviewProcessRepository;
 import xyz.catuns.imp.api.session.dto.CreateSessionRequest;
 import xyz.catuns.imp.api.session.dto.InterviewSessionResponse;
@@ -30,8 +35,14 @@ public class InterviewSessionService {
     private final InterviewProcessRepository processRepository;
     private final UserRepository userRepository;
 
+    // Self-injection via @Lazy so @Cacheable proxy intercepts loadAllByProcess from within listByProcess
+    @Autowired
+    @Lazy
+    private InterviewSessionService self;
+
     @PreAuthorize("hasAnyRole('ADMIN','MARKETER')")
     @Transactional
+    @CacheEvict(value = CacheConfig.SESSIONS_BY_PROCESS, key = "#processId")
     public InterviewSessionResponse create(UUID processId, CreateSessionRequest request) {
         processRepository.findById(processId)
                 .orElseThrow(() -> new NotFoundException("Process not found"));
@@ -53,16 +64,22 @@ public class InterviewSessionService {
             if (!process.getCandidateId().equals(userId)) {
                 throw new AccessDeniedException("Access denied");
             }
-            return sessionRepository.findByProcessIdOrderByRound(processId)
-                    .stream().map(sessionMapper::toResponse).toList();
+            // Candidate sees all sessions for their own process — use the cached full list
+            return self.loadAllByProcess(processId);
         }
 
         if (isSupporter(authentication)) {
             UUID userId = resolveUserId(authentication.getName());
-            return sessionRepository.findByProcessIdAndSupporterIdOrderByRound(processId, userId)
-                    .stream().map(sessionMapper::toResponse).toList();
+            return self.loadAllByProcess(processId).stream()
+                    .filter(s -> userId.equals(s.supporterId()))
+                    .toList();
         }
 
+        return self.loadAllByProcess(processId);
+    }
+
+    @Cacheable(value = CacheConfig.SESSIONS_BY_PROCESS, key = "#processId")
+    public List<InterviewSessionResponse> loadAllByProcess(UUID processId) {
         return sessionRepository.findByProcessIdOrderByRound(processId)
                 .stream().map(sessionMapper::toResponse).toList();
     }
@@ -78,6 +95,7 @@ public class InterviewSessionService {
 
     @PreAuthorize("hasAnyRole('ADMIN','MARKETER')")
     @Transactional
+    @CacheEvict(value = CacheConfig.SESSIONS_BY_PROCESS, allEntries = true)
     public InterviewSessionResponse update(UUID id, UpdateSessionRequest request) {
         InterviewSession session = sessionRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Session not found"));
