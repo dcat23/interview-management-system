@@ -7,6 +7,9 @@ app:
     title: @project.name@
     version: @project.version@
 spring:
+  threads:
+    virtual:
+      enabled: true
   cache:
     type: redis
     redis:
@@ -22,6 +25,8 @@ spring:
     password: ${DATABASE_PASSWORD:password}
     url: jdbc:postgresql://${DATABASE_HOST:localhost}:${DATABASE_PORT:5432}/${DATABASE_NAME:ims}
     username: ${DATABASE_USER:default}
+  flyway:
+    enabled: true
   kafka:
     producer:
       retries: 10
@@ -77,3 +82,12 @@ management:
 jwt:
   secret: ${JWT_SECRET}
   issuer: ${spring.application.name}
+  expiration: PT1H
+  security:
+    public-paths:
+      - /auth/login
+      - /auth/refresh
+      - /actuator/health/**
+      - /swagger-ui/**
+      - /v3/api-docs/**
+      - /error/**

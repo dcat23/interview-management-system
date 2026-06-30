@@ -123,7 +123,7 @@ Weeks 1–2 of frontend can start in parallel with Phase 3 weeks 3–4. Full API
 
 ### Weeks 5–6: Scaffold and auth (parallel with phase 3 weeks 3–4)
 
-- Next.js 14 App Router project setup (`apps/web`)
+- Next.js 16 App Router project setup (`apps/web`)
 - Role-aware layout: separate root layouts per role (`/candidate`, `/marketer`, `/supporter`, `/admin`)
 - Route guards: middleware checks JWT role claim, redirects on mismatch
 - Login page + JWT handling

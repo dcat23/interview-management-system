@@ -1,0 +1,232 @@
+{
+  "summary": "Auth and User Foundation",
+  "description": "Establish the Spring Boot 3 API project with all module boundaries, implement JWT-based authentication with refresh token rotation, RBAC via Spring Security @PreAuthorize, BCrypt password hashing, Redis-backed token blocklist, all Flyway database migrations, User CRUD, End Client CRUD, and healthcheck endpoints.\n\nKey paths: <apps/api/src/main/java/com/ims/auth>, <apps/api/src/main/java/com/ims/user>, <apps/api/src/main/java/com/ims/client>, <apps/api/src/main/resources/db/migration>",
+  "labels": ["auth", "user", "client", "spring-boot", "jwt", "flyway", "phase-3"],
+  "priority": "High",
+  "userType": "authenticated user",
+  "functionality": "log in securely and have their role enforced across all API endpoints",
+  "benefit": "every downstream module depends on identity resolution and RBAC being correct from day one",
+  "stories": [
+    {
+      "summary": "Bootstrap Spring Boot 3 API project with module structure and Flyway migrations",
+      "description": "Scaffold the Spring Boot 3 monorepo API application under <apps/api> with Java 21 virtual threads enabled. Create module packages: auth, user, client, process, session, question, feedback, job. Configure HikariCP, Spring Data JPA, and spring-boot-starter-validation. Author all Flyway migrations V1–V10 covering the full schema: users, clients, interview_processes, interview_sessions, status_history, questions, question_versions, session_questions, feedback, refresh_tokens.",
+      "labels": ["spring-boot", "flyway", "setup", "phase-3"],
+      "priority": "High",
+      "storyPoints": 3,
+      "acceptanceCriteria": [
+        {
+          "scenario": "Application starts with all modules wired",
+          "given": "the Spring Boot application is started locally with a running Postgres instance",
+          "when": "the app context initialises",
+          "then": "all module beans load without error and Flyway reports all migrations applied"
+        },
+        {
+          "scenario": "Virtual threads enabled",
+          "given": "the application is running",
+          "when": "a request is handled",
+          "then": "spring.threads.virtual.enabled=true is active and thread pool is using virtual threads"
+        },
+        {
+          "scenario": "Schema matches documented design",
+          "given": "Flyway has run all migrations against a clean Postgres instance",
+          "when": "the schema is inspected",
+          "then": "all tables, columns, constraints, and indexes match the database schema spec"
+        }
+      ],
+      "tasks": [
+        {
+          "summary": "Scaffold Spring Boot 3 project under apps/api",
+          "description": "Initialise the project with spring-boot-starter-web, spring-boot-starter-data-jpa, spring-boot-starter-security, spring-boot-starter-validation, spring-boot-starter-actuator, flyway-core, and micrometer-registry-cloudwatch2. Set spring.threads.virtual.enabled=true."
+        },
+        {
+          "summary": "Create module package structure",
+          "description": "Create packages for auth, user, client, process, session, question, feedback, and job modules under the base package. Each module contains controller, service, repository, domain, and dto sub-packages."
+        },
+        {
+          "summary": "Author Flyway migrations V1–V10",
+          "description": "Write SQL migration files under <apps/api/src/main/resources/db/migration> covering all tables defined in the database schema doc. Include GIN index on questions.search_vector tsvector column."
+        }
+      ]
+    },
+    {
+      "summary": "Implement JWT authentication — login, access token issuance, and Spring Security filter chain",
+      "description": "Implement the login endpoint (POST /auth/login) with BCrypt password verification. Issue a signed JWT access token (1hr TTL) containing the user ID and role claim. Configure the Spring Security filter chain to validate the JWT on all protected routes and extract the role for @PreAuthorize enforcement. Apply @PreAuthorize annotations to all service methods.\n\nKey paths: <apps/api/src/main/java/com/ims/auth/JwtFilter.java>, <apps/api/src/main/java/com/ims/auth/AuthService.java>",
+      "labels": ["auth", "jwt", "spring-security", "bcrypt", "phase-3"],
+      "priority": "High",
+      "storyPoints": 8,
+      "acceptanceCriteria": [
+        {
+          "scenario": "Successful login returns access and refresh tokens",
+          "given": "a user exists with a known BCrypt-hashed password",
+          "when": "POST /auth/login is called with valid credentials",
+          "then": "a 200 response is returned containing a signed JWT access token and a refresh token"
+        },
+        {
+          "scenario": "Invalid credentials return 401",
+          "given": "a login attempt is made with a wrong password",
+          "when": "POST /auth/login is called",
+          "then": "a 401 Unauthorized response is returned with no token"
+        },
+        {
+          "scenario": "JWT filter rejects missing token",
+          "given": "a protected endpoint is called without an Authorization header",
+          "when": "the request reaches the Spring Security filter chain",
+          "then": "a 401 Unauthorized response is returned before the controller is invoked"
+        },
+        {
+          "scenario": "Role-based access enforced via @PreAuthorize",
+          "given": "a user with role CANDIDATE calls a marketer-only endpoint",
+          "when": "the request is processed",
+          "then": "a 403 Forbidden response is returned"
+        }
+      ],
+      "tasks": [
+        {
+          "summary": "Implement login endpoint and BCrypt password verification",
+          "description": "Create POST /auth/login in AuthController. Verify credentials via UserDetailsService with BCryptPasswordEncoder. Return 401 on mismatch."
+        },
+        {
+          "summary": "Implement JWT token generation",
+          "description": "Generate a signed JWT with user ID, role, and 1hr expiry using jjwt or spring-security-oauth2-jose. Store signing key in environment variable."
+        },
+        {
+          "summary": "Configure Spring Security JWT filter chain",
+          "description": "Implement OncePerRequestFilter to extract and validate the JWT on each request. Populate the SecurityContext with UsernamePasswordAuthenticationToken."
+        },
+        {
+          "summary": "Apply @PreAuthorize annotations across all service methods",
+          "description": "Add role guards on every service method using hasRole(...). Enable @EnableMethodSecurity on the security config class."
+        },
+        {
+          "summary": "Add unit tests for auth service and JWT filter",
+          "description": "Cover: valid login, bad credentials, expired token, missing token, wrong role. Use Mockito for UserDetailsService."
+        }
+      ]
+    },
+    {
+      "summary": "Implement refresh token rotation and Redis-backed logout blocklist",
+      "description": "On successful login, issue a refresh token (7d TTL) stored in the refresh_tokens table. Implement POST /auth/refresh to rotate the refresh token and issue a new access token. Implement POST /auth/logout to add the access token JTI to a Redis blocklist so it cannot be reused before expiry.\n\nKey paths: <apps/api/src/main/java/com/ims/auth/RefreshTokenService.java>",
+      "labels": ["auth", "jwt", "redis", "refresh-token", "phase-3"],
+      "priority": "High",
+      "storyPoints": 5,
+      "acceptanceCriteria": [
+        {
+          "scenario": "Refresh token issues a new access token and rotates refresh token",
+          "given": "a valid refresh token is presented to POST /auth/refresh",
+          "when": "the endpoint is called",
+          "then": "a new access token and a new refresh token are returned; the old refresh token is invalidated"
+        },
+        {
+          "scenario": "Reused refresh token is rejected",
+          "given": "a refresh token has already been rotated",
+          "when": "the old refresh token is presented again",
+          "then": "a 401 Unauthorized response is returned"
+        },
+        {
+          "scenario": "Logged-out access token is rejected",
+          "given": "a user has called POST /auth/logout with a valid access token",
+          "when": "the same access token is used on any protected endpoint",
+          "then": "a 401 Unauthorized response is returned because the JTI is in the Redis blocklist"
+        }
+      ],
+      "tasks": [
+        {
+          "summary": "Implement refresh token persistence and POST /auth/refresh",
+          "description": "Store hashed refresh token in refresh_tokens table with user ID and expiry. On refresh, validate, rotate, and issue new access token."
+        },
+        {
+          "summary": "Implement POST /auth/logout with Redis JTI blocklist",
+          "description": "On logout, extract the JTI from the JWT and write it to Redis with a TTL matching the token's remaining validity. Update the JWT filter to check the blocklist."
+        },
+        {
+          "summary": "Add integration tests for refresh and logout flows",
+          "description": "Use Testcontainers (Postgres + Redis) to test full login → refresh → logout cycle including replay attack on old refresh token."
+        }
+      ]
+    },
+    {
+      "summary": "Implement User CRUD and End Client CRUD APIs",
+      "description": "Implement User management endpoints (POST /users, GET /users, GET /users/:id, PATCH /users/:id) and End Client management endpoints (POST /clients, GET /clients, GET /clients/:id, PATCH /clients/:id). Apply Bean Validation on all request DTOs. Enforce role-based access — admin only for user write operations, admin/marketer for client reads.\n\nKey paths: <apps/api/src/main/java/com/ims/user>, <apps/api/src/main/java/com/ims/client>",
+      "labels": ["user", "client", "crud", "validation", "phase-3"],
+      "priority": "High",
+      "storyPoints": 5,
+      "acceptanceCriteria": [
+        {
+          "scenario": "Admin can create a user",
+          "given": "an authenticated admin sends a valid POST /users request",
+          "when": "the request is processed",
+          "then": "the user is persisted and a 201 response with the created user is returned"
+        },
+        {
+          "scenario": "Invalid DTO returns 400",
+          "given": "a POST /users request is sent with a missing required field",
+          "when": "Bean Validation runs",
+          "then": "a 400 Bad Request response is returned with field-level error details"
+        },
+        {
+          "scenario": "End client list is accessible to admin and marketer",
+          "given": "an authenticated marketer calls GET /clients",
+          "when": "the request is processed",
+          "then": "a 200 response with the paginated client list is returned"
+        },
+        {
+          "scenario": "Non-admin cannot create users",
+          "given": "a marketer calls POST /users",
+          "when": "the request is processed",
+          "then": "a 403 Forbidden response is returned"
+        }
+      ],
+      "tasks": [
+        {
+          "summary": "Implement User CRUD service, repository, and controller",
+          "description": "Create UserEntity, UserRepository (JpaRepository), UserService with @PreAuthorize guards, and UserController with Bean Validation on DTOs."
+        },
+        {
+          "summary": "Implement End Client CRUD service, repository, and controller",
+          "description": "Create ClientEntity, ClientRepository, ClientService, and ClientController. Apply role guards: admin for writes, admin/marketer for reads."
+        },
+        {
+          "summary": "Add integration tests for User and Client endpoints",
+          "description": "Use Spring Boot Test + Testcontainers Postgres. Cover create, read, update, role enforcement, and validation error cases."
+        }
+      ]
+    },
+    {
+      "summary": "Configure healthcheck, Spring Actuator, and Micrometer baseline",
+      "description": "Expose GET /health returning 200 for ALB target group healthchecks. Enable Spring Actuator endpoints (/actuator/health, /actuator/info, /actuator/metrics). Configure Micrometer with micrometer-registry-cloudwatch2 to begin publishing JVM and HTTP metrics to CloudWatch from day one.\n\nKey paths: <apps/api/src/main/resources/application.yml>",
+      "labels": ["observability", "actuator", "micrometer", "cloudwatch", "phase-3"],
+      "priority": "Medium",
+      "storyPoints": 2,
+      "acceptanceCriteria": [
+        {
+          "scenario": "Healthcheck returns 200 for ALB",
+          "given": "the application is running",
+          "when": "GET /health is called without authentication",
+          "then": "a 200 OK response is returned with a JSON body indicating the service is up"
+        },
+        {
+          "scenario": "Actuator metrics endpoint is secured",
+          "given": "the application is running",
+          "when": "GET /actuator/metrics is called without an internal network header",
+          "then": "the endpoint returns 401 or is restricted to internal access only"
+        },
+        {
+          "scenario": "Micrometer publishes to CloudWatch",
+          "given": "the application is running in a staging environment with AWS credentials",
+          "when": "HTTP requests are processed",
+          "then": "http.server.requests metrics appear in the configured CloudWatch namespace"
+        }
+      ],
+      "tasks": [
+        {
+          "summary": "Add GET /health endpoint",
+          "description": "Implement a public HealthController returning 200 with a minimal status payload. Exclude from Spring Security filter chain."
+        },
+        {
+          "summary": "Configure Spring Actuator and Micrometer CloudWatch registry",
+          "description": "Enable actuator health, info, and metrics endpoints in application.yml. Configure micrometer-registry-cloudwatch2 with namespace and step interval. Restrict actuator to internal access."
+        }
+      ]
+    }
+  ]
+}
