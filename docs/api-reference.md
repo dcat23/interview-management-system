@@ -2,7 +2,7 @@
 
 Base URL: `https://api.{domain}/v1`
 
-All endpoints require `Authorization: Bearer {access_token}` unless marked **public**.
+All endpoints require `Authorization: Bearer {accessToken}` unless marked **public**.
 
 Responses are `application/json`. Errors follow the standard error envelope below.
 
@@ -14,7 +14,7 @@ Responses are `application/json`. Errors follow the standard error envelope belo
 {
   "error": {
     "code": "INVALID_STATUS_TRANSITION",
-    "message": "Cannot transition from 'cancelled' to 'scheduled'",
+    "message": "Cannot transition from 'CANCELLED' to 'SCHEDULED'",
     "status": 409,
     "timestamp": "2024-01-15T10:30:00Z"
   }
@@ -65,12 +65,14 @@ Authenticate and receive tokens.
 **Response `200`**
 ```json
 {
-  "access_token": "eyJ...",
-  "refresh_token": "eyJ...",
+  "accessToken": "eyJ...",
+  "refreshToken": "eyJ...",
   "role": "supporter",
-  "expires_in": 3600
+  "expiresIn": 3600
 }
 ```
+
+`role` is always lowercase (e.g., `admin`, `marketer`, `supporter`, `candidate`).
 
 ---
 
@@ -80,12 +82,12 @@ Rotate access token using a valid refresh token.
 
 **Request**
 ```json
-{ "refresh_token": "eyJ..." }
+{ "refreshToken": "eyJ..." }
 ```
 
 **Response `200`**
 ```json
-{ "access_token": "eyJ...", "expires_in": 3600 }
+{ "accessToken": "eyJ...", "expiresIn": 3600 }
 ```
 
 ---
@@ -93,6 +95,8 @@ Rotate access token using a valid refresh token.
 ### `POST /auth/logout` · all roles
 
 Invalidate the current refresh token. Access token expires naturally after TTL.
+
+**Query param:** `refreshToken` (optional)
 
 **Response `204`** No content.
 
@@ -108,10 +112,10 @@ List users with optional filters.
 
 | Param | Type | Description |
 |---|---|---|
-| `role` | string | Filter by role |
-| `is_active` | boolean | Default `true` |
-| `page` | int | Default `1` |
-| `limit` | int | Default `20`, max `100` |
+| `role` | string | Filter by role (`ADMIN`, `MARKETER`, `SUPPORTER`, `CANDIDATE`) |
+| `isActive` | boolean | Default `true` |
+| `page` | int | Default `0` |
+| `limit` | int | Default `20` |
 
 **Response `200`**
 ```json
@@ -121,13 +125,13 @@ List users with optional filters.
       "id": "uuid",
       "name": "string",
       "email": "string",
-      "role": "supporter",
-      "is_active": true,
-      "created_at": "2024-01-15T10:00:00Z"
+      "role": "SUPPORTER",
+      "isActive": true,
+      "createdAt": "2024-01-15T10:00:00Z"
     }
   ],
   "total": 42,
-  "page": 1,
+  "page": 0,
   "limit": 20
 }
 ```
@@ -144,7 +148,7 @@ Create a new user.
   "name": "Jane Smith",
   "email": "jane@example.com",
   "password": "string (min 12 chars)",
-  "role": "candidate | marketer | supporter | admin"
+  "role": "CANDIDATE | MARKETER | SUPPORTER | ADMIN"
 }
 ```
 
@@ -170,7 +174,7 @@ Update user fields.
   "name": "string",
   "email": "string",
   "role": "string",
-  "is_active": false
+  "isActive": false
 }
 ```
 
@@ -184,16 +188,16 @@ Update user fields.
 
 List end clients.
 
-**Query params:** `is_active` (boolean, default `true`), `page`, `limit`
+**Query params:** `isActive` (boolean, default `true`), `page`, `limit`
 
 **Response `200`**
 ```json
 {
   "data": [
-    { "id": "uuid", "name": "string", "industry": "string", "is_active": true }
+    { "id": "uuid", "name": "string", "industry": "string", "isActive": true }
   ],
   "total": 10,
-  "page": 1,
+  "page": 0,
   "limit": 20
 }
 ```
@@ -215,7 +219,7 @@ List end clients.
 
 **Request** (all fields optional)
 ```json
-{ "name": "string", "industry": "string", "is_active": false }
+{ "name": "string", "industry": "string", "isActive": false }
 ```
 
 **Response `200`** — returns updated client object.
@@ -224,22 +228,18 @@ List end clients.
 
 ## Question bank
 
-### `GET /questions` · `admin` `supporter`
+### `GET /questions` · `admin` `marketer` `supporter`
 
-Query questions with filters and full-text search.
+List active questions with optional filters.
 
 **Query params**
 
 | Param | Type | Description |
 |---|---|---|
-| `client_id` | uuid | Filter by end client |
-| `topic` | string | Filter by topic |
-| `round` | string | Filter by round |
-| `q` | string | Full-text search across topic and body |
-| `is_active` | boolean | Default `true` |
-| `page` | int | Default `1` |
-| `limit` | int | Default `20`, max `100` |
-| `sort` | string | e.g. `created_at:desc`, `topic:asc` |
+| `clientId` | uuid | Filter by end client |
+| `topic` | string | Partial match on topic |
+| `page` | int | Default `0` |
+| `limit` | int | Default `20` |
 
 **Response `200`**
 ```json
@@ -247,47 +247,47 @@ Query questions with filters and full-text search.
   "data": [
     {
       "id": "uuid",
-      "end_client_id": "uuid",
+      "clientId": "uuid",
       "topic": "Spring Boot",
-      "round": "technical screen",
+      "round": "Technical Screen",
       "body": "Explain the difference between @Component and @Bean.",
       "version": 2,
-      "is_active": true,
-      "created_by": "uuid",
-      "created_at": "2024-01-10T09:00:00Z"
+      "active": true,
+      "createdBy": "uuid",
+      "updatedBy": "uuid",
+      "createdAt": "2024-01-10T09:00:00Z",
+      "updatedAt": "2024-01-20T11:00:00Z"
     }
   ],
   "total": 80,
-  "page": 1,
+  "page": 0,
   "limit": 20
 }
 ```
 
 ---
 
-### `POST /questions` · `admin` `supporter`
+### `POST /questions` · `admin`
 
-Create a question in the bank.
+Create a question in the bank. `createdBy` set from JWT. `version` defaults to `1`.
 
 **Request**
 ```json
 {
-  "end_client_id": "uuid",
+  "clientId": "uuid",
   "topic": "string",
   "round": "string",
   "body": "string"
 }
 ```
 
-`created_by` set from JWT. `version` defaults to `1`.
-
 **Response `201`** — returns created question object.
 
 ---
 
-### `GET /questions/:id` · `admin` `supporter`
+### `GET /questions/:id` · `admin` `marketer` `supporter`
 
-Get a single question including version and authorship metadata.
+Get a single question including version history metadata.
 
 **Response `200`** — returns full question object.
 
@@ -295,41 +295,40 @@ Get a single question including version and authorship metadata.
 
 ### `PATCH /questions/:id` · `admin`
 
-Update question content. Increments `version` if `body` changes.
+Update question content. Always increments `version` on save. `updatedBy` set from JWT. Previous version is archived in `question_versions`.
 
 **Request** (all fields optional)
 ```json
 {
   "topic": "string",
   "round": "string",
-  "body": "string",
-  "is_active": false
+  "body": "string"
 }
 ```
-
-`updated_by` set from JWT server-side.
 
 **Response `200`** — returns updated question object.
 
 ---
 
+### `DELETE /questions/:id` · `admin`
+
+Soft-delete a question. Sets `active = false`. The question remains in the database and linked to existing sessions.
+
+**Response `204`** No content.
+
+---
+
 ## Interview processes
 
-### `GET /processes` · `admin` `marketer`
+### `GET /processes` · `admin` `marketer` `candidate`
 
-List interview processes with filters.
+List interview processes.
 
-**Query params**
+**Query params:** `page` (default `0`), `limit` (default `20`)
 
-| Param | Type | Description |
-|---|---|---|
-| `candidate_id` | uuid | Filter by candidate |
-| `client_id` | uuid | Filter by end client |
-| `status` | string | `active`, `completed`, `withdrawn`, `cancelled` |
-| `technology` | string | Partial match |
-| `page` | int | Default `1` |
-| `limit` | int | Default `20` |
-| `sort` | string | e.g. `started_at:desc` |
+**Role constraints:**
+- Candidate: own processes only (filtered automatically by JWT identity)
+- Admin / marketer: all processes
 
 **Response `200`**
 ```json
@@ -337,21 +336,25 @@ List interview processes with filters.
   "data": [
     {
       "id": "uuid",
-      "candidate": { "id": "uuid", "name": "string" },
-      "end_client": { "id": "uuid", "name": "string" },
-      "marketer": { "id": "uuid", "name": "string" },
+      "candidateId": "uuid",
+      "clientId": "uuid",
+      "marketerId": "uuid",
       "technology": "Java Full Stack",
       "description": "string",
-      "status": "active",
-      "started_at": "2024-01-01T00:00:00Z",
-      "session_count": 3
+      "status": "ACTIVE",
+      "startedAt": "2024-01-01T00:00:00Z",
+      "closedAt": null,
+      "createdAt": "2024-01-01T00:00:00Z",
+      "updatedAt": "2024-01-15T12:00:00Z"
     }
   ],
   "total": 15,
-  "page": 1,
+  "page": 0,
   "limit": 20
 }
 ```
+
+`status` values: `ACTIVE`, `COMPLETED`, `WITHDRAWN`, `CANCELLED`
 
 ---
 
@@ -362,14 +365,15 @@ Open a new interview process for a candidate.
 **Request**
 ```json
 {
-  "candidate_id": "uuid",
-  "end_client_id": "uuid",
+  "candidateId": "uuid",
+  "clientId": "uuid",
+  "marketerId": "uuid",
   "technology": "string",
   "description": "string (optional)"
 }
 ```
 
-`marketer_id` set from JWT. `status` defaults to `active`. `started_at` set server-side.
+`status` defaults to `ACTIVE`. `startedAt` set server-side.
 
 **Response `201`** — returns created process object.
 
@@ -377,33 +381,13 @@ Open a new interview process for a candidate.
 
 ### `GET /processes/:id` · `admin` `marketer` `supporter` `candidate`
 
-Get process with nested sessions ordered by `scheduled_at` ascending.
+Get process by ID.
 
-**Role-based response differences:**
-- **Candidate:** own process only, sessions list without feedback
-- **Supporter:** assigned sessions only, own feedback included
-- **Admin / marketer:** full detail including feedback summary per session
+**Role constraints:**
+- Candidate: own process only
+- Admin / marketer / supporter: any process
 
-**Response `200`**
-```json
-{
-  "id": "uuid",
-  "candidate": { "id": "uuid", "name": "string" },
-  "end_client": { "id": "uuid", "name": "string" },
-  "technology": "string",
-  "status": "active",
-  "sessions": [
-    {
-      "id": "uuid",
-      "round": "1st round",
-      "scheduled_at": "2024-02-01T14:00:00Z",
-      "status": "passed",
-      "mode": "Microsoft Teams",
-      "duration_minutes": 60
-    }
-  ]
-}
-```
+**Response `200`** — returns process object (same shape as list item).
 
 ---
 
@@ -416,8 +400,8 @@ Update process-level fields or close the process.
 {
   "technology": "string",
   "description": "string",
-  "status": "completed | withdrawn | cancelled",
-  "closed_at": "2024-03-01T00:00:00Z"
+  "status": "COMPLETED | WITHDRAWN | CANCELLED",
+  "closedAt": "2024-03-01T00:00:00Z"
 }
 ```
 
@@ -432,20 +416,19 @@ Full progression view: all rounds with outcomes, question counts, and feedback s
 **Response `200`**
 ```json
 {
-  "process_id": "uuid",
-  "candidate": { "id": "uuid", "name": "string" },
+  "processId": "uuid",
   "technology": "string",
   "rounds": [
     {
-      "session_id": "uuid",
+      "sessionId": "uuid",
       "round": "1st round",
-      "scheduled_at": "2024-02-01T14:00:00Z",
-      "status": "passed",
-      "supporter": { "id": "uuid", "name": "string" },
-      "questions_count": 8,
-      "feedback_submitted": true,
-      "status_changed_at": "2024-02-01T15:30:00Z",
-      "status_changed_by": "uuid | null"
+      "scheduledAt": "2024-02-01T14:00:00Z",
+      "status": "PASSED",
+      "supporterId": "uuid",
+      "questionsCount": 8,
+      "feedbackSubmitted": true,
+      "statusChangedAt": "2024-02-01T15:30:00Z",
+      "statusChangedBy": "uuid"
     }
   ]
 }
@@ -455,20 +438,20 @@ Full progression view: all rounds with outcomes, question counts, and feedback s
 
 ### `GET /processes/:id/feedback` · `admin` `marketer`
 
-All submitted feedback across all rounds in a process, ordered by `scheduled_at` ascending.
+All submitted feedback across all rounds in a process, ordered by `scheduledAt` ascending.
 
 **Response `200`**
 ```json
 {
-  "process_id": "uuid",
+  "processId": "uuid",
   "feedback": [
     {
-      "session_id": "uuid",
+      "sessionId": "uuid",
       "round": "1st round",
-      "scheduled_at": "2024-02-01T14:00:00Z",
-      "supporter": { "id": "uuid", "name": "string" },
+      "scheduledAt": "2024-02-01T14:00:00Z",
+      "supporterId": "uuid",
       "body": "string",
-      "submitted_at": "2024-02-01T15:45:00Z"
+      "submittedAt": "2024-02-01T15:45:00Z"
     }
   ]
 }
@@ -482,12 +465,32 @@ All submitted feedback across all rounds in a process, ordered by `scheduled_at`
 
 List sessions within a process.
 
-**Query params:** `status`, `round`, `sort` (default `scheduled_at:asc`), `page`, `limit`
-
 **Role constraints:**
-- Candidate: own sessions only, no feedback
-- Supporter: assigned sessions only
+- Candidate: own process only; denied 403 if the process does not belong to them
+- Supporter: own assigned sessions only
 - Admin / marketer: all sessions
+
+**Response `200`** — array of session objects.
+
+```json
+[
+  {
+    "id": "uuid",
+    "processId": "uuid",
+    "supporterId": "uuid",
+    "round": "1st round",
+    "mode": "Microsoft Teams",
+    "durationMinutes": 60,
+    "description": "string",
+    "status": "SCHEDULED",
+    "scheduledAt": "2024-02-15T14:00:00Z",
+    "statusChangedAt": null,
+    "statusChangedBy": null,
+    "createdAt": "2024-01-20T09:00:00Z",
+    "updatedAt": "2024-01-20T09:00:00Z"
+  }
+]
+```
 
 ---
 
@@ -498,29 +501,31 @@ Schedule a new round within a process.
 **Request**
 ```json
 {
-  "supporter_id": "uuid",
+  "supporterId": "uuid",
   "round": "1st round",
   "mode": "Microsoft Teams",
-  "duration_minutes": 60,
-  "scheduled_at": "2024-02-15T14:00:00Z",
+  "durationMinutes": 60,
+  "scheduledAt": "2024-02-15T14:00:00Z",
   "description": "string (optional)"
 }
 ```
 
-`status` defaults to `scheduled`. `process_id` from route param.
+`status` defaults to `SCHEDULED`.
 
-**Response `201`** — returns created session object. Also writes initial `STATUS_HISTORY` entry.
+**Response `201`** — returns created session object.
 
 ---
 
 ### `GET /sessions/:id` · `admin` `marketer` `supporter` `candidate`
 
-Get session detail.
+Get session by ID.
 
-**Role-based response differences:**
-- Candidate: questions (body only), schedule info. No feedback, no status history.
-- Supporter: questions with notes, own feedback (draft or submitted).
-- Admin / marketer: full detail including feedback and status history.
+**Role constraints:**
+- Supporter: own assigned sessions only
+- Candidate: sessions belonging to their own process only
+- Admin / marketer: any session
+
+**Response `200`** — returns session object.
 
 ---
 
@@ -531,11 +536,11 @@ Update session logistics fields.
 **Request** (all fields optional)
 ```json
 {
-  "supporter_id": "uuid",
+  "supporterId": "uuid",
   "round": "string",
   "mode": "string",
-  "duration_minutes": 90,
-  "scheduled_at": "2024-02-20T10:00:00Z",
+  "durationMinutes": 90,
+  "scheduledAt": "2024-02-20T10:00:00Z",
   "description": "string"
 }
 ```
@@ -546,35 +551,32 @@ Update session logistics fields.
 
 ### `PATCH /sessions/:id/status` · `admin` `marketer` `supporter`
 
-Transition session status. Role constraints enforced server-side.
+Transition session status. Role constraints are enforced server-side.
 
 **Request**
 ```json
-{ "status": "in_review | passed | rejected | no_show | cancelled" }
+{ "targetStatus": "IN_REVIEW" }
 ```
 
-**Role constraints**
+`targetStatus` values: `IN_REVIEW`, `PASSED`, `REJECTED`, `NO_SHOW`, `CANCELLED`
 
-| Role | Permitted transitions |
-|---|---|
-| `marketer` | `scheduled → cancelled`, `scheduled → in_review` |
-| `supporter` | `scheduled → no_show`, `scheduled → in_review`, `in_review → passed`, `in_review → rejected`, `in_review → no_show` |
-| `admin` | Any valid transition |
+**Permitted transitions by role**
+
+| From | To | Roles |
+|---|---|---|
+| `SCHEDULED` | `IN_REVIEW` | `supporter` |
+| `SCHEDULED` | `CANCELLED` | `marketer`, `admin` |
+| `IN_REVIEW` | `PASSED` | `supporter` |
+| `IN_REVIEW` | `REJECTED` | `supporter` |
+| `IN_REVIEW` | `NO_SHOW` | `supporter`, `marketer` |
+| `IN_REVIEW` | `CANCELLED` | `marketer`, `admin` |
 
 Returns `409` if the transition is not permitted from the current status.
+Returns `403` if the caller's role is not permitted for the requested transition.
 
-Writes to `status_history`. Sets `status_changed_by` from JWT and `status_changed_at` to `now()`.
+Writes to `status_history`. Sets `statusChangedBy` from JWT and `statusChangedAt` to `now()`.
 
-**Response `200`**
-```json
-{
-  "session_id": "uuid",
-  "previous_status": "scheduled",
-  "current_status": "in_review",
-  "changed_by": "uuid",
-  "changed_at": "2024-02-15T15:00:00Z"
-}
-```
+**Response `200`** — returns the updated session object.
 
 ---
 
@@ -585,37 +587,50 @@ Full audit trail of all status transitions for a session.
 **Response `200`**
 ```json
 {
-  "session_id": "uuid",
+  "sessionId": "uuid",
   "history": [
     {
-      "from_status": null,
-      "to_status": "scheduled",
-      "changed_by": { "id": "uuid", "name": "string" },
-      "change_source": "manual",
-      "changed_at": "2024-01-20T09:00:00Z"
+      "fromStatus": null,
+      "toStatus": "SCHEDULED",
+      "changedBy": "uuid",
+      "changeSource": "MANUAL",
+      "changedAt": "2024-01-20T09:00:00Z"
     },
     {
-      "from_status": "scheduled",
-      "to_status": "in_review",
-      "changed_by": null,
-      "change_source": "background_job",
-      "changed_at": "2024-02-15T15:00:00Z"
+      "fromStatus": "SCHEDULED",
+      "toStatus": "IN_REVIEW",
+      "changedBy": null,
+      "changeSource": "BACKGROUND_JOB",
+      "changedAt": "2024-02-15T15:00:00Z"
     }
   ]
 }
 ```
 
+`changeSource` values: `MANUAL`, `BACKGROUND_JOB`
+
 ---
 
 ## Session questions
 
-### `GET /sessions/:id/questions` · `admin` `supporter` `candidate`
+### `GET /sessions/:id/questions` · `admin` `marketer` `supporter` `candidate`
 
-Get questions linked to a session, ordered by `display_order`.
+Get questions linked to a session, ordered by `displayOrder`.
 
-**Role-based response:**
-- Candidate: `id`, `topic`, `round`, `body` only
-- Supporter / admin: full object including `notes`
+**Response `200`** — array of session-question objects.
+
+```json
+[
+  {
+    "id": "uuid",
+    "sessionId": "uuid",
+    "questionId": "uuid",
+    "displayOrder": 1,
+    "notes": "string",
+    "createdAt": "2024-01-20T09:00:00Z"
+  }
+]
+```
 
 ---
 
@@ -623,37 +638,29 @@ Get questions linked to a session, ordered by `display_order`.
 
 Link a question from the bank to this session.
 
+**Role constraint:** Supporter must be the assigned supporter for this session.
+
 **Request**
 ```json
 {
-  "question_id": "uuid",
-  "display_order": 1,
+  "questionId": "uuid",
+  "displayOrder": 1,
   "notes": "string (optional)"
 }
 ```
 
 Returns `409` if the question is already linked to this session.
+Returns `404` if the question is inactive or does not exist.
 
-**Response `201`** — returns `SESSION_QUESTION` object.
-
----
-
-### `PATCH /sessions/:id/questions/:question_id` · `admin` `supporter`
-
-Update display order or notes for a linked question.
-
-**Request** (all fields optional)
-```json
-{ "display_order": 2, "notes": "string" }
-```
-
-**Response `200`** — returns updated `SESSION_QUESTION` object.
+**Response `201`** — returns session-question object.
 
 ---
 
 ### `DELETE /sessions/:id/questions/:question_id` · `admin` `supporter`
 
 Unlink a question from a session. The question remains in the bank.
+
+**Role constraint:** Supporter must be the assigned supporter for this session.
 
 **Response `204`** No content.
 
@@ -681,7 +688,7 @@ Create a feedback draft.
 { "body": "string" }
 ```
 
-`supporter_id` set from JWT. `is_submitted` defaults to `false`.
+`supporterId` set from JWT. `isSubmitted` defaults to `false`.
 
 Returns `409` if a feedback record already exists — use `PATCH` to update.
 
@@ -697,11 +704,11 @@ Update or submit feedback.
 ```json
 {
   "body": "string",
-  "is_submitted": true
+  "isSubmitted": true
 }
 ```
 
-Once `is_submitted = true`, `body` becomes read-only. `submitted_at` set server-side on submission.
+Once `isSubmitted = true`, `body` becomes read-only. `submittedAt` set server-side on submission.
 
 **Response `200`** — returns updated feedback object.
 
@@ -709,16 +716,18 @@ Once `is_submitted = true`, `body` becomes read-only. `submitted_at` set server-
 
 ## Pagination envelope
 
-All list endpoints return:
+All list endpoints that return paginated results use:
 
 ```json
 {
   "data": [],
   "total": 100,
-  "page": 1,
+  "page": 0,
   "limit": 20
 }
 ```
+
+`page` is zero-based. Session list (`GET /processes/:id/sessions`) returns a plain array, not a paginated envelope.
 
 ---
 

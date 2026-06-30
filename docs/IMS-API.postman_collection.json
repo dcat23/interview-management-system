@@ -1,0 +1,700 @@
+{
+  "info": {
+    "_postman_id": "ims-api-v1",
+    "name": "Interview Management System API",
+    "description": "API reference for the Interview Management System. Base URL: https://api.{domain}/v1\n\nAll endpoints require `Authorization: Bearer {accessToken}` unless marked public.\n\nUse the **Login** request first — it auto-populates `accessToken` and `refreshToken` collection variables via the test script.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    { "key": "baseUrl",      "value": "https://api.example.com/v1", "type": "string" },
+    { "key": "accessToken",  "value": "",                            "type": "string" },
+    { "key": "refreshToken", "value": "",                            "type": "string" },
+    { "key": "userId",       "value": "",                            "type": "string" },
+    { "key": "clientId",     "value": "",                            "type": "string" },
+    { "key": "questionId",   "value": "",                            "type": "string" },
+    { "key": "processId",    "value": "",                            "type": "string" },
+    { "key": "sessionId",    "value": "",                            "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const body = pm.response.json();",
+                  "  pm.collectionVariables.set('accessToken', body.accessToken);",
+                  "  pm.collectionVariables.set('refreshToken', body.refreshToken);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"string\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "**Public** — no auth required.\n\nAuthenticate and receive tokens. The test script automatically stores `accessToken` and `refreshToken` into collection variables."
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const body = pm.response.json();",
+                  "  pm.collectionVariables.set('accessToken', body.accessToken);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/refresh",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "refresh"]
+            },
+            "description": "**Public** — no auth required.\n\nRotate access token using a valid refresh token. The test script automatically stores the new `accessToken`."
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": { "mode": "raw", "raw": "" },
+            "url": {
+              "raw": "{{baseUrl}}/auth/logout?refreshToken={{refreshToken}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "logout"],
+              "query": [
+                { "key": "refreshToken", "value": "{{refreshToken}}", "description": "Optional — invalidates the refresh token" }
+              ]
+            },
+            "description": "Invalidate the current refresh token. Access token expires naturally after TTL.\n\n**Roles:** all\n\n**Response:** `204 No Content`"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "List Users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users?isActive=true&page=0&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["users"],
+              "query": [
+                { "key": "role",     "value": "",     "description": "Filter by role (ADMIN | MARKETER | SUPPORTER | CANDIDATE)", "disabled": true },
+                { "key": "isActive", "value": "true", "description": "Default true" },
+                { "key": "page",     "value": "0",    "description": "Default 0 (zero-based)" },
+                { "key": "limit",    "value": "20",   "description": "Default 20" }
+              ]
+            },
+            "description": "List users with optional filters.\n\n**Roles:** admin"
+          }
+        },
+        {
+          "name": "Create User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  pm.collectionVariables.set('userId', pm.response.json().id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Jane Smith\",\n  \"email\": \"jane@example.com\",\n  \"password\": \"supersecret123!\",\n  \"role\": \"SUPPORTER\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["users"]
+            },
+            "description": "Create a new user.\n\n`role` values: `CANDIDATE | MARKETER | SUPPORTER | ADMIN`\n\n**Roles:** admin\n\n**Response:** `201` — returns created user object. Test script stores `id` → `userId`."
+          }
+        },
+        {
+          "name": "Get User",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "{{userId}}"]
+            },
+            "description": "Get user by ID.\n\n**Roles:** admin, self (non-admin users may only fetch their own profile)"
+          }
+        },
+        {
+          "name": "Update User",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Jane Doe\",\n  \"email\": \"janedoe@example.com\",\n  \"role\": \"MARKETER\",\n  \"isActive\": false\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "{{userId}}"]
+            },
+            "description": "Update user fields. All fields optional.\n\n**Roles:** admin\n\n**Response:** `200` — returns updated user object."
+          }
+        }
+      ]
+    },
+    {
+      "name": "End Clients",
+      "item": [
+        {
+          "name": "List Clients",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/clients?isActive=true&page=0&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["clients"],
+              "query": [
+                { "key": "isActive", "value": "true", "description": "Default true" },
+                { "key": "page",     "value": "0" },
+                { "key": "limit",    "value": "20" }
+              ]
+            },
+            "description": "List end clients.\n\n**Roles:** admin, marketer, supporter"
+          }
+        },
+        {
+          "name": "Create Client",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  pm.collectionVariables.set('clientId', pm.response.json().id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Acme Corp\",\n  \"industry\": \"Financial Services\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/clients",
+              "host": ["{{baseUrl}}"],
+              "path": ["clients"]
+            },
+            "description": "Create a new end client.\n\n**Roles:** admin, marketer\n\n**Response:** `201` — returns created client object. Test script stores `id` → `clientId`."
+          }
+        },
+        {
+          "name": "Update Client",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Acme Corporation\",\n  \"industry\": \"Technology\",\n  \"isActive\": false\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/clients/{{clientId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["clients", "{{clientId}}"]
+            },
+            "description": "Update end client fields. All fields optional.\n\n**Roles:** admin, marketer\n\n**Response:** `200` — returns updated client object."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Question Bank",
+      "item": [
+        {
+          "name": "List Questions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/questions?page=0&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["questions"],
+              "query": [
+                { "key": "clientId", "value": "", "description": "Filter by end client UUID", "disabled": true },
+                { "key": "topic",    "value": "", "description": "Partial match on topic",    "disabled": true },
+                { "key": "page",     "value": "0",  "description": "Default 0" },
+                { "key": "limit",    "value": "20", "description": "Default 20" }
+              ]
+            },
+            "description": "List active questions with optional filters.\n\n**Roles:** admin, marketer, supporter"
+          }
+        },
+        {
+          "name": "Create Question",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  pm.collectionVariables.set('questionId', pm.response.json().id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clientId\": \"{{clientId}}\",\n  \"topic\": \"Spring Boot\",\n  \"round\": \"Technical Screen\",\n  \"body\": \"Explain the difference between @Component and @Bean.\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/questions",
+              "host": ["{{baseUrl}}"],
+              "path": ["questions"]
+            },
+            "description": "Create a question in the bank. `createdBy` set from JWT; `version` defaults to 1.\n\n**Roles:** admin\n\n**Response:** `201` — returns created question object. Test script stores `id` → `questionId`."
+          }
+        },
+        {
+          "name": "Get Question",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/questions/{{questionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["questions", "{{questionId}}"]
+            },
+            "description": "Get a single question including version and authorship metadata.\n\n**Roles:** admin, marketer, supporter"
+          }
+        },
+        {
+          "name": "Update Question",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"topic\": \"Spring Boot\",\n  \"round\": \"Technical Screen\",\n  \"body\": \"Explain the difference between @Component and @Bean. Give examples of when to use each.\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/questions/{{questionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["questions", "{{questionId}}"]
+            },
+            "description": "Update question content. Always increments `version` on save. Previous version archived in `question_versions`. `updatedBy` set from JWT.\n\n**Roles:** admin\n\n**Response:** `200` — returns updated question object."
+          }
+        },
+        {
+          "name": "Delete Question (soft)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/questions/{{questionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["questions", "{{questionId}}"]
+            },
+            "description": "Soft-delete a question. Sets `active = false`. The question remains in the database and linked to existing sessions.\n\n**Roles:** admin\n\n**Response:** `204 No Content`"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Interview Processes",
+      "item": [
+        {
+          "name": "List Processes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/processes?page=0&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["processes"],
+              "query": [
+                { "key": "page",  "value": "0" },
+                { "key": "limit", "value": "20" }
+              ]
+            },
+            "description": "List interview processes.\n\nCandidates automatically see only their own processes. Admin/marketer see all.\n\n**Roles:** admin, marketer, candidate"
+          }
+        },
+        {
+          "name": "Create Process",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  pm.collectionVariables.set('processId', pm.response.json().id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"candidateId\": \"{{userId}}\",\n  \"clientId\": \"{{clientId}}\",\n  \"marketerId\": \"{{userId}}\",\n  \"technology\": \"Java Full Stack\",\n  \"description\": \"Java and Spring Boot position at Acme Corp\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/processes",
+              "host": ["{{baseUrl}}"],
+              "path": ["processes"]
+            },
+            "description": "Open a new interview process for a candidate. `status` defaults to `ACTIVE`; `startedAt` set server-side.\n\n**Roles:** admin, marketer\n\n**Response:** `201` — returns created process object. Test script stores `id` → `processId`."
+          }
+        },
+        {
+          "name": "Get Process",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/processes/{{processId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["processes", "{{processId}}"]
+            },
+            "description": "Get process by ID.\n\n**Roles:** admin, marketer, supporter, candidate"
+          }
+        },
+        {
+          "name": "Update Process",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"technology\": \"React Full Stack\",\n  \"description\": \"Updated position description\",\n  \"status\": \"COMPLETED\",\n  \"closedAt\": \"2024-03-01T00:00:00Z\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/processes/{{processId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["processes", "{{processId}}"]
+            },
+            "description": "Update process-level fields or close the process. All fields optional.\n\n`status` values: `COMPLETED | WITHDRAWN | CANCELLED`\n\n**Roles:** admin, marketer\n\n**Response:** `200` — returns updated process object."
+          }
+        },
+        {
+          "name": "Get Process Timeline",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/processes/{{processId}}/timeline",
+              "host": ["{{baseUrl}}"],
+              "path": ["processes", "{{processId}}", "timeline"]
+            },
+            "description": "Full progression view: all rounds with outcomes, question counts, and feedback status.\n\n**Roles:** admin, marketer"
+          }
+        },
+        {
+          "name": "Get Process Feedback",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/processes/{{processId}}/feedback",
+              "host": ["{{baseUrl}}"],
+              "path": ["processes", "{{processId}}", "feedback"]
+            },
+            "description": "All submitted feedback across all rounds in a process, ordered by `scheduledAt` ascending.\n\n**Roles:** admin, marketer"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Interview Sessions",
+      "item": [
+        {
+          "name": "List Sessions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/processes/{{processId}}/sessions",
+              "host": ["{{baseUrl}}"],
+              "path": ["processes", "{{processId}}", "sessions"]
+            },
+            "description": "List sessions within a process.\n\nRole constraints:\n- **Candidate:** own process only — 403 if process doesn't belong to them\n- **Supporter:** own assigned sessions only\n- **Admin / marketer:** all sessions\n\n**Roles:** admin, marketer, supporter, candidate\n\n**Response:** `200` — array of session objects (not paginated)"
+          }
+        },
+        {
+          "name": "Create Session",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  pm.collectionVariables.set('sessionId', pm.response.json().id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"supporterId\": \"{{userId}}\",\n  \"round\": \"1st round\",\n  \"mode\": \"Microsoft Teams\",\n  \"durationMinutes\": 60,\n  \"scheduledAt\": \"2024-02-15T14:00:00Z\",\n  \"description\": \"First technical screening\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/processes/{{processId}}/sessions",
+              "host": ["{{baseUrl}}"],
+              "path": ["processes", "{{processId}}", "sessions"]
+            },
+            "description": "Schedule a new round within a process. `status` defaults to `SCHEDULED`.\n\n**Roles:** admin, marketer\n\n**Response:** `201` — returns created session object. Test script stores `id` → `sessionId`."
+          }
+        },
+        {
+          "name": "Get Session",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/sessions/{{sessionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["sessions", "{{sessionId}}"]
+            },
+            "description": "Get session detail.\n\nRole constraints:\n- **Supporter:** own assigned sessions only\n- **Candidate:** sessions in their own process only\n- **Admin / marketer:** any session\n\n**Roles:** admin, marketer, supporter, candidate"
+          }
+        },
+        {
+          "name": "Update Session",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"supporterId\": \"{{userId}}\",\n  \"round\": \"2nd round\",\n  \"mode\": \"Google Meet\",\n  \"durationMinutes\": 90,\n  \"scheduledAt\": \"2024-02-20T10:00:00Z\",\n  \"description\": \"Follow-up technical round\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/sessions/{{sessionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["sessions", "{{sessionId}}"]
+            },
+            "description": "Update session logistics fields. All fields optional.\n\n**Roles:** admin, marketer\n\n**Response:** `200` — returns updated session object."
+          }
+        },
+        {
+          "name": "Transition Session Status",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetStatus\": \"IN_REVIEW\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/sessions/{{sessionId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["sessions", "{{sessionId}}", "status"]
+            },
+            "description": "Transition session status. Role constraints enforced server-side.\n\n`targetStatus` values: `IN_REVIEW | PASSED | REJECTED | NO_SHOW | CANCELLED`\n\nPermitted transitions by role:\n- **supporter:** `SCHEDULED → IN_REVIEW`, `IN_REVIEW → PASSED/REJECTED/NO_SHOW`\n- **marketer:** `SCHEDULED → CANCELLED`, `IN_REVIEW → NO_SHOW/CANCELLED`\n- **admin:** any valid transition\n\nReturns `409` if the transition is not valid from the current status.\nReturns `403` if the caller's role is not permitted for the requested transition.\n\n**Roles:** admin, marketer, supporter\n\n**Response:** `200` — returns updated session object."
+          }
+        },
+        {
+          "name": "Get Session Status History",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/sessions/{{sessionId}}/status-history",
+              "host": ["{{baseUrl}}"],
+              "path": ["sessions", "{{sessionId}}", "status-history"]
+            },
+            "description": "Full audit trail of all status transitions for a session.\n\n**Roles:** admin, marketer"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Session Questions",
+      "item": [
+        {
+          "name": "List Session Questions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/sessions/{{sessionId}}/questions",
+              "host": ["{{baseUrl}}"],
+              "path": ["sessions", "{{sessionId}}", "questions"]
+            },
+            "description": "Get questions linked to a session, ordered by `displayOrder`.\n\n**Roles:** admin, marketer, supporter, candidate"
+          }
+        },
+        {
+          "name": "Link Question to Session",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"questionId\": \"{{questionId}}\",\n  \"displayOrder\": 1,\n  \"notes\": \"Focus on the lifecycle aspect\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/sessions/{{sessionId}}/questions",
+              "host": ["{{baseUrl}}"],
+              "path": ["sessions", "{{sessionId}}", "questions"]
+            },
+            "description": "Link a question from the bank to this session. Returns `409` if the question is already linked.\n\nSupporter must be the assigned supporter for this session.\n\n**Roles:** admin, supporter\n\n**Response:** `201` — returns session-question object."
+          }
+        },
+        {
+          "name": "Unlink Question from Session",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/sessions/{{sessionId}}/questions/{{questionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["sessions", "{{sessionId}}", "questions", "{{questionId}}"]
+            },
+            "description": "Unlink a question from a session. The question remains in the bank.\n\nSupporter must be the assigned supporter for this session.\n\n**Roles:** admin, supporter\n\n**Response:** `204 No Content`"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Feedback",
+      "item": [
+        {
+          "name": "Get Session Feedback",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/sessions/{{sessionId}}/feedback",
+              "host": ["{{baseUrl}}"],
+              "path": ["sessions", "{{sessionId}}", "feedback"]
+            },
+            "description": "Get feedback for a session.\n\n- **Supporter:** own feedback only (draft or submitted)\n- **Admin:** any submitted feedback\n\nReturns `404` if no feedback record exists yet.\n\n**Roles:** admin, supporter"
+          }
+        },
+        {
+          "name": "Create Feedback Draft",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"body\": \"Candidate demonstrated strong knowledge of Spring Boot internals.\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/sessions/{{sessionId}}/feedback",
+              "host": ["{{baseUrl}}"],
+              "path": ["sessions", "{{sessionId}}", "feedback"]
+            },
+            "description": "Create a feedback draft. `supporterId` set from JWT; `isSubmitted` defaults to `false`.\n\nReturns `409` if a feedback record already exists — use `PATCH` to update.\n\n**Roles:** supporter\n\n**Response:** `201` — returns feedback object."
+          }
+        },
+        {
+          "name": "Update / Submit Feedback",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"body\": \"Candidate demonstrated strong knowledge of Spring Boot internals and design patterns.\",\n  \"isSubmitted\": true\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/sessions/{{sessionId}}/feedback",
+              "host": ["{{baseUrl}}"],
+              "path": ["sessions", "{{sessionId}}", "feedback"]
+            },
+            "description": "Update or submit feedback. All fields optional.\n\nOnce `isSubmitted = true`, `body` becomes read-only. `submittedAt` set server-side on submission.\n\n**Roles:** supporter\n\n**Response:** `200` — returns updated feedback object."
+          }
+        }
+      ]
+    }
+  ]
+}
