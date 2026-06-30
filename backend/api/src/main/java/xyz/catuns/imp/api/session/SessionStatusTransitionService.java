@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import xyz.catuns.imp.api.session.dto.InterviewSessionResponse;
 import xyz.catuns.imp.api.session.entity.*;
+import xyz.catuns.imp.api.session.event.SessionStatusChangedEvent;
 import xyz.catuns.imp.api.session.exception.InvalidTransitionException;
 import xyz.catuns.imp.api.session.mapper.InterviewSessionMapper;
 import xyz.catuns.imp.api.session.repository.InterviewSessionRepository;
@@ -48,6 +49,7 @@ public class SessionStatusTransitionService {
     private final StatusHistoryRepository statusHistoryRepository;
     private final InterviewSessionMapper sessionMapper;
     private final UserRepository userRepository;
+    private final SessionStatusEventPublisher eventPublisher;
 
     @PreAuthorize("isAuthenticated()")
     @Transactional
@@ -104,6 +106,15 @@ public class SessionStatusTransitionService {
         history.setChangedBy(actorId);
         history.setChangeSource(changeSource);
         statusHistoryRepository.save(history);
+
+        eventPublisher.publish(new SessionStatusChangedEvent(
+                session.getId(),
+                session.getProcessId(),
+                fromStatus,
+                toStatus,
+                history.getChangedAt() != null ? history.getChangedAt() : Instant.now(),
+                changeSource
+        ));
 
         return sessionMapper.toResponse(session);
     }

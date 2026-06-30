@@ -2,6 +2,8 @@ app:
   kafka:
     partitions: 1
     replicas: 1
+    topics:
+      session-status-changed: session.status.changed
   open-api:
     description: @project.description@
     title: @project.name@

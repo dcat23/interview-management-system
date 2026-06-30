@@ -2,6 +2,7 @@ package xyz.catuns.imp.api.config;
 
 import java.util.Map;
 
+import org.apache.kafka.clients.admin.NewTopic;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.kafka.KafkaProperties;
 import org.springframework.context.annotation.Bean;
@@ -18,6 +19,20 @@ class KafkaConfig {
 
     @Value("${spring.kafka.consumer.group-id}")
     private String groupId;
+
+    @Value("${app.kafka.topics.session-status-changed}")
+    private String sessionStatusChangedTopicName;
+
+    @Value("${app.kafka.partitions:1}")
+    private int partitions;
+
+    @Value("${app.kafka.replicas:1}")
+    private short replicas;
+
+    @Bean
+    NewTopic sessionStatusChangedTopic() {
+        return new NewTopic(sessionStatusChangedTopicName, partitions, replicas);
+    }
 
     @Bean
     public ProducerFactory<String, Object> producerFactory(KafkaProperties kafkaProperties) {
