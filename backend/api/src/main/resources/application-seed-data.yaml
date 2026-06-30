@@ -1,0 +1,19 @@
+app:
+  seed:
+    users:
+      - name: Admin
+        email: admin@system.local
+        role: ADMIN
+        password: "Password1!"
+      - name: Candidate
+        email: candidate@system.local
+        role: CANDIDATE
+        password: "Password1!"
+      - name: Marketer
+        email: marketer@system.local
+        role: MARKETER
+        password: "Password1!"
+      - name: Supporter
+        email: supporter@system.local
+        role: SUPPORTER
+        password: "Password1!"

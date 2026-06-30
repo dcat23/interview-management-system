@@ -1,4 +1,6 @@
 spring:
+  profiles:
+    include: seed-data
   jpa:
     hibernate:
       ddl-auto: none
