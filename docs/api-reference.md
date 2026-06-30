@@ -566,8 +566,8 @@ Transition session status. Role constraints are enforced server-side.
 |---|---|---|
 | `SCHEDULED` | `IN_REVIEW` | `supporter` |
 | `SCHEDULED` | `CANCELLED` | `marketer`, `admin` |
-| `IN_REVIEW` | `PASSED` | `supporter` |
-| `IN_REVIEW` | `REJECTED` | `supporter` |
+| `IN_REVIEW` | `PASSED` | `supporter`, `marketer` |
+| `IN_REVIEW` | `REJECTED` | `supporter`, `marketer` |
 | `IN_REVIEW` | `NO_SHOW` | `supporter`, `marketer` |
 | `IN_REVIEW` | `CANCELLED` | `marketer`, `admin` |
 

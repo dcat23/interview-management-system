@@ -38,8 +38,8 @@ public class SessionStatusTransitionService {
         ALLOWED_TRANSITIONS.put(SessionStatus.SCHEDULED, fromScheduled);
 
         Map<SessionStatus, Set<UserRole>> fromInReview = new EnumMap<>(SessionStatus.class);
-        fromInReview.put(SessionStatus.PASSED,   Set.of(UserRole.SUPPORTER));
-        fromInReview.put(SessionStatus.REJECTED,  Set.of(UserRole.SUPPORTER));
+        fromInReview.put(SessionStatus.PASSED,   Set.of(UserRole.SUPPORTER, UserRole.MARKETER));
+        fromInReview.put(SessionStatus.REJECTED,  Set.of(UserRole.SUPPORTER, UserRole.MARKETER));
         fromInReview.put(SessionStatus.NO_SHOW,   Set.of(UserRole.SUPPORTER, UserRole.MARKETER));
         fromInReview.put(SessionStatus.CANCELLED, Set.of(UserRole.MARKETER, UserRole.ADMIN));
         ALLOWED_TRANSITIONS.put(SessionStatus.IN_REVIEW, fromInReview);

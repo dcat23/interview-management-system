@@ -203,6 +203,32 @@ class StatusTransitionTest {
         }
 
         @Test
+        @DisplayName("IN_REVIEW → PASSED by marketer succeeds")
+        void inReviewToPassedByMarketer() throws Exception {
+            UUID sessionId = freshSessionWithStatus(SessionStatus.IN_REVIEW).getId();
+
+            mockMvc.perform(patch("/sessions/" + sessionId + "/status")
+                            .header("Authorization", "Bearer " + marketerToken)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(new TransitionRequest(SessionStatus.PASSED))))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value("PASSED"));
+        }
+
+        @Test
+        @DisplayName("IN_REVIEW → REJECTED by marketer succeeds")
+        void inReviewToRejectedByMarketer() throws Exception {
+            UUID sessionId = freshSessionWithStatus(SessionStatus.IN_REVIEW).getId();
+
+            mockMvc.perform(patch("/sessions/" + sessionId + "/status")
+                            .header("Authorization", "Bearer " + marketerToken)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(new TransitionRequest(SessionStatus.REJECTED))))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value("REJECTED"));
+        }
+
+        @Test
         @DisplayName("IN_REVIEW → NO_SHOW by marketer succeeds")
         void inReviewToNoShowByMarketer() throws Exception {
             UUID sessionId = freshSessionWithStatus(SessionStatus.IN_REVIEW).getId();

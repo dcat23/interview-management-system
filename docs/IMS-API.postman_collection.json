@@ -575,7 +575,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["sessions", "{{sessionId}}", "status"]
             },
-            "description": "Transition session status. Role constraints enforced server-side.\n\n`targetStatus` values: `IN_REVIEW | PASSED | REJECTED | NO_SHOW | CANCELLED`\n\nPermitted transitions by role:\n- **supporter:** `SCHEDULED → IN_REVIEW`, `IN_REVIEW → PASSED/REJECTED/NO_SHOW`\n- **marketer:** `SCHEDULED → CANCELLED`, `IN_REVIEW → NO_SHOW/CANCELLED`\n- **admin:** any valid transition\n\nReturns `409` if the transition is not valid from the current status.\nReturns `403` if the caller's role is not permitted for the requested transition.\n\n**Roles:** admin, marketer, supporter\n\n**Response:** `200` — returns updated session object."
+            "description": "Transition session status. Role constraints enforced server-side.\n\n`targetStatus` values: `IN_REVIEW | PASSED | REJECTED | NO_SHOW | CANCELLED`\n\nPermitted transitions by role:\n- **supporter:** `SCHEDULED → IN_REVIEW`, `IN_REVIEW → PASSED/REJECTED/NO_SHOW`\n- **marketer:** `SCHEDULED → CANCELLED`, `IN_REVIEW → PASSED/REJECTED/NO_SHOW/CANCELLED`\n- **admin:** any valid transition\n\nReturns `409` if the transition is not valid from the current status.\nReturns `403` if the caller's role is not permitted for the requested transition.\n\n**Roles:** admin, marketer, supporter\n\n**Response:** `200` — returns updated session object."
           }
         },
         {
