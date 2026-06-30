@@ -1,0 +1,24 @@
+spring:
+  data:
+    redis:
+      host: redis
+  datasource:
+    url: jdbc:postgresql://${DATABASE_HOST:postgres}:${DATABASE_PORT:5432}/${DATABASE_NAME:api}
+  kafka:
+    bootstrap-servers: ${BOOTSTRAP_SERVERS:kafka:9092}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: false
+        show_sql: false
+server:
+  port: 8080
+logging:
+  level:
+    root: warn
+    xyz:
+      catuns:
+        imp:
+          api: info
