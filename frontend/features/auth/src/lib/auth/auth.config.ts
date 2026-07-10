@@ -1,18 +1,21 @@
 import type { NextAuthConfig } from 'next-auth';
+import { authorized, jwt, redirect, session } from './callbacks';
 
 const VERCEL_DEPLOYMENT = !!process.env.VERCEL_URL;
 
-export const authConfig: NextAuthConfig = {
+// Edge-safe config (no providers) — usable in middleware for route protection.
+export const authConfig = {
   pages: {
-    signIn: `/auth`,
-    verifyRequest: `/auth`,
-    error: '/auth', // Error code passed in query string as ?error=
+    signIn: `/login`,
+    verifyRequest: `/login`,
+    error: '/login', // Error code passed in query string as ?error=
     newUser: '/onboarding',
   },
   callbacks: {
-    authorized({ auth, request: { nextUrl } }) {
-      return !!auth?.user;
-    },
+    authorized,
+    jwt,
+    session,
+    redirect,
   },
   session: { strategy: 'jwt' },
   cookies: {

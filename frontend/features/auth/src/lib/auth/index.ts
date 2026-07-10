@@ -1,8 +1,8 @@
-import type { Session, User } from '../types/next-auth';
-import NextAuth from 'next-auth';
-import type { JWT } from 'next-auth/jwt';
+import NextAuth, { User } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
+
 import { authConfig } from './auth.config';
+import { login } from '../actions/auth';
 
 export const { auth, handlers, signIn, signOut } = NextAuth({
   ...authConfig,
@@ -14,43 +14,24 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
+        const response = await login({
+          email: credentials.email as string,
+          password: credentials.password as string
+        })
+
+        if (response.success) {
+          const data = response.data;
+          return {
+            id: credentials.email as string,
+            email: credentials.email as string,
+            jwtToken: data.accessToken,
+            refreshToken: data.refreshToken,
+            expiration: data.expiration,
+            role: data.role,
+          } satisfies User;
+        }
         return null;
       },
     }),
   ],
-  callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.role = user.role;
-        token.jwtToken = user.jwtToken;
-        token.refreshToken = user.refreshToken;
-        token.expiration = user.expiration;
-      }
-      return token;
-    },
-    async session({
-      session,
-      token,
-    }: {
-      session: Session;
-      token: JWT;
-      user: User;
-    }) {
-      if (token && session.user) {
-        session.user.id = token.sub as string;
-        session.user.role = token.role as string;
-        session.user.jwtToken = token.jwtToken as string;
-        session.user.refreshToken = token.refreshToken as string;
-      }
-      return session;
-    },
-
-    async redirect({ url, baseUrl }) {
-      // Allows relative callback URLs
-      if (url.startsWith('/')) return `${baseUrl}${url}`;
-      // Allows callback URLs on the same origin
-      else if (new URL(url).origin === baseUrl) return url;
-      return baseUrl;
-    },
-  },
 });
