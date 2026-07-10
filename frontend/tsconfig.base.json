@@ -16,18 +16,15 @@
     "baseUrl": ".",
     "paths": {
       "@app/web/*": ["apps/web/*"],
-      "@feature/auth": ["features/auth/src/index.ts"],
-      "@feature/auth/server": ["features/auth/src/server.ts"],
-      "@feature/auth/*": ["features/auth/src/*"],
       "@feature/ui": ["features/ui/src/index.ts"],
       "@feature/ui/server": ["features/ui/src/server.ts"],
       "@feature/ui/*": ["features/ui/src/*"],
       "@feature/base": ["features/base/src/index.ts"],
       "@feature/base/server": ["features/base/src/server.ts"],
       "@feature/base/*": ["features/base/src/*"],
-      "@client/api-client": ["clients/api-client/src/index.ts"],
-      "@client/api-client/server": ["clients/api-client/src/server.ts"],
-      "@client/api-client/*": ["clients/api-client/src/*"]
+      "@feature/auth": ["features/auth/src/index.ts"],
+      "@feature/auth/server": ["features/auth/src/server.ts"],
+      "@feature/auth/*": ["features/auth/src/*"]
     }
   },
   "exclude": ["node_modules", "tmp"]
