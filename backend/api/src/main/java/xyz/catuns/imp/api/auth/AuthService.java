@@ -33,7 +33,10 @@ public class AuthService {
 
     public LoginResponse login(LoginRequest request) {
         Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.email(), request.password())
+                UsernamePasswordAuthenticationToken.unauthenticated(
+                        request.email(),
+                        request.password()
+                )
         );
 
         JwtToken accessToken = tokenProvider.generate(authentication);
@@ -45,9 +48,9 @@ public class AuthService {
                 .map(r -> r.replace("ROLE_", "").toLowerCase())
                 .orElse("");
 
-        long expiresIn = Duration.between(accessToken.issuedAt(), accessToken.expiration()).toSeconds();
+        long expiration = accessToken.expiration().toEpochMilli();
 
-        return new LoginResponse(accessToken.value(), refreshToken, role, expiresIn);
+        return new LoginResponse(accessToken.value(), refreshToken, role, expiration);
     }
 
     public RefreshResponse refresh(RefreshRequest request) {
@@ -67,8 +70,8 @@ public class AuthService {
         String newRefreshToken = UUID.randomUUID().toString();
         redis.opsForValue().set(REFRESH_PREFIX + newRefreshToken, email, REFRESH_TTL);
 
-        long expiresIn = Duration.between(newAccessToken.issuedAt(), newAccessToken.expiration()).toSeconds();
-        return new RefreshResponse(newAccessToken.value(), expiresIn);
+        long expiration = newAccessToken.expiration().toEpochMilli();
+        return new RefreshResponse(newAccessToken.value(), newRefreshToken, expiration);
     }
 
     public void logout(String accessToken, String refreshToken) {

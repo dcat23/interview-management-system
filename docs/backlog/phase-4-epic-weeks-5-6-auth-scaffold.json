@@ -1,0 +1,205 @@
+{
+  "summary": "Auth, Route Guards, and API Client Layer",
+  "description": "Complete the Phase 4 auth and scaffold milestone. The Next.js 16 App Router project is already scaffolded (NX workspace, providers, shadcn.json, stub role pages). This epic implements the remaining deliverables: a functional login page wired to the backend JWT credential flow, NextAuth silent refresh, role-aware middleware with per-role route guards, separate root layouts for each role, a configured API client singleton that attaches session tokens, and Zod schemas covering all API request/response shapes.\n\nKey paths: <apps/web/app/(auth)/login>, <apps/web/middleware.ts>, <apps/web/app/candidate/layout.tsx>, <apps/web/app/marketer/layout.tsx>, <apps/web/app/supporter/layout.tsx>, <apps/web/app/admin/layout.tsx>, <apps/web/lib/api>, <apps/web/lib/schemas>, <features/auth/src/lib/auth>",
+  "labels": ["auth", "nextauth", "middleware", "jwt", "react-query", "zod", "tailwind", "phase-4"],
+  "priority": "High",
+  "userType": "authenticated user",
+  "functionality": "log in with their credentials, be redirected to their role-specific dashboard, and have the app transparently maintain a valid session",
+  "benefit": "all four role experiences depend on working auth and session management from day one of frontend development",
+  "stories": [
+    {
+      "summary": "Implement login page UI and NextAuth credential flow",
+      "description": "Replace the login page placeholder with a functional email/password form built in Tailwind CSS. Wire the form to NextAuth's CredentialsProvider, which calls the backend POST /auth/login endpoint. On success, NextAuth stores the access token, refresh token, role, and expiry in the JWT session cookie. On failure, display an inline error. The submit button shows a loading state during the request.\n\nBackend endpoint: POST http://localhost:8080/auth/login\nRequest body: { email, password }\nResponse: { accessToken, refreshToken, role, expiresIn } — role is lowercase (e.g. 'candidate')\n\nKey paths: <apps/web/app/(auth)/login/page.tsx>, <features/auth/src/lib/auth/index.ts>, <features/auth/src/lib/types/next-auth.d.ts>",
+      "labels": ["auth", "login", "nextauth", "credentials", "phase-4"],
+      "priority": "High",
+      "storyPoints": 3,
+      "acceptanceCriteria": [
+        {
+          "scenario": "Valid credentials log the user in",
+          "given": "a user enters a registered email and correct password on the login page",
+          "when": "the form is submitted",
+          "then": "NextAuth calls the backend, receives tokens, stores them in the JWT session cookie, and the user is redirected to their role home"
+        },
+        {
+          "scenario": "Invalid credentials show an error",
+          "given": "a user enters an incorrect password",
+          "when": "the form is submitted",
+          "then": "the backend returns 401, the login page shows 'Invalid email or password', and no redirect occurs"
+        },
+        {
+          "scenario": "Already-authenticated user is redirected away from login",
+          "given": "a user with an active session navigates to /login",
+          "when": "the page loads",
+          "then": "the middleware redirects them to their role home without showing the login form"
+        },
+        {
+          "scenario": "Submit button is disabled while request is in flight",
+          "given": "the login form has been submitted",
+          "when": "the backend request is pending",
+          "then": "the submit button is disabled and shows a loading label"
+        }
+      ],
+      "tasks": [
+        {
+          "summary": "Add Role type and extend NextAuth User and JWT interfaces",
+          "description": "In <features/auth/src/lib/types/next-auth.d.ts>, add `type Role = 'candidate' | 'marketer' | 'supporter' | 'admin'`. Extend the `User` interface with `role: Role`, `jwtToken`, `refreshToken`, `expiration`. Extend the `JWT` interface with the same fields plus `expiration` as an epoch timestamp."
+        },
+        {
+          "summary": "Wire CredentialsProvider authorize to backend POST /auth/login",
+          "description": "In <features/auth/src/lib/auth/index.ts>, implement the `authorize` callback. Call `fetch(process.env.AUTH_API_URL + '/auth/login')` with the email and password credentials. On a 2xx response, return a User object with jwtToken, refreshToken, role, and expiration. On failure, return null. Add AUTH_API_URL to .env and .env.example."
+        },
+        {
+          "summary": "Implement silent token refresh in the JWT callback",
+          "description": "In the NextAuth `jwt` callback, store `token.expiration` as an epoch timestamp (Date.now()/1000 + expiresIn). On each callback invocation, if the token expires within the next 60 seconds, call the backend POST /auth/refresh with token.refreshToken, update token.jwtToken and token.expiration with the response, and rotate token.refreshToken with the new value returned by the backend."
+        },
+        {
+          "summary": "Build login form UI in Tailwind CSS",
+          "description": "Replace <apps/web/app/(auth)/login/page.tsx> with a 'use client' component. Render an email input, a password input, and a submit button with loading state. Call `signIn('credentials', { redirect: false })` on submit. Display the returned error (if any) as an inline alert. On success navigate to '/' — the middleware handles the role redirect."
+        }
+      ]
+    },
+    {
+      "summary": "Implement role-aware middleware and per-role root layouts",
+      "description": "Create the Next.js middleware that enforces authentication and role-based routing for all non-API routes. Use NextAuth(authConfig).auth to read the JWT session cookie at the edge. Add four separate root layouts (one per role) with role-specific navigation links and a sign-out server action.\n\nRole routing rules:\n- /login → redirect to role home if already authenticated\n- / → redirect to role home if authenticated, else to /login\n- /candidate/* → require role 'candidate'; mismatch → redirect to own role home\n- /marketer/* → require role 'marketer'\n- /supporter/* → require role 'supporter'\n- /admin/* → require role 'admin'\n- Unauthenticated on any protected path → /login\n- /api/* → pass through\n\nKey paths: <apps/web/middleware.ts>, <apps/web/app/candidate/layout.tsx>, <apps/web/app/marketer/layout.tsx>, <apps/web/app/supporter/layout.tsx>, <apps/web/app/admin/layout.tsx>, <features/auth/src/lib/auth/auth.config.ts>",
+      "labels": ["middleware", "auth", "layouts", "rbac", "phase-4"],
+      "priority": "High",
+      "storyPoints": 5,
+      "acceptanceCriteria": [
+        {
+          "scenario": "Unauthenticated user is redirected to login",
+          "given": "a user with no session navigates to /marketer/processes",
+          "when": "the middleware runs",
+          "then": "the user is redirected to /login"
+        },
+        {
+          "scenario": "Candidate cannot access marketer routes",
+          "given": "an authenticated candidate navigates to /marketer/processes",
+          "when": "the middleware runs",
+          "then": "the user is redirected to /candidate (their role home)"
+        },
+        {
+          "scenario": "Each role sees its own navigation",
+          "given": "a marketer logs in and navigates to /marketer/processes",
+          "when": "the page renders",
+          "then": "the layout shows marketer-specific navigation links and the user's email"
+        },
+        {
+          "scenario": "Sign-out from any layout clears the session and redirects to login",
+          "given": "an authenticated user clicks sign out from any role layout",
+          "when": "the server action runs",
+          "then": "the NextAuth session is cleared and the user is redirected to /login"
+        }
+      ],
+      "tasks": [
+        {
+          "summary": "Update authConfig signIn page and simplify authorized callback",
+          "description": "In <features/auth/src/lib/auth/auth.config.ts>, change pages.signIn from '/auth' to '/login'. Simplify the authorized callback to return true (routing logic moves to the custom middleware wrapper)."
+        },
+        {
+          "summary": "Create middleware.ts with edge-compatible role routing",
+          "description": "Create <apps/web/middleware.ts>. Import `NextAuth` and `authConfig`. Call `const { auth } = NextAuth(authConfig)` to get a session-aware wrapper. Export `auth((req) => { ... })` as default. Inside the callback read `req.auth?.user?.role`, implement the role routing rules, and return appropriate NextResponse.redirect() calls. Match with `export const config = { matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'] }`."
+        },
+        {
+          "summary": "Create candidate layout with navigation and sign-out",
+          "description": "Create <apps/web/app/candidate/layout.tsx> as a server component. Import `auth` from `@feature/auth`. Render a top navigation bar with a link to /candidate/processes (My Processes). Display the user's email and role badge. Include a `<form action={async () => { 'use server'; await signOut() }}>` with a Sign Out button."
+        },
+        {
+          "summary": "Create marketer layout with navigation and sign-out",
+          "description": "Create <apps/web/app/marketer/layout.tsx>. Navigation links: /marketer/processes (Processes), /marketer/processes/new (New Process). Same user info and sign-out pattern as candidate layout."
+        },
+        {
+          "summary": "Create supporter layout with navigation and sign-out",
+          "description": "Create <apps/web/app/supporter/layout.tsx>. Navigation links: /supporter/sessions (My Sessions). Same user info and sign-out pattern."
+        },
+        {
+          "summary": "Create admin layout with navigation and sign-out",
+          "description": "Create <apps/web/app/admin/layout.tsx>. Navigation links: /admin/processes (Processes), /admin/questions (Question Bank). Same user info and sign-out pattern."
+        }
+      ]
+    },
+    {
+      "summary": "Configure API client singleton with session token attachment and unauthorized handling",
+      "description": "Create a configured ApiClient singleton that reads the active NextAuth session JWT and attaches it as a Bearer token on every request. Silent token refresh is handled server-side in the NextAuth jwt callback, so the client always receives a fresh token from getSession(). On a 401 response (session revoked or expired), sign out and redirect to /login. Export the singleton from a central lib/api module.\n\nKey paths: <apps/web/lib/api/client.ts>, <clients/api-client/src/lib/client.ts>",
+      "labels": ["api-client", "axios", "session", "jwt", "phase-4"],
+      "priority": "High",
+      "storyPoints": 3,
+      "acceptanceCriteria": [
+        {
+          "scenario": "Every API request includes the Bearer token",
+          "given": "a logged-in user triggers a React Query fetch",
+          "when": "the ApiClient sends the request",
+          "then": "the Authorization header contains 'Bearer <accessToken>' from the current NextAuth session"
+        },
+        {
+          "scenario": "401 response clears the session and redirects to login",
+          "given": "the backend responds with 401 (e.g., token revoked)",
+          "when": "the ApiClient processes the response",
+          "then": "signOut is called and the browser navigates to /login"
+        }
+      ],
+      "tasks": [
+        {
+          "summary": "Create ApiClient singleton with onAuthenticated and onUnauthorized callbacks",
+          "description": "Create <apps/web/lib/api/client.ts>. Instantiate ApiClient with enableRefreshToken: false (refresh is handled by NextAuth JWT callback). In onAuthenticated, call getSession() and set config.headers.Authorization = 'Bearer ' + session.user.jwtToken. In onUnauthorized, call signOut({ redirect: false }) then set window.location.href = '/login'."
+        },
+        {
+          "summary": "Update env files to include BACKEND_API_URL and NEXT_PUBLIC_API_URL",
+          "description": "Add BACKEND_API_URL=http://localhost:8080 and NEXT_PUBLIC_API_URL=http://localhost:8080 to <apps/web/.env> and <apps/web/.env.example>. The ApiClient reads BACKEND_API_URL server-side; NEXT_PUBLIC_API_URL is available client-side."
+        },
+        {
+          "summary": "Export apiClient and create typed React Query hook wrappers",
+          "description": "Export the singleton from <apps/web/lib/api/index.ts>. Create a thin useQuery wrapper (lib/hooks/use-api-query.ts) that forwards generic API errors to Sonner toast via the existing withToast utility."
+        }
+      ]
+    },
+    {
+      "summary": "Define Zod schemas for all API request and response shapes",
+      "description": "Create Zod schemas for every backend DTO used by the frontend. These schemas serve as the single source of truth for request validation (forms) and response parsing (React Query). They must match the camelCase JSON fields returned by the Spring Boot backend.\n\nDTOs to cover:\n- Auth: loginRequest, loginResponse, refreshRequest, refreshResponse\n- Process: createProcessRequest, updateProcessRequest, interviewProcessResponse\n- Session: createSessionRequest, updateSessionRequest, transitionRequest, interviewSessionResponse\n- Question: createQuestionRequest, updateQuestionRequest, questionResponse, sessionQuestionResponse, linkQuestionRequest\n- Client: createClientRequest, updateClientRequest, clientResponse\n- User: createUserRequest, updateUserRequest, userResponse\n- Common: pageResponse<T>, statusHistoryEntry\n\nKey paths: <apps/web/lib/schemas/>",
+      "labels": ["zod", "validation", "types", "phase-4"],
+      "priority": "Medium",
+      "storyPoints": 5,
+      "acceptanceCriteria": [
+        {
+          "scenario": "Login form validates client-side before submission",
+          "given": "a user submits the login form with an invalid email format",
+          "when": "the Zod loginRequest schema is applied",
+          "then": "a validation error is shown inline without an API call being made"
+        },
+        {
+          "scenario": "API response is parsed and typed at runtime",
+          "given": "the backend returns an interviewProcessResponse payload",
+          "when": "the React Query success handler runs",
+          "then": "the Zod schema parses the response and TypeScript infers the typed result"
+        },
+        {
+          "scenario": "Unexpected API shape triggers a parse error",
+          "given": "the backend returns a response missing a required field",
+          "when": "the Zod schema parses the response",
+          "then": "a ZodError is thrown and the useApiError handler shows a toast"
+        }
+      ],
+      "tasks": [
+        {
+          "summary": "Create auth schemas in lib/schemas/auth.ts",
+          "description": "Define loginRequestSchema (email + password), loginResponseSchema (accessToken, refreshToken, role enum, expiresIn), refreshRequestSchema, refreshResponseSchema (accessToken, expiresIn)."
+        },
+        {
+          "summary": "Create process and session schemas in lib/schemas/process.ts",
+          "description": "Define createProcessRequestSchema, updateProcessRequestSchema, interviewProcessResponseSchema (UUID fields, ProcessStatus enum, Instant as z.string().datetime()). Define createSessionRequestSchema, updateSessionRequestSchema, transitionRequestSchema, interviewSessionResponseSchema (SessionStatus enum, all UUID and Instant fields)."
+        },
+        {
+          "summary": "Create question schemas in lib/schemas/question.ts",
+          "description": "Define createQuestionRequestSchema, updateQuestionRequestSchema, questionResponseSchema (UUID, clientId, topic, round, body, version, active). Define sessionQuestionResponseSchema and linkQuestionRequestSchema."
+        },
+        {
+          "summary": "Create user and client schemas in lib/schemas/user.ts and lib/schemas/client.ts",
+          "description": "Define createUserRequestSchema, updateUserRequestSchema, userResponseSchema. Define createClientRequestSchema, updateClientRequestSchema, clientResponseSchema."
+        },
+        {
+          "summary": "Create common schemas and barrel export in lib/schemas/index.ts",
+          "description": "Define pageResponseSchema<T> (data array, total, page, limit) as a generic schema factory. Define statusHistoryEntrySchema. Export all schemas from lib/schemas/index.ts."
+        }
+      ]
+    }
+  ]
+}

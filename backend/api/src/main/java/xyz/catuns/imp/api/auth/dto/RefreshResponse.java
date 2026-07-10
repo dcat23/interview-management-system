@@ -2,6 +2,7 @@ package xyz.catuns.imp.api.auth.dto;
 
 public record RefreshResponse(
         String accessToken,
-        long expiresIn
+        String refreshToken,
+        long expiration
 ) {
 }
