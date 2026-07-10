@@ -62,13 +62,8 @@
       "feature": {
         "orgName": "feature"
       },
-      "auth": {},
-      "axios": {
-        "appProjectName": "web"
-      },
-      "client": {
-        "orgName": "client"
-      }
+      "declaration": {},
+      "action": {}
     },
     "@nx/react": {
       "library": {
@@ -80,5 +75,6 @@
     "version": {
       "preVersionCommand": "pnpm dlx nx run-many -t build"
     }
-  }
+  },
+  "plugins": []
 }

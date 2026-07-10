@@ -6,3 +6,7 @@ allowBuilds:
   sharp: true
   unrs-resolver: true
 autoInstallPeers: true
+minimumReleaseAgeExclude:
+  - next-feature@0.1.4-0 || 0.1.4-1 || 0.1.4-2 || 0.1.4-3 || 0.1.4-6 || 0.1.4-7
+  - '@next-feature/client@0.1.4-0 || 0.1.4-1 || 0.1.4-2 || 0.1.4-3 || 0.1.4-6 || 0.1.4-7'
+  - '@next-feature/logging@0.1.4-0 || 0.1.4-1 || 0.1.4-2 || 0.1.4-3 || 0.1.4-4 || 0.1.4-6 || 0.1.4-7'

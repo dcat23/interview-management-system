@@ -10,6 +10,10 @@ const nextConfig = {
   // Use this to set Nx-specific options
   // See: https://nx.dev/recipes/next/next-config-setup
   nx: {},
+  // pino relies on runtime require()/worker-thread transport loading and
+  // shared internal Symbols; bundling it breaks that (e.g. "Cannot read
+  // properties of undefined (reading 'stringifySym')").
+  serverExternalPackages: ['pino', 'pino-pretty', 'thread-stream'],
 };
 
 const plugins = [
