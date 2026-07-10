@@ -12,7 +12,7 @@ export const jwt: Callbacks['jwt'] = async ({ token, user }) => {
     return token;
   }
 
-  const isExpiringSoon = Math.floor(Date.now() / 1000) >= token.expiration - 60;
+  const isExpiringSoon = Date.now() >= token.expiration - 6000;
   if (!isExpiringSoon) {
     return token;
   }
@@ -29,7 +29,7 @@ export const jwt: Callbacks['jwt'] = async ({ token, user }) => {
 
   token.jwtToken = response.data.accessToken;
   token.refreshToken = response.data.refreshToken;
-  token.expiration = Math.floor(Date.now() / 1000) + response.data.expiresIn;
+  token.expiration = response.data.expiration;
 
   return token;
 };
@@ -54,5 +54,5 @@ export const redirect: Callbacks['redirect'] = async ({ url, baseUrl }) => {
 
 export const authorized: Callbacks['authorized'] = ({ auth, request }) => {
   // routing logic moves to the custom middleware wrapper
-  return true;
+  return !!auth.user;
 };
