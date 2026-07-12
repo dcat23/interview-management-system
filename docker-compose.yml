@@ -10,14 +10,24 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://web:4200}
     depends_on:
-      - postgres
-      - kafka
-      - redis
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - microservice
       - kafka-net
       - redis
+      - postgres
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
 #
 #  web:
 #    image: web:latest
@@ -38,7 +48,7 @@ services:
       KAFKA_PROCESS_ROLES: broker,controller
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka-1:9091
       KAFKA_LISTENERS: "PLAINTEXT://:9090,CONTROLLER://:9091,EXTERNAL://:9092"
-      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka-1:9090,EXTERNAL://${HOSTNAME:-localhost}:9092"
+      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka:9090,EXTERNAL://${HOSTNAME:-localhost}:9092"
       KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT"
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
@@ -55,6 +65,12 @@ services:
     networks:
       - kafka-net
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server localhost:9090"]
+      interval: 10s
+      timeout: 10s
+      retries: 15
+      start_period: 30s
 
   postgres:
     image: postgres:17-alpine3.19
@@ -71,20 +87,11 @@ services:
     networks:
       - postgres
     restart: unless-stopped
-
-  #  pgadmin:
-  #    image: dpage/pgadmin4
-  #    environment:
-  #      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-pgadmin4@pgadmin.org}
-  #      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
-  #      PGADMIN_CONFIG_SERVER_MODE: 'False'
-  #    volumes:
-  #      - pgadmin:/var/lib/pgadmin
-  #    ports:
-  #      - '5050:80'
-  #    networks:
-  #      - postgres
-  #    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USER:-default} -d ${DATABASE_NAME:-ims}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   redis:
     image: redis
@@ -93,6 +100,11 @@ services:
     networks:
       - redis
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
 networks:
   microservice:
@@ -103,7 +115,6 @@ networks:
     driver: bridge
   redis:
     driver: bridge
-
 
 volumes:
   kafka-1-data:
