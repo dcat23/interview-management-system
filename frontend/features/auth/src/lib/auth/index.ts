@@ -1,8 +1,9 @@
-import NextAuth, { User } from 'next-auth';
+import NextAuth, { CredentialsSignin, User } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 
 import { authConfig } from './auth.config';
 import { login } from '../actions/auth';
+import { logger } from '@next-feature/logging/server';
 
 export const { auth, handlers, signIn, signOut } = NextAuth({
   ...authConfig,
@@ -30,7 +31,12 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
             role: data.role,
           } satisfies User;
         }
-        return null;
+        
+        if (response.error) {
+          logger.debug(`authorize error ${response.error.name}: '${response.error.message}'`)
+        }
+
+        throw new CredentialsSignin(response.message);
       },
     }),
   ],

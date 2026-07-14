@@ -1,5 +1,5 @@
 import { ApiClient, type ApiResponse, ApiError } from '@next-feature/client';
-import { AUTH_API_URL } from './env';
+import { BACKEND_API_URL } from './env';
 import { logger } from '@next-feature/logging/server';
 
 const log = logger.child({ module: 'auth-client' });
@@ -17,10 +17,11 @@ const skipRefreshPaths: RegExp[] = [
  * - Authentication handling
  */
 const apiClient = new ApiClient({
-  baseURL: AUTH_API_URL,
+  baseURL: BACKEND_API_URL,
   skipRefreshPaths,
+  maxRetries: 0,
   onAuthenticated: async (config) => {
-    log.info(`${config.method?.toUpperCase()} ${config.url} ${config.data ?? ""}`)
+    log.info(`${config.method?.toUpperCase()} ${config.url} ${JSON.stringify(config.data) ?? ""}`)
   },
 });
 

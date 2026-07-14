@@ -54,5 +54,5 @@ export const redirect: Callbacks['redirect'] = async ({ url, baseUrl }) => {
 
 export const authorized: Callbacks['authorized'] = ({ auth, request }) => {
   // routing logic moves to the custom middleware wrapper
-  return !!auth.user;
+  return true;
 };

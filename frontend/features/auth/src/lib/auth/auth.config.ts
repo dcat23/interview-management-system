@@ -1,6 +1,9 @@
 import type { NextAuthConfig } from 'next-auth';
 import { authorized, jwt, redirect, session } from './callbacks';
+import { ApiError } from '@next-feature/client';
+import { logger } from '@next-feature/logging/server';
 
+const log = logger.child({ module: 'auth-config' });
 const VERCEL_DEPLOYMENT = !!process.env.VERCEL_URL;
 
 // Edge-safe config (no providers) — usable in middleware for route protection.
@@ -31,6 +34,15 @@ export const authConfig = {
           : undefined,
         secure: VERCEL_DEPLOYMENT,
       },
+    },
+  },
+  logger: {
+    error(error) {
+      if (error instanceof ApiError) {
+        log.error(error.body);
+        return;
+      }
+      log.error(`${error.name}: ${error.message}`);
     },
   },
   providers: [],

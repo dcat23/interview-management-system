@@ -3,7 +3,7 @@
 import { withApi, withForm } from '@next-feature/client/server';
 import { z } from 'zod';
 import api from '../config/client';
-import { signIn } from '../auth';
+import { signIn, signOut } from '../auth';
 import { Role } from '../types';
 
 /**
@@ -81,12 +81,13 @@ export const logout = withApi(async (options?: LogoutRequest) => {
   const session = await auth();
 
   const endpoint = '/auth/logout';
-  const response = await api.post<LogoutResponse>(endpoint, parsed.data, {
+  await api.post<LogoutResponse>(endpoint, parsed.data, {
     headers: {
       Authorization: `Bearer ${session?.user?.jwtToken}`
     }
   });
-  return response;
+
+  await signOut({ redirectTo: "/login" })
 }, {});
 
 /**
@@ -111,7 +112,7 @@ export const loginFormData = withApi(async (formData: FormData) => {
     throw parsed.error;
   }
 
-  await signIn("credentials", formData);
+  await signIn('credentials', { redirect: false, ...parsed.data });
 
   return parsed.data as LoginRequest;
 }, {});

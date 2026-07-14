@@ -6,7 +6,7 @@ import { z } from 'zod';
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production']),
   /* schema start */
-  BACKEND_API_URL: z.string().url(),
+  BACKEND_API_URL: z.string(),
   LOGGING_BROWSER_BEACON_PATH: z.string(),
   LOGGING_SERVICE_NAME: z.string(),
   /* schema end */

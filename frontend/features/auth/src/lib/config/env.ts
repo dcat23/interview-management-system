@@ -4,7 +4,6 @@ const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production']),
   /* schema start */
   BACKEND_API_URL: z.string(),
-  AUTH_API_URL: z.string(),
   /* schema end */
 });
 
@@ -18,5 +17,4 @@ declare global {
 export const NODE_ENV = process.env.NODE_ENV;
 /* vars start */
 export const BACKEND_API_URL = process.env.BACKEND_API_URL;
-export const AUTH_API_URL = process.env.AUTH_API_URL;
 /* vars end */
