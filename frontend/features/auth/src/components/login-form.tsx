@@ -2,7 +2,7 @@
 
 import { ReactNode, useActionState } from 'react';
 import { type ApiResponse } from '@next-feature/client';
-import { type LoginRequest } from '../lib/actions/auth';
+import { loginFormAction, type LoginRequest } from '../lib/actions/auth';
 
 import './login-form-styles.css';
 
@@ -26,21 +26,19 @@ import {
 } from '@feature/ui/components/field';
 
 interface Props<T> {
-  action: (
+  action?: (
     prevState: ApiResponse<T>,
     formData: FormData,
   ) => Promise<ApiResponse<T>>;
   initialState?: T;
-  children?: ReactNode;
 }
 
 export function LoginForm({
-  action,
+  action = loginFormAction,
   initialState = {
     email: '',
     password: '',
   },
-  children,
 }: Props<LoginRequest>) {
   const [formState, formAction, isPending] = useActionState(action, {
     data: initialState,
