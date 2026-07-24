@@ -5,6 +5,8 @@ import { authConfig } from './auth.config';
 import { login } from '../actions/auth';
 import { logger } from '@next-feature/logging/server';
 
+const log = logger.child({ module: "nextauth-config"})
+
 export const { auth, handlers, signIn, signOut } = NextAuth({
   ...authConfig,
   providers: [
@@ -33,7 +35,8 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
         }
         
         if (response.error) {
-          logger.debug(`authorize error ${response.error.name}: '${response.error.message}'`)
+          log.error(`authorize() ${JSON.stringify(response.error.body)}`);
+          
         }
 
         throw new CredentialsSignin(response.message);

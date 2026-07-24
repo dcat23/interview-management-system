@@ -5,7 +5,7 @@ import { logger } from '@next-feature/logging/server';
 const log = logger.child({ module: 'auth-client' });
 
 const skipRefreshPaths: RegExp[] = [
-  /^\/auth\/[login|refresh]/
+  /^\/auth\/(login|refresh)/
 ]
 /**
  * Centralized API client configuration

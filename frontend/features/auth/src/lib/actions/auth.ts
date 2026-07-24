@@ -1,8 +1,8 @@
 'use server';
 
-import { withApi, withForm } from '@next-feature/client/server';
+import { withApi } from '@next-feature/client/server';
 import { z } from 'zod';
-import api from '../config/client';
+import api, { ApiError, type ApiResponse } from '../config/client';
 import { signIn, signOut } from '../auth';
 import { Role } from '../types';
 
@@ -104,17 +104,28 @@ function parseLoginFormActionRequest(
   };
 }
 
-export const loginFormData = withApi(async (formData: FormData) => {
+// Not wrapped with withForm: its error branch always falls back to
+// prevState.data, which would discard the email/password the user just
+// typed. This returns the full ApiResponse shape with the correct data
+// for every branch instead.
+export async function loginFormAction(
+  prevState: ApiResponse<LoginRequest>,
+  formData: FormData,
+): Promise<ApiResponse<LoginRequest>> {
   const options = parseLoginFormActionRequest(formData);
   const parsed = loginSchema.safeParse(options);
 
   if (!parsed.success) {
-    throw parsed.error;
+    const error = ApiError.of(parsed.error);
+    return { success: false, error, message: error.message, data: options };
   }
 
-  await signIn('credentials', { redirect: false, ...parsed.data });
+  try {
+    await signIn('credentials', { redirect: false, ...parsed.data });
+  } catch (e) {
+    const error = ApiError.of(e);
+    return { success: false, error, message: error.message, data: parsed.data };
+  }
 
-  return parsed.data as LoginRequest;
-}, {});
-
-export const loginFormAction = withForm(loginFormData);
+  return { success: true, message: 'Signed in successfully', data: parsed.data };
+}
