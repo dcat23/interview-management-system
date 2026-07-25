@@ -1,6 +1,6 @@
 import { Badge } from '@feature/ui/components/badge';
 import { cn } from '@feature/ui/lib/utils';
-import type { SessionMode, SessionStatus } from '@app/web/lib/data/sessions';
+import type { FeedbackState, SessionMode, SessionStatus } from '@app/web/lib/data/sessions';
 
 const statusStyles: Record<SessionStatus, string> = {
   Scheduled: 'border-primary/30 bg-primary/10 text-primary',
@@ -24,4 +24,21 @@ export function ModeBadge({ mode, className }: { mode: SessionMode; className?: 
       {mode}
     </Badge>
   );
+}
+
+export function FeedbackStatusBadge({ status }: { status: FeedbackState }) {
+
+  if (status.submitted) {
+    return (
+      <Badge variant="default" className="bg-primary/15 text-primary border border-primary/20 hover:bg-primary/15">
+        Feedback submitted
+      </Badge>
+    )
+  }
+
+  if (status.content) {
+    return <Badge variant="secondary">Draft saved</Badge>
+  }
+  
+  return <Badge variant="outline">No feedback yet</Badge>
 }

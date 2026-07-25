@@ -18,7 +18,9 @@ export interface NavItem {
  * July 25th 2026, 3:10:39 am
  */
 const supporter: NavItem[] = [
+    { name: 'Dashboard', href: '/supporter', icon: 'layout-dashboard' },
     { name: 'My Sessions', href: '/supporter/sessions', icon: 'calendar-check' },
+    { name: 'Processes', href: '/supporter/processes', icon: 'briefcase' },
 ]
 export const ROLE_NAV: Record<Role, NavItem[]> = {
     candidate: [

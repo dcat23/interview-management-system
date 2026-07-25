@@ -17,13 +17,15 @@ export type FeedbackState = {
 export type Session = {
   id: string;
   technology: string;
-  round: number;
+  round: string;
   mode: SessionMode;
   status: SessionStatus;
   timing: SessionTiming;
   date: string;
   time: string;
   candidateName: string;
+  clientName: string;
+  description?: string;
   linkedQuestionIds: string[];
   feedback: FeedbackState;
 };
@@ -80,39 +82,45 @@ export const sessions: Session[] = [
   {
     id: '1',
     technology: 'Backend Engineer',
-    round: 2,
+    round: "2nd",
     mode: 'Online',
     status: 'Scheduled',
     timing: 'upcoming',
     date: '2026-08-04',
     time: '10:00 AM - 11:00 AM EST',
     candidateName: 'Priya Nair',
+    clientName: 'Acme Corp',
+    description: 'Second-round technical interview focused on backend architecture and system design.',
     linkedQuestionIds: ['q1', 'q3', 'q6'],
     feedback: { submitted: false, content: '', submittedAt: null },
   },
   {
     id: '2',
     technology: 'Frontend Engineer',
-    round: 1,
+    round: "1st",
     mode: 'In Person',
     status: 'Scheduled',
     timing: 'upcoming',
     date: '2026-08-06',
     time: '2:00 PM - 3:00 PM EST',
     candidateName: 'Marcus Chen',
+    clientName: 'Globex Media',
+    description: 'First-round screen covering frontend fundamentals and component architecture.',
     linkedQuestionIds: [],
     feedback: { submitted: false, content: '', submittedAt: null },
   },
   {
     id: '3',
     technology: 'Platform Engineer',
-    round: 3,
+    round: "3",
     mode: 'Hybrid',
     status: 'In Review',
     timing: 'past',
     date: '2026-07-21',
     time: '11:00 AM - 12:30 PM EST',
     candidateName: 'Sofia Ramirez',
+    clientName: 'Initech Systems',
+    description: 'Third-round system design round evaluating scalability tradeoffs and data modeling.',
     linkedQuestionIds: ['q2', 'q5'],
     feedback: {
       submitted: true,
@@ -124,13 +132,15 @@ export const sessions: Session[] = [
   {
     id: '4',
     technology: 'Data Engineer',
-    round: 2,
+    round: "2nd",
     mode: 'Online',
     status: 'Passed',
     timing: 'past',
     date: '2026-07-14',
     time: '9:00 AM - 10:00 AM EST',
     candidateName: 'James Okoro',
+    clientName: 'Northwind Health',
+    description: 'Second-round technical round on data modeling and pipeline reliability.',
     linkedQuestionIds: ['q4', 'q8'],
     feedback: {
       submitted: true,
@@ -142,13 +152,15 @@ export const sessions: Session[] = [
   {
     id: '5',
     technology: 'Mobile Engineer',
-    round: 1,
+    round: "1st",
     mode: 'In Person',
     status: 'No Show',
     timing: 'past',
     date: '2026-07-09',
     time: '3:30 PM - 4:30 PM EST',
     candidateName: 'Elena Novak',
+    clientName: 'Umbrella Retail',
+    description: 'First-round screen; candidate did not join the call.',
     linkedQuestionIds: [],
     feedback: { submitted: false, content: '', submittedAt: null },
   },

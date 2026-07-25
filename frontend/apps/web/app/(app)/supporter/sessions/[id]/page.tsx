@@ -1,10 +1,11 @@
-import { notFound } from 'next/navigation';
-import Link from 'next/link';
-import { Button } from '@feature/ui/components/button';
-import { ArrowLeft, MessageSquare } from 'lucide-react';
-import { SessionSummaryHeader } from '@app/web/components/supporter/session-summary-header';
 import { QuestionLinker } from '@app/web/components/supporter/question-linker';
-import { sessions, getSessionById } from '@app/web/lib/data/sessions';
+import { ModeBadge, StatusBadge } from '@app/web/components/supporter/session-badges';
+import { SessionSummaryHeader } from '@app/web/components/supporter/session-summary-header';
+import { getSessionById, sessions } from '@app/web/lib/data/sessions';
+import { Button } from '@feature/ui/components/button';
+import { ArrowLeft, MessageSquarePlus } from 'lucide-react';
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
 
 export function generateStaticParams() {
   return sessions.map((session) => ({ id: session.id }));
@@ -22,27 +23,34 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
     <div className="mx-auto max-w-4xl space-y-6">
       <Link
         href="/supporter/sessions"
-        className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+        className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
       >
         <ArrowLeft className="h-4 w-4" />
         Back to My Sessions
       </Link>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex-1">
-          <SessionSummaryHeader session={session} />
+      <div className="space-y-2">
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">{session.candidateName}</h1>
+          <StatusBadge status={session.status} />
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="text-muted-foreground">{session.technology}</p>
+          <ModeBadge mode={session.mode} />
         </div>
       </div>
 
-      <div className="flex justify-end">
-        <Button asChild variant="outline">
+      <SessionSummaryHeader session={session} />
+
+      <div className="flex justify-end border-t border-border pt-4">
+        <Button asChild>
           <Link href={`/supporter/sessions/${session.id}/feedback`}>
-            <MessageSquare className="mr-2 h-4 w-4" />
-            {session.feedback.submitted ? 'View Feedback' : 'Write Feedback'}
+            <MessageSquarePlus className="h-4 w-4 mr-2" />
+            {session.feedback.submitted ? "View Feedback" : "Provide Feedback"}
           </Link>
         </Button>
       </div>
-
+      
       <QuestionLinker initialLinkedIds={session.linkedQuestionIds} />
     </div>
   );

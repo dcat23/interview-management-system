@@ -26,8 +26,15 @@ export default async function FeedbackPage({ params }: { params: Promise<{ id: s
         <ArrowLeft className="h-4 w-4" />
         Back to Session
       </Link>
+      
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">{session.candidateName}</h1>
+        <p className="mt-1 text-muted-foreground">
+          {session.technology}
+        </p>
+      </div>
 
-      <SessionSummaryHeader session={session} condensed />
+      <SessionSummaryHeader session={session} />
 
       {session.feedback.submitted ? (
         <FeedbackSubmitted feedback={session.feedback} />

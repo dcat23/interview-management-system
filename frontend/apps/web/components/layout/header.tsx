@@ -25,13 +25,19 @@ interface Props {
   role?: Role | null;
 }
 
+// Picks the longest-href match rather than the first, so a base route like
+// "/supporter" doesn't shadow more specific sibling routes like
+// "/supporter/sessions" that also prefix-match against it.
 function getCurrentPage(pathname: string, navigation: NavItem[]) {
+  let match: NavItem | null = null;
   for (const item of navigation) {
     if (pathname === item.href || pathname.startsWith(item.href + '/')) {
-      return item;
+      if (!match || item.href.length > match.href.length) {
+        match = item;
+      }
     }
   }
-  return null;
+  return match;
 }
 
 function initials(email: string) {
@@ -94,7 +100,7 @@ export function Header(props: Props) {
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-1">
             {navigation.map((item) => {
-              const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+              const isActive = item === currentPage;
               return (
                 <Link
                   key={item.name}
@@ -187,7 +193,7 @@ export function Header(props: Props) {
               {/* Main Navigation */}
               <nav className="space-y-1">
                 {navigation.map((item, index) => {
-                  const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+                  const isActive = item === currentPage;
                   return (
                     <Link
                       key={item.name}
