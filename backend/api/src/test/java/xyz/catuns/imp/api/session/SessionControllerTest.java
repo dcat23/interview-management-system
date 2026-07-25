@@ -289,13 +289,14 @@ class SessionControllerTest {
         }
 
         @Test
-        @DisplayName("supporter sees only their assigned sessions")
-        void supporterSeesOwnSessions() throws Exception {
+        @DisplayName("supporter sees all sessions for process, not just their own")
+        void supporterSeesAllSessions() throws Exception {
             mockMvc.perform(get("/processes/" + candidate1ProcessId + "/sessions")
                             .header("Authorization", "Bearer " + supporter1Token))
                     .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.length()").value(org.hamcrest.Matchers.greaterThanOrEqualTo(2)))
                     .andExpect(jsonPath("$[*].supporterId",
-                            org.hamcrest.Matchers.everyItem(org.hamcrest.Matchers.is(supporter1Id.toString()))));
+                            org.hamcrest.Matchers.hasItem(supporter2Id.toString())));
         }
 
         @Test
@@ -322,6 +323,83 @@ class SessionControllerTest {
             mockMvc.perform(get("/processes/" + UUID.randomUUID() + "/sessions")
                             .header("Authorization", "Bearer " + adminToken))
                     .andExpect(status().isNotFound());
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /sessions")
+    class ListSessions {
+
+        @Test
+        @DisplayName("admin lists sessions across all processes, paginated")
+        void adminListsAll() throws Exception {
+            mockMvc.perform(get("/sessions")
+                            .header("Authorization", "Bearer " + adminToken))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data").isArray())
+                    .andExpect(jsonPath("$.total").value(org.hamcrest.Matchers.greaterThanOrEqualTo(3)))
+                    .andExpect(jsonPath("$.page").value(0))
+                    .andExpect(jsonPath("$.limit").exists());
+        }
+
+        @Test
+        @DisplayName("marketer lists sessions across all processes")
+        void marketerListsAll() throws Exception {
+            mockMvc.perform(get("/sessions")
+                            .header("Authorization", "Bearer " + marketerToken))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.total").value(org.hamcrest.Matchers.greaterThanOrEqualTo(3)));
+        }
+
+        @Test
+        @DisplayName("supporter lists sessions across all processes, not just their own")
+        void supporterListsAll() throws Exception {
+            mockMvc.perform(get("/sessions")
+                            .header("Authorization", "Bearer " + supporter1Token))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data[*].supporterId",
+                            org.hamcrest.Matchers.hasItem(supporter2Id.toString())));
+        }
+
+        @Test
+        @DisplayName("candidate cannot list sessions → 403")
+        void candidateCannotList() throws Exception {
+            mockMvc.perform(get("/sessions")
+                            .header("Authorization", "Bearer " + candidate1Token))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("filters by processId")
+        void filtersByProcessId() throws Exception {
+            mockMvc.perform(get("/sessions")
+                            .param("processId", candidate1ProcessId.toString())
+                            .header("Authorization", "Bearer " + adminToken))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data[*].processId",
+                            org.hamcrest.Matchers.everyItem(org.hamcrest.Matchers.is(candidate1ProcessId.toString()))));
+        }
+
+        @Test
+        @DisplayName("filters by supporterId")
+        void filtersBySupporterId() throws Exception {
+            mockMvc.perform(get("/sessions")
+                            .param("supporterId", supporter2Id.toString())
+                            .header("Authorization", "Bearer " + adminToken))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data[*].supporterId",
+                            org.hamcrest.Matchers.everyItem(org.hamcrest.Matchers.is(supporter2Id.toString()))));
+        }
+
+        @Test
+        @DisplayName("filters by status")
+        void filtersByStatus() throws Exception {
+            mockMvc.perform(get("/sessions")
+                            .param("status", "SCHEDULED")
+                            .header("Authorization", "Bearer " + adminToken))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data[*].status",
+                            org.hamcrest.Matchers.everyItem(org.hamcrest.Matchers.is("SCHEDULED"))));
         }
     }
 
@@ -356,11 +434,12 @@ class SessionControllerTest {
         }
 
         @Test
-        @DisplayName("supporter cannot get another supporter's session → 403")
-        void supporterCannotGetOtherSession() throws Exception {
+        @DisplayName("supporter can get another supporter's session")
+        void supporterCanGetOtherSupportersSession() throws Exception {
             mockMvc.perform(get("/sessions/" + sessionForCandidate1Supporter2)
                             .header("Authorization", "Bearer " + supporter1Token))
-                    .andExpect(status().isForbidden());
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.supporterId").value(supporter2Id.toString()));
         }
 
         @Test

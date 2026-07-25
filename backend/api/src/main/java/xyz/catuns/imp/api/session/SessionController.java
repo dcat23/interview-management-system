@@ -7,13 +7,16 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import xyz.catuns.imp.api.common.dto.PageResponse;
 import xyz.catuns.imp.api.session.dto.CreateSessionRequest;
 import xyz.catuns.imp.api.session.dto.InterviewSessionResponse;
 import xyz.catuns.imp.api.session.dto.TransitionRequest;
 import xyz.catuns.imp.api.session.dto.UpdateSessionRequest;
+import xyz.catuns.imp.api.session.entity.SessionStatus;
 
 import java.net.URI;
 import java.util.List;
@@ -47,7 +50,7 @@ public class SessionController {
     }
 
     @GetMapping("/processes/{processId}/sessions")
-    @Operation(summary = "List sessions for a process", description = "Candidates see only their process's sessions; supporters see their assigned sessions.")
+    @Operation(summary = "List sessions for a process", description = "Candidates see only their own process's sessions; admin, marketer, and supporter see all sessions in the process.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Session list"),
             @ApiResponse(responseCode = "403", description = "Not the candidate's own process"),
@@ -60,8 +63,25 @@ public class SessionController {
         return ResponseEntity.ok(sessionService.listByProcess(processId, authentication));
     }
 
+    @GetMapping("/sessions")
+    @Operation(summary = "List sessions", description = "Paginated, filterable session listing across all processes. Admin, marketer, and supporter roles only.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Paginated session list"),
+            @ApiResponse(responseCode = "403", description = "Insufficient role")
+    })
+    public ResponseEntity<PageResponse<InterviewSessionResponse>> list(
+            @RequestParam(required = false) SessionStatus status,
+            @RequestParam(required = false) UUID processId,
+            @RequestParam(required = false) UUID supporterId,
+            Pageable pageable
+    ) {
+        return ResponseEntity.ok(
+                PageResponse.from(sessionService.list(status, processId, supporterId, pageable))
+        );
+    }
+
     @GetMapping("/sessions/{id}")
-    @Operation(summary = "Get session by ID", description = "Supporters see only their assigned sessions; candidates see only sessions belonging to their process.")
+    @Operation(summary = "Get session by ID", description = "Candidates see only sessions belonging to their own process; admin, marketer, and supporter can access any session.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Session found"),
             @ApiResponse(responseCode = "403", description = "Insufficient access"),

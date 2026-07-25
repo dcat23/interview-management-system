@@ -320,7 +320,7 @@ Soft-delete a question. Sets `active = false`. The question remains in the datab
 
 ## Interview processes
 
-### `GET /processes` · `admin` `marketer` `candidate`
+### `GET /processes` · `admin` `marketer` `supporter` `candidate`
 
 List interview processes.
 
@@ -328,7 +328,7 @@ List interview processes.
 
 **Role constraints:**
 - Candidate: own processes only (filtered automatically by JWT identity)
-- Admin / marketer: all processes
+- Admin / marketer / supporter: all processes
 
 **Response `200`**
 ```json
@@ -461,14 +461,47 @@ All submitted feedback across all rounds in a process, ordered by `scheduledAt` 
 
 ## Interview sessions
 
+### `GET /sessions` · `admin` `marketer` `supporter`
+
+List sessions across all processes, paginated.
+
+**Query params:** `status`, `processId`, `supporterId` (all optional filters), `page` (default `0`), `limit` (default `20`)
+
+**Response `200`**
+```json
+{
+  "data": [
+    {
+      "id": "uuid",
+      "processId": "uuid",
+      "supporterId": "uuid",
+      "round": "1st round",
+      "mode": "Microsoft Teams",
+      "durationMinutes": 60,
+      "description": "string",
+      "status": "SCHEDULED",
+      "scheduledAt": "2024-02-15T14:00:00Z",
+      "statusChangedAt": null,
+      "statusChangedBy": null,
+      "createdAt": "2024-01-20T09:00:00Z",
+      "updatedAt": "2024-01-20T09:00:00Z"
+    }
+  ],
+  "total": 42,
+  "page": 0,
+  "limit": 20
+}
+```
+
+---
+
 ### `GET /processes/:id/sessions` · `admin` `marketer` `supporter` `candidate`
 
 List sessions within a process.
 
 **Role constraints:**
 - Candidate: own process only; denied 403 if the process does not belong to them
-- Supporter: own assigned sessions only
-- Admin / marketer: all sessions
+- Admin / marketer / supporter: all sessions in the process, regardless of assignment
 
 **Response `200`** — array of session objects.
 
@@ -521,9 +554,8 @@ Schedule a new round within a process.
 Get session by ID.
 
 **Role constraints:**
-- Supporter: own assigned sessions only
 - Candidate: sessions belonging to their own process only
-- Admin / marketer: any session
+- Admin / marketer / supporter: any session, regardless of assignment
 
 **Response `200`** — returns session object.
 
@@ -727,7 +759,7 @@ All list endpoints that return paginated results use:
 }
 ```
 
-`page` is zero-based. Session list (`GET /processes/:id/sessions`) returns a plain array, not a paginated envelope.
+`page` is zero-based. Session list scoped to a process (`GET /processes/:id/sessions`) returns a plain array, not a paginated envelope; the top-level `GET /sessions` endpoint uses the paginated envelope like other list endpoints.
 
 ---
 

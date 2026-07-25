@@ -417,6 +417,20 @@ class QuestionControllerTest {
                             .header("Authorization", "Bearer " + adminToken))
                     .andExpect(status().isNotFound());
         }
+
+        @Test
+        @DisplayName("unassigned supporter cannot unlink → 403")
+        void unassignedSupporterForbidden() throws Exception {
+            var req = new LinkQuestionRequest(seededQuestionId, 1, null);
+            mockMvc.perform(post("/sessions/" + sessionId + "/questions")
+                    .header("Authorization", "Bearer " + adminToken)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(req)));
+
+            mockMvc.perform(delete("/sessions/" + sessionId + "/questions/" + seededQuestionId)
+                            .header("Authorization", "Bearer " + supporter2Token))
+                    .andExpect(status().isForbidden());
+        }
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────

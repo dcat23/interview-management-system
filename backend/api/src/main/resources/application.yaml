@@ -23,6 +23,11 @@ spring:
     redis:
       port: ${REDIS_PORT:6379}
       host: ${REDIS_HOST:localhost}
+    web:
+      pageable:
+        page-parameter: page
+        size-parameter: limit
+        default-page-size: 20
   datasource:
     password: ${DATABASE_PASSWORD:password}
     url: jdbc:postgresql://${DATABASE_HOST:localhost}:${DATABASE_PORT:5432}/${DATABASE_NAME:ims}

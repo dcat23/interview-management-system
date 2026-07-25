@@ -5,6 +5,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -16,6 +19,7 @@ import xyz.catuns.imp.api.session.dto.CreateSessionRequest;
 import xyz.catuns.imp.api.session.dto.InterviewSessionResponse;
 import xyz.catuns.imp.api.session.dto.UpdateSessionRequest;
 import xyz.catuns.imp.api.session.entity.InterviewSession;
+import xyz.catuns.imp.api.session.entity.SessionStatus;
 import xyz.catuns.imp.api.session.mapper.InterviewSessionMapper;
 import xyz.catuns.imp.api.session.repository.InterviewSessionRepository;
 import xyz.catuns.imp.api.user.entity.User;
@@ -64,15 +68,6 @@ public class InterviewSessionService {
             if (!process.getCandidateId().equals(userId)) {
                 throw new AccessDeniedException("Access denied");
             }
-            // Candidate sees all sessions for their own process — use the cached full list
-            return self.loadAllByProcess(processId);
-        }
-
-        if (isSupporter(authentication)) {
-            UUID userId = resolveUserId(authentication.getName());
-            return self.loadAllByProcess(processId).stream()
-                    .filter(s -> userId.equals(s.supporterId()))
-                    .toList();
         }
 
         return self.loadAllByProcess(processId);
@@ -84,8 +79,22 @@ public class InterviewSessionService {
                 .stream().map(sessionMapper::toResponse).toList();
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','MARKETER') " +
-            "or (hasRole('SUPPORTER') and @interviewSessionService.isSupporterFor(#id, authentication.name)) " +
+    @PreAuthorize("hasAnyRole('ADMIN','MARKETER','SUPPORTER')")
+    public Page<InterviewSessionResponse> list(SessionStatus status, UUID processId, UUID supporterId, Pageable pageable) {
+        Specification<InterviewSession> spec = Specification.unrestricted();
+        if (status != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("status"), status));
+        }
+        if (processId != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("processId"), processId));
+        }
+        if (supporterId != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("supporterId"), supporterId));
+        }
+        return sessionRepository.findAll(spec, pageable).map(sessionMapper::toResponse);
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN','MARKETER','SUPPORTER') " +
             "or (hasRole('CANDIDATE') and @interviewSessionService.isCandidateOwnerOfSession(#id, authentication.name))")
     public InterviewSessionResponse getById(UUID id) {
         return sessionRepository.findById(id)
@@ -103,13 +112,6 @@ public class InterviewSessionService {
         return sessionMapper.toResponse(sessionRepository.save(session));
     }
 
-    public boolean isSupporterFor(UUID sessionId, String email) {
-        UUID userId = resolveUserId(email);
-        return sessionRepository.findById(sessionId)
-                .map(s -> s.getSupporterId().equals(userId))
-                .orElse(false);
-    }
-
     public boolean isCandidateOwnerOfSession(UUID sessionId, String email) {
         UUID userId = resolveUserId(email);
         return sessionRepository.findById(sessionId)
@@ -121,11 +123,6 @@ public class InterviewSessionService {
     private boolean isCandidate(Authentication authentication) {
         return authentication.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_CANDIDATE"));
-    }
-
-    private boolean isSupporter(Authentication authentication) {
-        return authentication.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_SUPPORTER"));
     }
 
     private UUID resolveUserId(String email) {
