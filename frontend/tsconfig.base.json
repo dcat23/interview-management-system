@@ -24,10 +24,7 @@
       "@feature/base/*": ["features/base/src/*"],
       "@feature/auth": ["features/auth/src/index.ts"],
       "@feature/auth/server": ["features/auth/src/server.ts"],
-      "@feature/auth/*": ["features/auth/src/*"],
-      "@feature/templates": ["features/templates/src/index.ts"],
-      "@feature/templates/server": ["features/templates/src/server.ts"],
-      "@feature/templates/*": ["features/templates/src/*"]
+      "@feature/auth/*": ["features/auth/src/*"]
     }
   },
   "exclude": ["node_modules", "tmp"]

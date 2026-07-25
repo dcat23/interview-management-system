@@ -51,3 +51,5 @@ vite.config.*.timestamp*
 .env*
 !.env.example
 .env
+
+/template
