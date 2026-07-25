@@ -4,15 +4,16 @@ import { Layout } from '../components/layout';
 import { ReactNode } from 'react';
 import { Crimson_Pro, Source_Code_Pro } from 'next/font/google';
 
-// Imported for their font-loading side effect (self-hosted @font-face
-// injection under the real Google font family name) — referenced by
-// literal name via --font-sans/--font-mono in global.css.
-Crimson_Pro({
+// Next's font-loader compiler plugin requires the call be assigned to a
+// module-scope const. Unused otherwise — self-hosted @font-face injection
+// under the real Google font family name is referenced by literal name via
+// --font-sans/--font-mono in global.css.
+const _crimsonPro = Crimson_Pro({
   subsets: ['latin'],
   weight: ['200', '300', '400', '500', '600', '700', '800'],
   style: ['normal', 'italic'],
 });
-Source_Code_Pro({
+const _sourceCodePro = Source_Code_Pro({
   subsets: ['latin'],
   weight: ['200', '400', '600', '700'],
 });
