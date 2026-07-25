@@ -2,11 +2,16 @@ import Link from 'next/link';
 import { Card, CardContent } from '@feature/ui/components/card';
 import { Briefcase, Calendar, ChevronRight, Clock } from 'lucide-react';
 import { ModeBadge, StatusBadge } from './session-badges';
-import { sessionTitle, type Session } from '@app/web/lib/data/sessions';
+import type { InterviewSession } from '@feature/base/server';
 
-function formatDate(dateString: string) {
-  const date = new Date(dateString);
-  return date.toLocaleDateString('en-US', {
+export type SessionCardData = InterviewSession & {
+  candidateName: string;
+  clientName: string;
+  technology: string;
+};
+
+function formatDate(scheduledAt: string) {
+  return new Date(scheduledAt).toLocaleDateString('en-US', {
     weekday: 'short',
     month: 'long',
     day: 'numeric',
@@ -14,7 +19,14 @@ function formatDate(dateString: string) {
   });
 }
 
-export function SessionCard({ session }: { session: Session }) {
+function formatTime(scheduledAt: string, durationMinutes: number) {
+  const start = new Date(scheduledAt);
+  const end = new Date(start.getTime() + durationMinutes * 60_000);
+  const timeFormat: Intl.DateTimeFormatOptions = { hour: 'numeric', minute: '2-digit' };
+  return `${start.toLocaleTimeString('en-US', timeFormat)} - ${end.toLocaleTimeString('en-US', timeFormat)}`;
+}
+
+export function SessionCard({ session }: { session: SessionCardData }) {
   return (
     <Link href={`/supporter/sessions/${session.id}`} className="block group">
       <Card className="bg-card hover:border-primary/30 transition-colors">
@@ -32,15 +44,15 @@ export function SessionCard({ session }: { session: Session }) {
               <div className="space-y-2 text-sm text-muted-foreground">
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4" />
-                  <span>{formatDate(session.date)}</span>
+                  <span>{formatDate(session.scheduledAt)}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Clock className="h-4 w-4" />
-                  <span>{session.time}</span>
+                  <span>{formatTime(session.scheduledAt, session.durationMinutes)}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Briefcase className="h-4 w-4" />
-                  <span>{sessionTitle(session)}</span>
+                  <span>{session.technology} — Round {session.round}</span>
                 </div>
               </div>
             </div>

@@ -13,3 +13,20 @@ export interface SessionQuestion {
   notes: string | null;
   createdAt: string;
 }
+
+/**
+ * Matches QuestionResponse on the backend (question/dto/QuestionResponse.java).
+ */
+export interface Question {
+  id: string;
+  clientId: string;
+  topic: string;
+  round: string;
+  body: string;
+  version: number;
+  active: boolean;
+  createdBy: string;
+  updatedBy: string | null;
+  createdAt: string;
+  updatedAt: string;
+}

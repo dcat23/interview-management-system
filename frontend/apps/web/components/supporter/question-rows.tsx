@@ -1,7 +1,7 @@
 import { Badge } from '@feature/ui/components/badge';
 import { Button } from '@feature/ui/components/button';
 import { HelpCircle, Plus, X } from 'lucide-react';
-import type { Question } from '@app/web/lib/data/sessions';
+import type { Question } from '@feature/base/server';
 
 export function LinkedQuestionRow({
   question,
@@ -21,7 +21,7 @@ export function LinkedQuestionRow({
         <Badge variant="outline" className="text-[10px]">
           {question.topic}
         </Badge>
-        <p className="line-clamp-2 text-sm leading-relaxed">{question.text}</p>
+        <p className="line-clamp-2 text-sm leading-relaxed">{question.body}</p>
       </div>
       <Button
         variant="ghost"
@@ -54,7 +54,7 @@ export function QuestionSearchResultRow({
         <Badge variant="outline" className="text-[10px]">
           {question.topic}
         </Badge>
-        <p className="line-clamp-2 text-sm leading-relaxed">{question.text}</p>
+        <p className="line-clamp-2 text-sm leading-relaxed">{question.body}</p>
       </div>
       <Button
         variant={linked ? 'secondary' : 'outline'}

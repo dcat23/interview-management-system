@@ -30,3 +30,13 @@ export const getInterviewProcesses = withApi(
     }
   },
 );
+
+/**
+ * [get-process-by-id]
+ */
+export type GetProcessByIdResponse = InterviewProcess;
+
+export const getProcessById = withApi(async (id: string) => {
+  const endpoint = `/processes/${id}`;
+  return api.get<GetProcessByIdResponse>(endpoint);
+}, {});

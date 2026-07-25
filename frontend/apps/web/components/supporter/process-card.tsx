@@ -1,21 +1,27 @@
-import { Card, CardContent } from '@feature/ui/components/card';
+import type { InterviewProcess, ProcessStatus } from '@feature/base/server';
 import { Badge } from '@feature/ui/components/badge';
-import { Briefcase, Building2, Layers, User } from 'lucide-react';
-import type { Process, ProcessStatus } from '@app/web/lib/data/processes';
+import { Card, CardContent } from '@feature/ui/components/card';
+import { Building2, Layers, User } from 'lucide-react';
 
 function statusVariant(status: ProcessStatus): 'default' | 'secondary' | 'outline' {
-  if (status === 'Offer Extended') return 'default';
-  if (status === 'On Hold') return 'outline';
+  if (status === 'COMPLETED') return 'default';
+  if (status === 'WITHDRAWN' || status === 'CANCELLED') return 'outline';
   return 'secondary';
 }
 
+export type ProcessCardData = InterviewProcess & {
+  candidateName: string;
+  clientName: string;
+  currentRound: string | null;
+  sessionCount: number;
+};
+
 interface Props {
-  process: Process;
+  process: ProcessCardData;
 }
 
 export function ProcessCard(props: Props) {
   const { process } = props;
-
   return (
     <Card className="bg-card hover:border-primary/30 transition-colors">
       <CardContent className="flex h-full flex-col p-6">
@@ -26,9 +32,9 @@ export function ProcessCard(props: Props) {
           <Badge
             variant={statusVariant(process.status)}
             className={
-              process.status === 'Offer Extended'
+              process.status === 'COMPLETED'
                 ? 'bg-primary/15 text-primary border border-primary/20 hover:bg-primary/15'
-                : process.status === 'On Hold'
+                : process.status === 'WITHDRAWN' || process.status === 'CANCELLED'
                   ? 'text-muted-foreground'
                   : ''
             }
@@ -47,7 +53,7 @@ export function ProcessCard(props: Props) {
         </div>
 
         <div className="mt-4 flex items-center justify-between border-t border-border/40 pt-4 text-xs text-muted-foreground">
-          <span className="font-mono uppercase tracking-wide">{process.currentRound}</span>
+          <span className="font-mono uppercase tracking-wide">{process.currentRound ?? 'No sessions yet'}</span>
           <span className="flex items-center gap-1.5">
             <Layers className="h-3.5 w-3.5" />
             {process.sessionCount} {process.sessionCount === 1 ? 'session' : 'sessions'}

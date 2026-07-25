@@ -3,7 +3,42 @@
 import { withApi, withForm } from '@next-feature/client/server';
 import { z } from 'zod';
 import api from '../config/client';
-import { SessionQuestion } from '@feature/base/server';
+import { Page, Pageable, Question, SessionQuestion, toRecord } from '@feature/base/server';
+
+/**
+ * [get-questions]
+ *
+ * No `q` full-text search param yet — the search story hasn't been built on
+ * the backend. Filters by clientId/topic only for now.
+ */
+export type GetQuestionsRequest = Pageable & {
+  clientId?: string;
+  topic?: string;
+};
+
+export type GetQuestionsResponse = Page<Question>;
+
+export const getQuestions = withApi(
+  async (options?: GetQuestionsRequest) => {
+    const params = new URLSearchParams(toRecord(options));
+    const endpoint = '/questions?' + params.toString();
+
+    return api.get<GetQuestionsResponse>(endpoint);
+  },
+  {
+    fallbackData: { data: [], total: 0, page: 0, limit: 0 },
+  },
+);
+
+/**
+ * [get-session-questions]
+ */
+export type GetSessionQuestionsResponse = SessionQuestion[];
+
+export const getSessionQuestions = withApi(async (sessionId: string) => {
+  const endpoint = `/sessions/${sessionId}/questions`;
+  return api.get<GetSessionQuestionsResponse>(endpoint);
+}, { fallbackData: [] });
 
 /**
  * [link-question]
