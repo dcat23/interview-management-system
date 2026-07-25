@@ -1,7 +1,6 @@
 import { ReactNode } from 'react';
-import Link from 'next/link';
-import { auth, signOutAction } from '@feature/auth/server';
-import { Button } from '@feature/ui/components/button';
+import { auth } from '@feature/auth/server';
+import { Header } from '@app/web/components/supporter/header';
 
 interface Props {
   children: ReactNode;
@@ -11,31 +10,11 @@ async function SupporterLayout({ children }: Props) {
   const session = await auth();
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <header className="border-b">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-          <nav className="flex items-center gap-4">
-            <Link
-              href="/supporter/sessions"
-              className="text-sm font-medium hover:underline"
-            >
-              My Sessions
-            </Link>
-          </nav>
-          <div className="flex items-center gap-3 text-sm text-muted-foreground">
-            <span>{session?.user?.email}</span>
-            <span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground">
-              {session?.user?.role}
-            </span>
-            <form action={signOutAction}>
-              <Button type="submit" variant="outline" size="sm">
-                Sign Out
-              </Button>
-            </form>
-          </div>
-        </div>
-      </header>
-      <main className="flex-1">{children}</main>
+    <div className="min-h-screen bg-background">
+      <Header email={session?.user?.email} role={session?.user?.role} />
+      <main className="pt-16">
+        <div className="px-4 py-6 md:px-8 md:py-8">{children}</div>
+      </main>
     </div>
   );
 }
