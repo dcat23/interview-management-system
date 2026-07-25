@@ -1,0 +1,196 @@
+{
+  "summary": "Backend API completion for Supporter role — feedback, broadened read access, question search",
+  "description": "Closes the gap discovered while wiring the Phase 4 Supporter frontend (Weeks 7-8 role views) to the real backend. Verified against the live OpenAPI spec at /v3/api-docs, not just docs/api-reference.md — the feedback module and full-text question search were already spec'd in docs/backlog/phase-3-epic-weeks-7-8-feedback-job-search.json but were never actually implemented (no FeedbackResponse schema, no q param on GET /questions in the live spec). This epic scopes a focused completion of exactly what the Supporter frontend needs to function, rather than re-speccing that whole epic.\n\nAlso implements a new product decision made during this integration pass: supporters should not be scoped to only their own assigned processes/sessions the way candidates are scoped to their own process. Supporters should have the same breadth of READ access as marketer/admin across processes, sessions, clients, and questions. This does NOT extend to write actions — linking/unlinking questions and submitting feedback remain scoped to the assigned supporter, since those are data-integrity boundaries (a supporter must not be able to submit feedback or link questions under another supporter's name), not visibility restrictions.\n\nNote for whoever picks up the feedback story: three sources currently disagree on the submit shape. The Phase 3 epic spec'd a separate `POST /sessions/:id/feedback/submit`; docs/api-reference.md documents `PATCH /sessions/:id/feedback` with `{ isSubmitted: true }`; the live backend has neither built. This epic specifies the PATCH approach (simpler, matches the currently-published docs) — reconcile docs/api-reference.md and the Phase 3 epic once built.\n\nKey paths: <apps/api/src/main/java/com/ims/feedback>, <apps/api/src/main/java/com/ims/process>, <apps/api/src/main/java/com/ims/session>, <apps/api/src/main/java/com/ims/question>",
+  "labels": ["backend", "supporter", "feedback", "authorization", "search", "phase-4"],
+  "priority": "High",
+  "userType": "supporter",
+  "functionality": "read all processes/sessions/clients/questions, list sessions without knowing a process id in advance, search the question bank by text, and manage feedback for sessions they conducted",
+  "benefit": "unblocks the already-built Phase 4 Supporter frontend (session list, question linking, feedback editor) and removes an unnecessary visibility restriction that doesn't match how supporters actually work across clients",
+  "stories": [
+    {
+      "summary": "Implement feedback draft, view, and submit lifecycle",
+      "description": "Build the Feedback module: a supporter can create a draft, update it, and submit it (PATCH with isSubmitted: true), after which it is locked. Supporters can only read their own feedback; admins can read any submitted feedback for a session. This is the same scope as the unbuilt Phase 3 story (docs/backlog/phase-3-epic-weeks-7-8-feedback-job-search.json, \"Implement feedback draft and submit lifecycle\") but uses PATCH-based submit instead of a separate /submit endpoint, matching docs/api-reference.md.\n\nEndpoints:\n- GET /sessions/:id/feedback (supporter: own only; admin: any submitted) — 404 if no record exists\n- POST /sessions/:id/feedback — creates a DRAFT record, { body }, supporterId from JWT, 409 if a record already exists\n- PATCH /sessions/:id/feedback — { body?, isSubmitted? }, sets submittedAt server-side when isSubmitted flips to true, 409 on any further PATCH once submitted\n\nKey paths: <apps/api/src/main/java/com/ims/feedback/FeedbackEntity.java>, <apps/api/src/main/java/com/ims/feedback/FeedbackService.java>, <apps/api/src/main/java/com/ims/feedback/FeedbackController.java>",
+      "labels": ["feedback", "crud", "lifecycle", "phase-4"],
+      "priority": "High",
+      "storyPoints": 5,
+      "acceptanceCriteria": [
+        {
+          "scenario": "Supporter creates a feedback draft",
+          "given": "an authenticated supporter calls POST /sessions/:id/feedback with { body }",
+          "when": "no feedback record exists yet for the session",
+          "then": "a feedback record is created with isSubmitted=false and a 201 response is returned"
+        },
+        {
+          "scenario": "Creating a second draft is rejected",
+          "given": "a feedback record already exists for a session",
+          "when": "POST /sessions/:id/feedback is called again",
+          "then": "a 409 Conflict response is returned"
+        },
+        {
+          "scenario": "Draft can be updated before submission",
+          "given": "a DRAFT feedback record exists",
+          "when": "PATCH /sessions/:id/feedback is called with { body }",
+          "then": "the body is updated and updatedAt changes, isSubmitted remains false"
+        },
+        {
+          "scenario": "Submitting locks the record",
+          "given": "a DRAFT feedback record exists",
+          "when": "PATCH /sessions/:id/feedback is called with { isSubmitted: true }",
+          "then": "isSubmitted becomes true, submittedAt is set server-side, and a 200 response returns the updated record"
+        },
+        {
+          "scenario": "Submitted feedback cannot be edited further",
+          "given": "a feedback record has isSubmitted=true",
+          "when": "PATCH /sessions/:id/feedback is called again with any field",
+          "then": "a 409 Conflict response is returned and the record is unchanged"
+        },
+        {
+          "scenario": "Admin can read any submitted feedback for a session",
+          "given": "a supporter has submitted feedback for a session",
+          "when": "an admin calls GET /sessions/:id/feedback",
+          "then": "the submitted feedback record is returned"
+        },
+        {
+          "scenario": "Supporter cannot read another supporter's feedback",
+          "given": "supporter A submitted feedback for a session originally assigned to supporter A",
+          "when": "supporter B calls GET /sessions/:id/feedback for that session",
+          "then": "a 403 Forbidden or 404 response is returned, not supporter A's feedback content"
+        }
+      ],
+      "tasks": [
+        {
+          "summary": "Add FeedbackResponse, CreateFeedbackRequest, UpdateFeedbackRequest DTOs",
+          "description": "camelCase JSON fields per project convention: id, sessionId, supporterId, body, isSubmitted, submittedAt, updatedAt. No @JsonProperty snake_case annotations."
+        },
+        {
+          "summary": "Implement FeedbackEntity, repository, and service",
+          "description": "JPA entity mapping to the existing feedback table (already in the schema per docs/database-schema.md — no new migration expected unless the table is missing in the actual database). Service methods: createDraft, updateDraft, submit. Submit sets submitted_at and rejects further writes."
+        },
+        {
+          "summary": "Implement FeedbackController with role-scoped access",
+          "description": "GET/POST/PATCH /sessions/:id/feedback. Enforce supporterId from JWT on create (cannot author feedback as another supporter). Supporter GET scoped to own record; admin GET unscoped to any submitted record for the session."
+        },
+        {
+          "summary": "Add integration tests for feedback lifecycle",
+          "description": "Cover all acceptance criteria above using Testcontainers Postgres: draft create, duplicate create 409, draft update, submit, edit-after-submit 409, admin read any, supporter cannot read another supporter's feedback."
+        },
+        {
+          "summary": "Update docs/api-reference.md and cross-reference the Phase 3 epic",
+          "description": "Confirm the PATCH-based submit shape is documented correctly. Add a note to docs/backlog/phase-3-epic-weeks-7-8-feedback-job-search.json's feedback story pointing at this epic as the one actually implemented, to avoid future confusion between the two specs."
+        }
+      ]
+    },
+    {
+      "summary": "Broaden supporter read access to processes and sessions; add unscoped session listing",
+      "description": "Remove the 'own assigned sessions only' scoping for the supporter role on process and session read endpoints, matching marketer/admin visibility. Add supporter to the allowed roles on GET /processes (currently admin/marketer/candidate only). Add a new top-level GET /sessions endpoint — this both replaces the frontend's originally-assumed-but-nonexistent 'my sessions' endpoint and generalizes cleanly under the new broadened access model, since a supporter can still filter to their own sessions client-side or via a supporterId query param without needing a bespoke scoped route.\n\nWrite actions are explicitly NOT broadened by this story — POST/DELETE /sessions/:id/questions keep their existing 'must be the assigned supporter' constraint, and feedback stays self-authored via JWT (see the feedback story above). This story is read-access only.\n\nEndpoints:\n- GET /processes — add supporter to allowed roles, unscoped (same result set as marketer)\n- GET /processes/:id/sessions — remove supporter 'own assigned only' scoping\n- GET /sessions/:id — remove supporter 'own assigned only' scoping\n- GET /sessions (new) — paginated, filterable by status/processId/supporterId, allowed for admin/marketer/supporter\n\nKey paths: <apps/api/src/main/java/com/ims/process/ProcessController.java>, <apps/api/src/main/java/com/ims/session/SessionController.java>, <apps/api/src/main/java/com/ims/session/SessionService.java>",
+      "labels": ["authorization", "process", "session", "phase-4"],
+      "priority": "High",
+      "storyPoints": 5,
+      "acceptanceCriteria": [
+        {
+          "scenario": "Supporter can list all processes",
+          "given": "an authenticated supporter",
+          "when": "GET /processes is called",
+          "then": "the full paginated process list is returned, same shape as when called by marketer, not filtered to processes containing the supporter's own sessions"
+        },
+        {
+          "scenario": "Supporter can read any session detail",
+          "given": "an authenticated supporter who is not assigned to a given session",
+          "when": "GET /sessions/:id is called for that session",
+          "then": "a 200 response returns the session, not a 403"
+        },
+        {
+          "scenario": "Supporter can list all sessions within any process",
+          "given": "an authenticated supporter",
+          "when": "GET /processes/:id/sessions is called for a process with sessions assigned to other supporters",
+          "then": "all sessions in the process are returned, not just the caller's own"
+        },
+        {
+          "scenario": "New GET /sessions supports pagination and filters",
+          "given": "an authenticated supporter, marketer, or admin",
+          "when": "GET /sessions?status=SCHEDULED is called",
+          "then": "a paginated envelope of matching sessions is returned across all processes"
+        },
+        {
+          "scenario": "Write actions remain scoped to the assigned supporter",
+          "given": "a supporter who is not assigned to a session",
+          "when": "POST /sessions/:id/questions is called by that supporter",
+          "then": "a 403 Forbidden response is returned, unchanged from current behavior"
+        },
+        {
+          "scenario": "Candidate visibility is unaffected",
+          "given": "an authenticated candidate",
+          "when": "GET /processes or GET /sessions is called",
+          "then": "existing candidate scoping (own process only) is unchanged — this story only touches supporter authorization"
+        }
+      ],
+      "tasks": [
+        {
+          "summary": "Add GET /sessions endpoint with pagination and filters",
+          "description": "New controller method returning InterviewSessionResponse in the standard PageResponse envelope. Query params: status, processId, supporterId, page, limit. Allowed roles: admin, marketer, supporter."
+        },
+        {
+          "summary": "Add supporter to GET /processes allowed roles",
+          "description": "Update @PreAuthorize on ProcessController#list to include SUPPORTER. Confirm no supporter-specific filtering is applied — same result set as marketer."
+        },
+        {
+          "summary": "Remove supporter ownership scoping from GET /processes/:id/sessions and GET /sessions/:id",
+          "description": "Update SessionService query logic so supporter callers get the same unscoped result as marketer/admin. Leave candidate scoping untouched."
+        },
+        {
+          "summary": "Add integration tests for broadened supporter read access",
+          "description": "Cover all acceptance criteria above with Testcontainers, including the negative case that write endpoints (POST/DELETE /sessions/:id/questions) remain assignment-scoped."
+        },
+        {
+          "summary": "Update docs/api-reference.md role tables",
+          "description": "Update the role constraints text under GET /processes, GET /processes/:id/sessions, and GET /sessions/:id to reflect unscoped supporter access. Document the new GET /sessions endpoint."
+        }
+      ]
+    },
+    {
+      "summary": "Expose full-text question search via q parameter on GET /questions",
+      "description": "The questions table already has a search_vector tsvector column and GIN index maintained by trigger (docs/database-schema.md) — this was built as part of the Phase 3 schema. What's missing is the API-layer q query parameter and search service, which is the remainder of the already-spec'd but unbuilt Phase 3 story (docs/backlog/phase-3-epic-weeks-7-8-feedback-job-search.json, \"Implement full-text question search with PostgreSQL tsvector\"). This story exists here scoped down to unblock the Supporter question-linking search box specifically; verify the migration/trigger is actually applied to the running database before assuming it's done.\n\nKey paths: <apps/api/src/main/java/com/ims/question/QuestionSearchService.java>, <apps/api/src/main/java/com/ims/question/QuestionController.java>",
+      "labels": ["question", "full-text-search", "postgres", "phase-4"],
+      "priority": "Medium",
+      "storyPoints": 3,
+      "acceptanceCriteria": [
+        {
+          "scenario": "Full-text search returns relevant questions",
+          "given": "the question bank contains questions with varying topics and bodies",
+          "when": "GET /questions?q=java+concurrency is called",
+          "then": "only questions matching the search terms in body or topic are returned, ranked by relevance"
+        },
+        {
+          "scenario": "Empty search term returns all questions paginated",
+          "given": "no q parameter is provided",
+          "when": "GET /questions is called",
+          "then": "existing clientId/topic-filtered, paginated behavior is unchanged"
+        },
+        {
+          "scenario": "Malformed search query does not crash the endpoint",
+          "given": "a q parameter contains special characters that would break a raw tsquery",
+          "when": "GET /questions?q=%3A%21%21 is called",
+          "then": "plainto_tsquery sanitises the input and a valid response is returned instead of a 500"
+        }
+      ],
+      "tasks": [
+        {
+          "summary": "Verify search_vector column and GIN index exist on the running database",
+          "description": "Confirm the Phase 3 migration (V-series adding search_vector + trigger, per docs/database-schema.md) has actually been applied. If not, write it now rather than assuming."
+        },
+        {
+          "summary": "Implement QuestionSearchService with tsvector query",
+          "description": "Native query using to_tsvector and plainto_tsquery. Apply existing Spring Data pagination. Fall back to the current clientId/topic filtering when q is absent or blank."
+        },
+        {
+          "summary": "Add q parameter to QuestionController#list",
+          "description": "Route to QuestionSearchService when q is present; keep existing behavior otherwise. Allowed roles unchanged (admin, marketer, supporter)."
+        },
+        {
+          "summary": "Add integration tests for full-text search",
+          "description": "Testcontainers Postgres with the real GIN index. Cover: matching results ranked, non-matching term returns empty, empty q returns existing paginated behavior, special-character input handled safely."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+import { Role } from "./user";
+import { type IconName } from "lucide-react/dynamic"
+
+/**
+ * [nav-item]
+ * next-feature@0.1.4-0
+ * July 25th 2026, 3:09:14 am
+ */
+export interface NavItem {
+    name: string
+    href: string
+    icon: IconName
+}
+
+/**
+ * [role-nav-items]
+ * next-feature@0.1.4-0
+ * July 25th 2026, 3:10:39 am
+ */
+const supporter: NavItem[] = [
+    { name: 'My Sessions', href: '/supporter/sessions', icon: 'calendar-check' },
+]
+export const ROLE_NAV: Record<Role, NavItem[]> = {
+    candidate: [
+        { name: 'My Processes', href: '/candidate/processes', icon: 'briefcase' },
+    ],
+    marketer: [
+        { name: 'Processes', href: '/marketer/processes', icon: 'briefcase' },
+        { name: 'New Process', href: '/marketer/processes/new', icon: 'plus' },
+    ],
+    supporter,
+    admin: [
+        { name: 'Processes', href: '/admin/processes', icon: 'briefcase' },
+        { name: 'Question Bank', href: '/admin/questions', icon: 'book-open' },
+    ],
+} as const;

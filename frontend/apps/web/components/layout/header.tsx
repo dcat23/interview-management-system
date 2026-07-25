@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X, CalendarCheck, LogOut, Moon, Sun } from 'lucide-react';
+import { Menu, X, LogOut, Moon, Sun } from 'lucide-react';
+import { DynamicIcon } from 'lucide-react/dynamic';
 import { useRef, useState } from 'react';
 import { cn } from '@feature/ui/lib/utils';
 import { Button } from '@feature/ui/components/button';
@@ -16,14 +17,18 @@ import {
 } from '@feature/ui/components/dropdown-menu';
 import { ThemeToggle } from '@app/web/components/theme-toggle';
 import { useTheme } from '@app/web/lib/providers/theme-provider';
-import { signOutAction } from '@feature/auth/server';
+import { signOutAction, ROLE_HOME, type Role } from '@feature/auth/server';
+import { ROLE_NAV, type NavItem } from '@feature/base/server';
 
-const navigation = [{ name: 'My Sessions', href: '/supporter/sessions', icon: CalendarCheck }];
+interface Props {
+  email?: string | null;
+  role?: Role | null;
+}
 
-function getCurrentPage(pathname: string) {
+function getCurrentPage(pathname: string, navigation: NavItem[]) {
   for (const item of navigation) {
     if (pathname === item.href || pathname.startsWith(item.href + '/')) {
-      return { name: item.name, icon: item.icon };
+      return item;
     }
   }
   return null;
@@ -52,12 +57,15 @@ function SignOutMenuItem() {
   );
 }
 
-export function Header({ email, role }: { email?: string | null; role?: string | null }) {
+export function Header(props: Props) {
+  const { email, role } = props;
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { resolvedTheme, setTheme } = useTheme();
 
-  const currentPage = getCurrentPage(pathname);
+  const navigation = role ? ROLE_NAV[role] : [];
+  const homeHref = role ? ROLE_HOME[role] : '/';
+  const currentPage = getCurrentPage(pathname, navigation);
   const label = email ?? '';
 
   return (
@@ -65,7 +73,7 @@ export function Header({ email, role }: { email?: string | null; role?: string |
       <header className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 bg-card/90 backdrop-blur-xl">
         <div className="flex h-16 items-center justify-between px-4 md:px-6">
           <div className="flex items-center gap-3">
-            <Link href="/supporter/sessions" className="flex items-center gap-3 group">
+            <Link href={homeHref} className="flex items-center gap-3 group">
               <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/30 group-hover:border-primary/50 transition-colors">
                 <span className="font-mono text-sm font-semibold text-primary">IMS</span>
               </div>
@@ -76,7 +84,7 @@ export function Header({ email, role }: { email?: string | null; role?: string |
               <div className="flex items-center gap-2 md:hidden">
                 <span className="text-muted-foreground/50">/</span>
                 <div className="flex items-center gap-1.5 text-foreground">
-                  <currentPage.icon className="h-4 w-4 text-primary" />
+                  <DynamicIcon name={currentPage.icon} className="h-4 w-4 text-primary" />
                   <span className="font-medium text-sm">{currentPage.name}</span>
                 </div>
               </div>
@@ -98,7 +106,7 @@ export function Header({ email, role }: { email?: string | null; role?: string |
                       : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50',
                   )}
                 >
-                  <item.icon className="h-4 w-4" />
+                  <DynamicIcon name={item.icon} className="h-4 w-4" />
                   <span className="font-mono text-xs uppercase tracking-wider">{item.name}</span>
                 </Link>
               );
@@ -155,7 +163,7 @@ export function Header({ email, role }: { email?: string | null; role?: string |
             {/* Mobile Menu Header */}
             <div className="flex h-14 items-center justify-between border-b border-border/50 px-4">
               <Link
-                href="/supporter/sessions"
+                href={homeHref}
                 className="flex items-center gap-2.5"
                 onClick={() => setMobileMenuOpen(false)}
               >
@@ -193,7 +201,7 @@ export function Header({ email, role }: { email?: string | null; role?: string |
                           : 'text-muted-foreground hover:bg-secondary/50 hover:text-foreground',
                       )}
                     >
-                      <item.icon className="h-5 w-5" />
+                      <DynamicIcon name={item.icon} className="h-5 w-5" />
                       <span className="font-medium">{item.name}</span>
                     </Link>
                   );
