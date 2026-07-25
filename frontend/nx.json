@@ -64,7 +64,10 @@
         "orgName": "feature"
       },
       "declaration": {},
-      "action": {}
+      "action": {
+        "projectName": "backend",
+        "actionType": "api"
+      }
     },
     "@nx/react": {
       "library": {
