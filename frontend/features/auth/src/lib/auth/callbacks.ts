@@ -1,5 +1,8 @@
 import type { NextAuthConfig } from 'next-auth';
 import { Role } from '../types';
+import { logger } from '@next-feature/logging/server';
+
+const log = logger.child({ module: "auth-callbacks"})
 
 type Callbacks = NonNullable<NextAuthConfig['callbacks']>;
 
@@ -9,6 +12,9 @@ export const jwt: Callbacks['jwt'] = async ({ token, user }) => {
     token.jwtToken = user.jwtToken ?? '';
     token.refreshToken = user.refreshToken ?? '';
     token.expiration = user.expiration ?? 0;
+    token.name = user.name;
+    token.email = user.email;
+    delete token.error;
     return token;
   }
 
@@ -24,12 +30,18 @@ export const jwt: Callbacks['jwt'] = async ({ token, user }) => {
   const response = await refresh({ refreshToken: token.refreshToken });
 
   if (!response.success || !response.data) {
-    return token;
+    log.info(JSON.stringify(response.error?.body));
+    // Refresh token is old, invalid, or already used — flag the token as
+    // errored so the session callback and middleware can treat this as
+    // unauthenticated and bounce the user to /login instead of silently
+    // continuing with a dead access token.
+    return { ...token, error: 'RefreshTokenError' as const };
   }
 
   token.jwtToken = response.data.accessToken;
   token.refreshToken = response.data.refreshToken;
   token.expiration = response.data.expiration;
+  delete token.error;
 
   return token;
 };
@@ -40,6 +52,9 @@ export const session: Callbacks['session'] = async ({ session, token }) => {
     session.user.role = token.role as Role;
     session.user.jwtToken = token.jwtToken as string;
     session.user.refreshToken = token.refreshToken as string;
+  }
+  if (token.error) {
+    session.error = token.error;
   }
   return session;
 };

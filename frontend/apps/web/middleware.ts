@@ -15,10 +15,13 @@ export default auth((req) => {
   }
 
   const role = req.auth?.user?.role as Role | undefined;
-
+  // Set by the jwt() callback when a refresh attempt fails against an old
+  // or invalid refresh token — the access token on file is dead even though
+  // the session cookie itself is still present, so route as unauthenticated.
+  const hasRefreshError = !!req.auth?.error;
 
   if (pathname === '/login') {
-    if (role) {
+    if (role && !hasRefreshError) {
       return NextResponse.redirect(new URL(ROLE_HOME[role], req.url));
     }
     return NextResponse.next();
@@ -26,11 +29,11 @@ export default auth((req) => {
 
   if (pathname === '/') {
     return NextResponse.redirect(
-      new URL(role ? ROLE_HOME[role] : '/login', req.url),
+      new URL(role && !hasRefreshError ? ROLE_HOME[role] : '/login', req.url),
     );
   }
 
-  if (!role) {
+  if (!role || hasRefreshError) {
     return NextResponse.redirect(new URL('/login', req.url));
   }
 

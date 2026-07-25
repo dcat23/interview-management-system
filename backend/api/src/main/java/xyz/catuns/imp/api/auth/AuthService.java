@@ -7,12 +7,16 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import xyz.catuns.imp.api.auth.dto.LoginRequest;
 import xyz.catuns.imp.api.auth.dto.LoginResponse;
+import xyz.catuns.imp.api.auth.dto.MeResponse;
 import xyz.catuns.imp.api.auth.dto.RefreshRequest;
 import xyz.catuns.imp.api.auth.dto.RefreshResponse;
+import xyz.catuns.imp.api.auth.dto.UpdateMeRequest;
 import xyz.catuns.imp.api.user.entity.User;
 import xyz.catuns.imp.api.user.repository.UserRepository;
+import xyz.catuns.spring.base.exception.controller.ConflictException;
 import xyz.catuns.spring.base.exception.controller.UnauthorizedException;
 import xyz.catuns.spring.jwt.core.model.JwtToken;
 
@@ -79,5 +83,42 @@ public class AuthService {
         if (refreshToken != null && !refreshToken.isBlank()) {
             redis.delete(REFRESH_PREFIX + refreshToken);
         }
+    }
+
+    public MeResponse me(Authentication authentication) {
+        User user = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new UnauthorizedException("User not found"));
+        return toMeResponse(user);
+    }
+
+    @Transactional
+    public MeResponse updateMe(Authentication authentication, UpdateMeRequest request) {
+        User user = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new UnauthorizedException("User not found"));
+
+        if (request.email() != null && !request.email().equals(user.getEmail())
+                && userRepository.existsByEmail(request.email())) {
+            throw new ConflictException("Email already in use");
+        }
+
+        if (request.name() != null) {
+            user.setName(request.name());
+        }
+        if (request.email() != null) {
+            user.setEmail(request.email());
+        }
+
+        return toMeResponse(userRepository.save(user));
+    }
+
+    private MeResponse toMeResponse(User user) {
+        return new MeResponse(
+                user.getId(),
+                user.getName(),
+                user.getEmail(),
+                user.getRole().name().toLowerCase(),
+                user.isActive(),
+                user.getCreatedAt()
+        );
     }
 }

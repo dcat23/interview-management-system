@@ -88,6 +88,72 @@ export const logout = withApi(async (options?: LogoutRequest) => {
   });
 }, {});
 
+/**
+ * [me]
+ * next-feature@0.1.4-3
+ * July 25th 2026, 3:20:00 pm
+ */
+const meSchema = z.object({
+  jwtToken: z.string(),
+});
+export type MeRequest = z.infer<typeof meSchema>;
+export type MeResponse = {
+  id: string;
+  name: string;
+  email: string;
+  role: Role;
+  active: boolean;
+  createdAt: string;
+};
+
+// Takes the access token explicitly rather than reading it off the session:
+// this runs from the jwt() callback right after login, before a session
+// exists to read from.
+export const me = withApi(async (options: MeRequest) => {
+  const parsed = meSchema.safeParse(options);
+
+  if (!parsed.success) {
+    throw parsed.error;
+  }
+
+  const endpoint = '/auth/me';
+  const response = await api.get<MeResponse>(endpoint, {
+    headers: {
+      Authorization: `Bearer ${parsed.data.jwtToken}`
+    }
+  });
+  return response;
+}, {});
+
+/**
+ * [update-me]
+ * next-feature@0.1.4-3
+ * July 25th 2026, 3:24:00 pm
+ */
+const updateMeSchema = z.object({
+  name: z.string().optional(),
+  email: z.string().email().optional(),
+});
+export type UpdateMeRequest = z.infer<typeof updateMeSchema>;
+
+export const updateMe = withApi(async (options: UpdateMeRequest) => {
+  const parsed = updateMeSchema.safeParse(options);
+
+  if (!parsed.success) {
+    throw parsed.error;
+  }
+  const { auth } = await import("../auth");
+  const session = await auth();
+
+  const endpoint = '/auth/me';
+  const response = await api.patch<MeResponse>(endpoint, parsed.data, {
+    headers: {
+      Authorization: `Bearer ${session?.user?.jwtToken}`
+    }
+  });
+  return response;
+}, {});
+
 // `<form action>` requires a (formData) => Promise<void> signature, but
 // `logout` (via withApi) resolves to Promise<ApiResponse<...>>. This adapts
 // it for direct use as a sign-out form action across the role layouts.

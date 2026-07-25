@@ -5,6 +5,7 @@ import { Role } from '.';
 declare module 'next-auth' {
   interface Session extends DefaultSession {
     user: User;
+    error?: 'RefreshTokenError';
   }
 
   interface User extends DefaultUser {
@@ -22,6 +23,7 @@ declare module 'next-auth/jwt' {
     jwtToken: string;
     expiration: number;
     refreshToken: string;
+    error?: 'RefreshTokenError';
   }
 }
 

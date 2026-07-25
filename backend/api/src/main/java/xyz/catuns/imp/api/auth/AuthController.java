@@ -8,11 +8,14 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import xyz.catuns.imp.api.auth.dto.LoginRequest;
 import xyz.catuns.imp.api.auth.dto.LoginResponse;
+import xyz.catuns.imp.api.auth.dto.MeResponse;
 import xyz.catuns.imp.api.auth.dto.RefreshRequest;
 import xyz.catuns.imp.api.auth.dto.RefreshResponse;
+import xyz.catuns.imp.api.auth.dto.UpdateMeRequest;
 
 @RestController
 @RequestMapping("/auth")
@@ -60,5 +63,32 @@ public class AuthController {
                 : authorizationHeader;
         authService.logout(accessToken, refreshToken);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/me")
+    @SecurityRequirement(name = "bearerAuth")
+    @Operation(summary = "Get current user", description = "Returns full profile details for the authenticated user.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Current user"),
+            @ApiResponse(responseCode = "401", description = "Missing or invalid token")
+    })
+    public ResponseEntity<MeResponse> me(Authentication authentication) {
+        return ResponseEntity.ok(authService.me(authentication));
+    }
+
+    @PatchMapping("/me")
+    @SecurityRequirement(name = "bearerAuth")
+    @Operation(summary = "Update current user", description = "Partially updates the authenticated user's own name/email. Role and active status can only be changed by an admin via /users/{id}.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "User updated"),
+            @ApiResponse(responseCode = "400", description = "Validation error"),
+            @ApiResponse(responseCode = "401", description = "Missing or invalid token"),
+            @ApiResponse(responseCode = "409", description = "Email already in use")
+    })
+    public ResponseEntity<MeResponse> updateMe(
+            @Valid @RequestBody UpdateMeRequest request,
+            Authentication authentication
+    ) {
+        return ResponseEntity.ok(authService.updateMe(authentication, request));
     }
 }
