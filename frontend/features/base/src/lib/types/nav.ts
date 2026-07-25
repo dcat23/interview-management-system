@@ -21,6 +21,7 @@ const supporter: NavItem[] = [
     { name: 'Dashboard', href: '/supporter', icon: 'layout-dashboard' },
     { name: 'My Sessions', href: '/supporter/sessions', icon: 'calendar-check' },
     { name: 'Processes', href: '/supporter/processes', icon: 'briefcase' },
+    { name: 'Clients', href: '/supporter/clients', icon: 'building-2' },
 ]
 export const ROLE_NAV: Record<Role, NavItem[]> = {
     candidate: [
