@@ -15,11 +15,11 @@ importers:
         specifier: ^5.4.0
         version: 5.4.0(react-hook-form@7.81.0(react@19.2.7))
       '@next-feature/client':
-        specifier: 0.1.4-7
-        version: 0.1.4-7
+        specifier: 0.1.4-0
+        version: 0.1.4-0
       '@next-feature/logging':
-        specifier: 0.1.4-7
-        version: 0.1.4-7
+        specifier: 0.1.4-0
+        version: 0.1.4-0
       '@radix-ui/react-dialog':
         specifier: ^1.1.21
         version: 1.1.21(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -205,8 +205,8 @@ importers:
         specifier: ~22.1.0
         version: 22.1.0
       next-feature:
-        specifier: 0.1.4-7
-        version: 0.1.4-7(a4b5b7d43319912d40f968cfce78a705)
+        specifier: 0.1.4-0
+        version: 0.1.4-0(a4b5b7d43319912d40f968cfce78a705)
       nx:
         specifier: 22.0.3
         version: 22.0.3(@swc-node/register@1.9.2(@swc/core@1.5.29(@swc/helpers@0.5.15))(@swc/types@0.1.27)(typescript@5.9.3))(@swc/core@1.5.29(@swc/helpers@0.5.15))(debug@4.4.3)
@@ -1949,11 +1949,11 @@ packages:
       '@emnapi/core': ^1.7.1
       '@emnapi/runtime': ^1.7.1
 
-  '@next-feature/client@0.1.4-7':
-    resolution: {integrity: sha512-kItkmTqQFJ+yxOo0ZzxvBXXkDELLLUpmqWdV0McYGHKdEldamtU+t5PnETwhj3Dn8PmMU6xggtSrDsrTjqbNpg==}
+  '@next-feature/client@0.1.4-0':
+    resolution: {integrity: sha512-t68fNqfQYmBEN65qMO/PdBV8b73cKorlHMzLLTOG2f+cM4yOIpUhlX+88EUUnYBcP+mE3H0irOuqGmbSVDL18Q==}
 
-  '@next-feature/logging@0.1.4-7':
-    resolution: {integrity: sha512-vYrnvc2IuuvrCCWNbQORKUtklwK0QOxNANGeZkZPDV03jurbGf3BkeD4ZZIGkY9t7Sasy2jTCc16s358fb4NTw==}
+  '@next-feature/logging@0.1.4-0':
+    resolution: {integrity: sha512-ycvWqxp9i+oPNK4RsLwgtNnDyJs9Fe8g0R9zgKbEslzJ9gUpfeAtgAUNBxYWjQ/zgvy11W0RAiEy3dl73batRA==}
 
   '@next/env@16.0.11':
     resolution: {integrity: sha512-hULMheQaOhFK1vAoFPigXca42LguwyLILtJKPRzpY1d+og6jk0YNAQVwLGNYYhWEMd2zj4gcIWSf1yC5PffqqA==}
@@ -7109,8 +7109,8 @@ packages:
       nodemailer:
         optional: true
 
-  next-feature@0.1.4-7:
-    resolution: {integrity: sha512-XLWxZDQagDCR01hN3DLDm+mqmnf9w+MupscHRvELkViMjaTYOpTIwHttUI+t1vO+esKka3MWYSLBDJaSLxicAg==}
+  next-feature@0.1.4-0:
+    resolution: {integrity: sha512-wlghMKxZatBzkaN7uK0gsVUAAktzVMS3GV/9OkqWNvqunc55Kiu19rlm5Cv+7SjnG6eAL4VCyDOmSfHkN6n3tQ==}
 
   next@16.0.11:
     resolution: {integrity: sha512-Xlo2aFWaoypPzXr4PFLSNmxrzNptlp+hgxnG9Y2THYvHrvmXIuHUyNAWO6Q+F4rm4/bmTOukprXEyF/j4qsC2A==}
@@ -11601,9 +11601,9 @@ snapshots:
       '@tybys/wasm-util': 0.10.3
     optional: true
 
-  '@next-feature/client@0.1.4-7': {}
+  '@next-feature/client@0.1.4-0': {}
 
-  '@next-feature/logging@0.1.4-7': {}
+  '@next-feature/logging@0.1.4-0': {}
 
   '@next/env@16.0.11': {}
 
@@ -17705,7 +17705,7 @@ snapshots:
       next: 16.0.11(@babel/core@7.29.7)(babel-plugin-macros@3.1.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(sass@1.101.0)
       react: 19.2.7
 
-  next-feature@0.1.4-7(a4b5b7d43319912d40f968cfce78a705):
+  next-feature@0.1.4-0(a4b5b7d43319912d40f968cfce78a705):
     dependencies:
       '@nx/devkit': 22.4.3(nx@22.0.3(@swc-node/register@1.9.2(@swc/core@1.5.29(@swc/helpers@0.5.15))(@swc/types@0.1.27)(typescript@5.9.3))(@swc/core@1.5.29(@swc/helpers@0.5.15))(debug@4.4.3))
       '@nx/eslint': 22.4.3(@babel/traverse@7.29.7)(@swc-node/register@1.9.2(@swc/core@1.5.29(@swc/helpers@0.5.15))(@swc/types@0.1.27)(typescript@5.9.3))(@swc/core@1.5.29(@swc/helpers@0.5.15))(@zkochan/js-yaml@0.0.7)(eslint@9.39.4(jiti@2.4.2))(nx@22.0.3(@swc-node/register@1.9.2(@swc/core@1.5.29(@swc/helpers@0.5.15))(@swc/types@0.1.27)(typescript@5.9.3))(@swc/core@1.5.29(@swc/helpers@0.5.15))(debug@4.4.3))(verdaccio@6.7.4(encoding@0.1.13)(typanion@3.14.0))
