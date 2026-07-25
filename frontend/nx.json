@@ -57,7 +57,7 @@
     },
     "next-feature": {
       "component": {
-        "projectName": "web"
+        "projectName": "templates"
       },
       "feature": {
         "orgName": "feature"
