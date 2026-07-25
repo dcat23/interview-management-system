@@ -86,9 +86,21 @@ export const logout = withApi(async (options?: LogoutRequest) => {
       Authorization: `Bearer ${session?.user?.jwtToken}`
     }
   });
-
-  await signOut({ redirectTo: "/login" })
 }, {});
+
+// `<form action>` requires a (formData) => Promise<void> signature, but
+// `logout` (via withApi) resolves to Promise<ApiResponse<...>>. This adapts
+// it for direct use as a sign-out form action across the role layouts.
+//
+// signOut() must run outside of logout()/withApi's try-catch: Next.js
+// implements redirectTo by throwing a special error that has to propagate
+// uncaught up through the framework, and withApi's generic catch swallows
+// it — the session cookie would get cleared but the redirect would never
+// fire, making sign-out look like a no-op.
+export async function signOutAction(formData: FormData): Promise<void> {
+  await logout(formData);
+  await signOut({ redirectTo: '/login' });
+}
 
 /**
  * [login-form-action]

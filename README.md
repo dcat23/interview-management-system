@@ -1,4 +1,5 @@
 # interview management system
+
 ## Overview
 
 Interview platform for a job training and placement company. Manages the full lifecycle of candidate interview processes — from session scheduling through multi-round progression, question bank management, supporter feedback, and admin reporting.

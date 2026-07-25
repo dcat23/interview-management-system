@@ -1,6 +1,7 @@
 'use client';
 
-import { ReactNode, useActionState } from 'react';
+import { useActionState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { type ApiResponse } from '@next-feature/client';
 import { loginFormAction, type LoginRequest } from '../lib/actions/auth';
 
@@ -43,6 +44,13 @@ export function LoginForm({
   const [formState, formAction, isPending] = useActionState(action, {
     data: initialState,
   });
+  const router = useRouter();
+
+  useEffect(() => {
+    if (formState.success) {
+      router.push('/');
+    }
+  }, [formState.success, router]);
 
   const displayError = (key: string) => {
     if (formState?.error?.body?.errors && formState.error.body.errors[key]) {
@@ -153,15 +161,6 @@ export function LoginForm({
             </Button>
           </FieldGroup>
         </form>
-        <div className="text-center text-sm">
-          {"Don't have an account? "}
-          <Link
-            href="/sign-up"
-            className="text-primary font-bold underline hover:text-primary/80 transition-colors"
-          >
-            Sign Up Now
-          </Link>
-        </div>
       </CardContent>
     </Card>
   );
