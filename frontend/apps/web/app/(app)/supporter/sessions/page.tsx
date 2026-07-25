@@ -1,18 +1,56 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@feature/ui/components/tabs';
 import { CalendarX } from 'lucide-react';
-import { SessionCard } from '@app/web/components/supporter/session-card';
+import { SessionCard, type SessionCardData } from '@app/web/components/supporter/session-card';
 import { EmptyState } from '@app/web/components/supporter/empty-state';
-import { sessions } from '@app/web/lib/data/sessions';
+import { getCandidates, getClients, getInterviewSessions, getProcessById } from '@feature/backend/server';
+import type { InterviewSession } from '@feature/base/server';
 
-export default function SessionsPage() {
-  const upcoming = sessions.filter((s) => s.timing === 'upcoming');
-  const past = sessions.filter((s) => s.timing === 'past');
+// No pagination UI on this page yet — fetch a generously large page so the
+// "all sessions" read-only view is effectively complete for current data volumes.
+const MAX_SESSIONS = 100;
+
+async function buildSessionCards(sessions: InterviewSession[]): Promise<SessionCardData[]> {
+  const uniqueProcessIds = [...new Set(sessions.map((s) => s.processId))];
+
+  const [processResults, clientsResult] = await Promise.all([
+    Promise.all(uniqueProcessIds.map((id) => getProcessById(id))),
+    getClients({ limit: MAX_SESSIONS }),
+  ]);
+
+  const processById = new Map(uniqueProcessIds.map((id, index) => [id, processResults[index].data]));
+  const clientNameById = new Map(clientsResult.data.data.map((c) => [c.id, c.name]));
+
+  const candidateIds = [...new Set([...processById.values()].map((p) => p.candidateId).filter(Boolean))];
+  const candidatesResult = await getCandidates({ ids: candidateIds, limit: Math.max(candidateIds.length, 1) });
+  const candidateNameById = new Map(candidatesResult.data.data.map((c) => [c.id, c.name]));
+
+  return sessions.map((session) => {
+    const process = processById.get(session.processId);
+    const candidateName = process?.candidateId ? candidateNameById.get(process.candidateId) : undefined;
+    const clientName = process?.clientId ? clientNameById.get(process.clientId) : undefined;
+
+    return {
+      ...session,
+      candidateName: candidateName ?? 'Unknown candidate',
+      clientName: clientName ?? 'Unknown client',
+      technology: process?.technology ?? 'Unknown role',
+    };
+  });
+}
+
+export default async function SessionsPage() {
+  const { data: sessionPage } = await getInterviewSessions({ limit: MAX_SESSIONS });
+  const sessionCards = await buildSessionCards(sessionPage.data);
+
+  const now = Date.now();
+  const upcoming = sessionCards.filter((s) => new Date(s.scheduledAt).getTime() >= now);
+  const past = sessionCards.filter((s) => new Date(s.scheduledAt).getTime() < now);
 
   return (
     <div className="mx-auto max-w-3xl space-y-8">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">My Sessions</h1>
-        <p className="mt-1 text-muted-foreground">Interview sessions assigned to you</p>
+        <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">Interview Sessions</h1>
+        <p className="mt-1 text-muted-foreground">All interview sessions across clients</p>
       </div>
 
       <Tabs defaultValue="upcoming" className="w-full">
@@ -31,8 +69,8 @@ export default function SessionsPage() {
           ) : (
             <EmptyState
               icon={CalendarX}
-              title="No sessions assigned yet"
-              description="Upcoming sessions assigned to you will appear here."
+              title="No upcoming sessions"
+              description="Upcoming interview sessions will appear here."
             />
           )}
         </TabsContent>

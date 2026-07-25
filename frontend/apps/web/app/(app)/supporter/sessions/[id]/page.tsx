@@ -1,23 +1,60 @@
 import { QuestionLinker } from '@app/web/components/supporter/question-linker';
 import { ModeBadge, StatusBadge } from '@app/web/components/supporter/session-badges';
 import { SessionSummaryHeader } from '@app/web/components/supporter/session-summary-header';
-import { getSessionById, sessions } from '@app/web/lib/data/sessions';
+import type { SessionCardData } from '@app/web/components/supporter/session-card';
+import {
+  getCandidateById,
+  getClients,
+  getProcessById,
+  getQuestions,
+  getSessionById,
+  getSessionQuestions,
+} from '@feature/backend/server';
 import { Button } from '@feature/ui/components/button';
 import { ArrowLeft, MessageSquarePlus } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
-export function generateStaticParams() {
-  return sessions.map((session) => ({ id: session.id }));
+async function loadSessionDetail(sessionId: string) {
+  const { data: session } = await getSessionById(sessionId);
+  if (!session.id) return null;
+
+  const [processResult, clientsResult, linkedQuestionsResult] = await Promise.all([
+    getProcessById(session.processId),
+    getClients({ limit: 100 }),
+    getSessionQuestions(sessionId),
+  ]);
+  const process = processResult.data;
+  const client = clientsResult.data.data.find((c) => c.id === process.clientId);
+
+  const [candidateResult, questionBankResult] = await Promise.all([
+    getCandidateById(process.candidateId),
+    getQuestions({ clientId: process.clientId, limit: 100 }),
+  ]);
+
+  const sessionCard: SessionCardData = {
+    ...session,
+    candidateName: candidateResult.data.name ?? 'Unknown candidate',
+    clientName: client?.name ?? 'Unknown client',
+    technology: process.technology,
+  };
+
+  return {
+    session: sessionCard,
+    linkedQuestions: linkedQuestionsResult.data,
+    questionBank: questionBankResult.data.data,
+  };
 }
 
 export default async function SessionDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const session = getSessionById(id);
+  const detail = await loadSessionDetail(id);
 
-  if (!session) {
+  if (!detail) {
     notFound();
   }
+
+  const { session, linkedQuestions, questionBank } = detail;
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
@@ -46,12 +83,16 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
         <Button asChild>
           <Link href={`/supporter/sessions/${session.id}/feedback`}>
             <MessageSquarePlus className="h-4 w-4 mr-2" />
-            {session.feedback.submitted ? "View Feedback" : "Provide Feedback"}
+            Provide Feedback
           </Link>
         </Button>
       </div>
-      
-      <QuestionLinker initialLinkedIds={session.linkedQuestionIds} />
+
+      <QuestionLinker
+        sessionId={session.id}
+        initialLinkedQuestions={linkedQuestions}
+        questionBank={questionBank}
+      />
     </div>
   );
 }

@@ -1,35 +1,68 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useTransition } from 'react';
+import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@feature/ui/components/card';
 import { Input } from '@feature/ui/components/input';
 import { Search, ListChecks, Library } from 'lucide-react';
 import { LinkedQuestionRow, QuestionSearchResultRow } from './question-rows';
-import { questionBank, getQuestionById } from '@app/web/lib/data/sessions';
+import { linkQuestion, unlinkQuestion } from '@feature/backend/server';
+import type { Question, SessionQuestion } from '@feature/base/server';
 
-export function QuestionLinker({ initialLinkedIds }: { initialLinkedIds: string[] }) {
-  const [linkedIds, setLinkedIds] = useState<string[]>(initialLinkedIds);
+interface Props {
+  sessionId: string;
+  initialLinkedQuestions: SessionQuestion[];
+  questionBank: Question[];
+}
+
+export function QuestionLinker({ sessionId, initialLinkedQuestions, questionBank }: Props) {
+  const [linked, setLinked] = useState<SessionQuestion[]>(
+    [...initialLinkedQuestions].sort((a, b) => a.displayOrder - b.displayOrder),
+  );
   const [query, setQuery] = useState('');
+  const [isPending, startTransition] = useTransition();
+
+  const questionById = useMemo(() => new Map(questionBank.map((q) => [q.id, q])), [questionBank]);
+  const linkedIds = useMemo(() => new Set(linked.map((sq) => sq.questionId)), [linked]);
 
   const linkedQuestions = useMemo(
-    () => linkedIds.map((id) => getQuestionById(id)).filter((q): q is NonNullable<typeof q> => Boolean(q)),
-    [linkedIds],
+    () =>
+      linked
+        .map((sq) => ({ sessionQuestion: sq, question: questionById.get(sq.questionId) }))
+        .filter((entry): entry is { sessionQuestion: SessionQuestion; question: Question } => Boolean(entry.question)),
+    [linked, questionById],
   );
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return questionBank;
     return questionBank.filter(
-      (item) => item.text.toLowerCase().includes(q) || item.topic.toLowerCase().includes(q),
+      (item) => item.body.toLowerCase().includes(q) || item.topic.toLowerCase().includes(q),
     );
-  }, [query]);
+  }, [query, questionBank]);
 
-  function link(id: string) {
-    setLinkedIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
+  function link(questionId: string) {
+    if (isPending || linkedIds.has(questionId)) return;
+    startTransition(async () => {
+      const response = await linkQuestion(sessionId, { questionId, displayOrder: linked.length + 1 });
+      if (response.success && response.data) {
+        setLinked((prev) => [...prev, response.data]);
+      } else {
+        toast.error(response.message ?? 'Failed to link question');
+      }
+    });
   }
 
-  function unlink(id: string) {
-    setLinkedIds((prev) => prev.filter((x) => x !== id));
+  function unlink(questionId: string) {
+    if (isPending) return;
+    startTransition(async () => {
+      const response = await unlinkQuestion({ sessionId, questionId });
+      if (response.success) {
+        setLinked((prev) => prev.filter((sq) => sq.questionId !== questionId));
+      } else {
+        toast.error(response.message ?? 'Failed to unlink question');
+      }
+    });
   }
 
   return (
@@ -45,8 +78,13 @@ export function QuestionLinker({ initialLinkedIds }: { initialLinkedIds: string[
         </CardHeader>
         <CardContent className="space-y-2">
           {linkedQuestions.length > 0 ? (
-            linkedQuestions.map((q, index) => (
-              <LinkedQuestionRow key={q.id} question={q} order={index + 1} onUnlink={unlink} />
+            linkedQuestions.map(({ sessionQuestion, question }) => (
+              <LinkedQuestionRow
+                key={question.id}
+                question={question}
+                order={sessionQuestion.displayOrder}
+                onUnlink={unlink}
+              />
             ))
           ) : (
             <p className="rounded-lg border border-dashed border-border py-8 text-center text-sm text-muted-foreground">
@@ -80,7 +118,7 @@ export function QuestionLinker({ initialLinkedIds }: { initialLinkedIds: string[
                 <QuestionSearchResultRow
                   key={q.id}
                   question={q}
-                  linked={linkedIds.includes(q.id)}
+                  linked={linkedIds.has(q.id)}
                   onLink={link}
                 />
               ))
