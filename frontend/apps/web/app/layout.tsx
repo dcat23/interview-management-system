@@ -2,6 +2,20 @@ import './global.css';
 import Providers from './providers';
 import { Layout } from '../components/layout';
 import { ReactNode } from 'react';
+import { Crimson_Pro, Source_Code_Pro } from 'next/font/google';
+
+// Imported for their font-loading side effect (self-hosted @font-face
+// injection under the real Google font family name) — referenced by
+// literal name via --font-sans/--font-mono in global.css.
+Crimson_Pro({
+  subsets: ['latin'],
+  weight: ['200', '300', '400', '500', '600', '700', '800'],
+  style: ['normal', 'italic'],
+});
+Source_Code_Pro({
+  subsets: ['latin'],
+  weight: ['200', '400', '600', '700'],
+});
 
 export const metadata = {
   title: 'web',
@@ -14,8 +28,8 @@ export default function RootLayout({
   children: ReactNode
 }) {
   return (
-    <html lang="en">
-      <body>
+    <html lang="en" suppressHydrationWarning>
+      <body className="font-sans antialiased">
         <Providers>
           <Layout>
             {children}
