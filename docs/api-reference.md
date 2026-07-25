@@ -182,6 +182,43 @@ Update user fields.
 
 ---
 
+## Candidates
+
+Minimal, name-only candidate lookups for display purposes (e.g. rendering a candidate's name on a process/session card). Deliberately separate from `GET /users/:id`, which is admin/self-only — marketer and supporter need candidate names but must not gain general user-lookup access.
+
+### `GET /candidates` · `admin` `marketer` `supporter`
+
+List candidates, paginated.
+
+**Query params:** `ids` (optional, repeatable — filter to a specific set of candidate ids for batch name resolution), `page` (default `0`), `limit` (default `20`)
+
+**Response `200`**
+```json
+{
+  "data": [
+    { "id": "uuid", "name": "string" }
+  ],
+  "total": 15,
+  "page": 0,
+  "limit": 20
+}
+```
+
+---
+
+### `GET /candidates/:id` · `admin` `marketer` `supporter`
+
+Get a candidate by ID.
+
+**Response `200`**
+```json
+{ "id": "uuid", "name": "string" }
+```
+
+Returns `404` if the id does not exist or does not belong to a user with the `CANDIDATE` role.
+
+---
+
 ## End clients
 
 ### `GET /clients` · `admin` `marketer` `supporter`

@@ -1,4 +1,5 @@
 export * from './lib/types/api';
+export * from './lib/types/client';
 export * from './lib/types/nav';
 export * from './lib/types/process';
 export * from './lib/types/question';

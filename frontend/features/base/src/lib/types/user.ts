@@ -9,3 +9,13 @@
  */
 export type Role = 'candidate' | 'marketer' | 'supporter' | 'admin';
 
+/**
+ * Matches CandidateResponse on the backend (user/dto/CandidateResponse.java)
+ * — a minimal, name-only projection of a CANDIDATE-role user, distinct from
+ * the admin-only User type.
+ */
+export interface Candidate {
+  id: string;
+  name: string;
+}
+
