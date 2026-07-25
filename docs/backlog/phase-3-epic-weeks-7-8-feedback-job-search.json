@@ -1,0 +1,289 @@
+{
+  "summary": "Feedback, Background Job, and Full-Text Search",
+  "description": "Implement the feedback draft/submit lifecycle scoped to sessions. Deliver the timeline and cross-round feedback rollup endpoints. Build the background job service that auto-transitions sessions from SCHEDULED to IN_REVIEW, with PostgreSQL advisory locking, Micrometer metrics, and Kafka event publication. Add the Kafka consumer for notifications.send dispatching via AWS SES. Implement full-text question search using PostgreSQL tsvector and auto-generate OpenAPI docs.\n\nKey paths: <apps/api/src/main/java/com/ims/feedback>, <services/background-job/src/main/java/com/ims/job>",
+  "labels": ["feedback", "background-job", "kafka", "ses", "full-text-search", "openapi", "phase-3"],
+  "priority": "High",
+  "userType": "interview supporter",
+  "functionality": "submit structured feedback after conducting a session and have the platform automatically progress sessions and notify stakeholders",
+  "benefit": "closes the full interview lifecycle loop — feedback reaches admins and marketers, and background automation removes manual status management overhead",
+  "stories": [
+    {
+      "summary": "Implement feedback draft and submit lifecycle",
+      "description": "Implement the Feedback module with draft create/update and a one-way submit action. Once submitted, feedback is locked and cannot be edited. Supporters can only access their own feedback; admins can read all submitted feedback for a session.\n\nEndpoints: POST /sessions/:id/feedback (create draft), PATCH /sessions/:id/feedback (update draft), POST /sessions/:id/feedback/submit (submit and lock).\n\nKey paths: <apps/api/src/main/java/com/ims/feedback/FeedbackService.java>, <apps/api/src/main/java/com/ims/feedback/FeedbackController.java>",
+      "labels": ["feedback", "crud", "lifecycle", "phase-3"],
+      "priority": "High",
+      "storyPoints": 5,
+      "acceptanceCriteria": [
+        {
+          "scenario": "Supporter creates a feedback draft",
+          "given": "an authenticated supporter is assigned to a session",
+          "when": "POST /sessions/:id/feedback is called with feedback content",
+          "then": "a feedback record is created in DRAFT status and a 201 response is returned"
+        },
+        {
+          "scenario": "Submitted feedback cannot be edited",
+          "given": "a feedback record has been submitted via POST /sessions/:id/feedback/submit",
+          "when": "PATCH /sessions/:id/feedback is called",
+          "then": "a 409 Conflict response is returned and the feedback remains unchanged"
+        },
+        {
+          "scenario": "Admin can read all submitted feedback for a session",
+          "given": "multiple supporters have submitted feedback for a session",
+          "when": "an admin calls GET /sessions/:id/feedback",
+          "then": "all submitted feedback records for that session are returned"
+        },
+        {
+          "scenario": "Supporter cannot read another supporter's feedback",
+          "given": "a supporter calls GET /sessions/:id/feedback",
+          "when": "the request is processed",
+          "then": "only feedback authored by that supporter is returned"
+        }
+      ],
+      "tasks": [
+        {
+          "summary": "Implement FeedbackEntity, repository, and service",
+          "description": "Create JPA entity mapping to the feedback table with status field (DRAFT/SUBMITTED). Implement FeedbackService with create, update (draft only), and submit methods. Submit sets submitted_at and locks the record."
+        },
+        {
+          "summary": "Implement FeedbackController with role-scoped access",
+          "description": "Expose feedback CRUD and submit endpoints. Enforce: supporters access own feedback only, admins access all submitted feedback per session."
+        },
+        {
+          "summary": "Add integration tests for feedback lifecycle",
+          "description": "Cover: create draft, update draft, submit, attempt to edit submitted (expect 409), admin read all, supporter read own only."
+        }
+      ]
+    },
+    {
+      "summary": "Implement process timeline and cross-round feedback rollup endpoints",
+      "description": "Implement GET /processes/:id/timeline returning a chronological rollup of all sessions, their statuses, status history events, and feedback submission indicators for a given process. Implement GET /processes/:id/feedback returning all submitted feedback across all rounds of the process, visible to admin and marketer only.\n\nKey paths: <apps/api/src/main/java/com/ims/process/TimelineService.java>",
+      "labels": ["process", "feedback", "reporting", "phase-3"],
+      "priority": "Medium",
+      "storyPoints": 3,
+      "acceptanceCriteria": [
+        {
+          "scenario": "Timeline returns all sessions with status history",
+          "given": "a process has 3 sessions with various statuses and status history events",
+          "when": "an admin calls GET /processes/:id/timeline",
+          "then": "a response is returned with each session and its full status history ordered chronologically"
+        },
+        {
+          "scenario": "Feedback rollup returns all submitted feedback across rounds",
+          "given": "a process has feedback submitted in rounds 1 and 2",
+          "when": "an admin calls GET /processes/:id/feedback",
+          "then": "all submitted feedback records are returned grouped by session/round"
+        },
+        {
+          "scenario": "Candidate cannot access timeline with feedback details",
+          "given": "a candidate calls GET /processes/:id/feedback",
+          "when": "the request is processed",
+          "then": "a 403 Forbidden response is returned"
+        }
+      ],
+      "tasks": [
+        {
+          "summary": "Implement TimelineService with session and status history aggregation",
+          "description": "Query sessions and their STATUS_HISTORY rows for a process. Map to a TimelineResponse DTO with sessions ordered by round and events ordered by changed_at."
+        },
+        {
+          "summary": "Implement cross-round feedback rollup query and endpoint",
+          "description": "Join sessions → feedback for a process, filtering to SUBMITTED feedback only. Expose as GET /processes/:id/feedback restricted to admin and marketer."
+        },
+        {
+          "summary": "Add integration tests for timeline and feedback rollup",
+          "description": "Cover: multi-round process timeline ordering, feedback rollup completeness, candidate 403 on feedback endpoint."
+        }
+      ]
+    },
+    {
+      "summary": "Build background job service with advisory lock, Kafka publication, and Micrometer metrics",
+      "description": "Build the background job as a separate Spring Boot service under <services/background-job>. On an hourly @Scheduled trigger, acquire a PostgreSQL advisory lock to prevent concurrent execution, query sessions where status=SCHEDULED and scheduled_at < now(), transition each to IN_REVIEW, write STATUS_HISTORY with change_source=BACKGROUND_JOB, and publish events to both session.status.changed and notifications.send Kafka topics. Instrument with custom Micrometer metrics.\n\nCustom metrics:\n- background.job.executions (counter)\n- background.job.sessions.transitioned (counter)\n- background.job.duration (timer)\n\nKey paths: <services/background-job/src/main/java/com/ims/job/SessionTransitionJob.java>",
+      "labels": ["background-job", "kafka", "advisory-lock", "micrometer", "phase-3"],
+      "priority": "High",
+      "storyPoints": 8,
+      "acceptanceCriteria": [
+        {
+          "scenario": "Job transitions overdue sessions to IN_REVIEW",
+          "given": "two sessions have status=SCHEDULED and scheduled_at in the past",
+          "when": "the background job executes",
+          "then": "both sessions are updated to IN_REVIEW, STATUS_HISTORY rows are written with change_source=BACKGROUND_JOB, and events are published to session.status.changed"
+        },
+        {
+          "scenario": "Advisory lock prevents concurrent execution",
+          "given": "the job is already running and holds the advisory lock",
+          "when": "a second instance attempts to run",
+          "then": "the second instance fails to acquire the lock and exits without processing any sessions"
+        },
+        {
+          "scenario": "Job publishes to notifications.send for each transitioned session",
+          "given": "three sessions are transitioned by the job",
+          "when": "the job completes",
+          "then": "three messages are published to the notifications.send Kafka topic, one per session"
+        },
+        {
+          "scenario": "Custom Micrometer metrics are emitted per run",
+          "given": "the job has executed and transitioned 2 sessions",
+          "when": "metrics are queried",
+          "then": "background.job.executions is incremented by 1, background.job.sessions.transitioned is incremented by 2, and background.job.duration records the run time"
+        }
+      ],
+      "tasks": [
+        {
+          "summary": "Scaffold background-job Spring Boot service",
+          "description": "Create Spring Boot project under <services/background-job> with spring-boot-starter-data-jpa, spring-kafka, and micrometer-registry-cloudwatch2. Share database connection to the main RDS instance."
+        },
+        {
+          "summary": "Implement hourly @Scheduled trigger and PostgreSQL advisory lock",
+          "description": "Use @Scheduled(cron) for hourly execution. Acquire advisory lock via pg_try_advisory_lock() before processing. Release lock in a finally block. Skip run if lock is not acquired."
+        },
+        {
+          "summary": "Implement session query, transition, and STATUS_HISTORY write",
+          "description": "Query sessions where status=SCHEDULED and scheduled_at < now(). For each, update status to IN_REVIEW and write a STATUS_HISTORY row with change_source=BACKGROUND_JOB."
+        },
+        {
+          "summary": "Implement Kafka event publication for session.status.changed and notifications.send",
+          "description": "After each session is transitioned, publish a SessionStatusChangedEvent to session.status.changed and a NotificationEvent to notifications.send using KafkaTemplate."
+        },
+        {
+          "summary": "Instrument custom Micrometer metrics",
+          "description": "Register background.job.executions Counter, background.job.sessions.transitioned Counter, and background.job.duration Timer. Increment/record on each job execution."
+        },
+        {
+          "summary": "Add integration tests with Testcontainers Postgres and Kafka",
+          "description": "Test: overdue sessions are transitioned, advisory lock blocks concurrent run, Kafka messages are published per session, metrics are incremented correctly."
+        }
+      ]
+    },
+    {
+      "summary": "Implement Kafka notification consumer dispatching via AWS SES",
+      "description": "Implement a Kafka consumer in the background-job service subscribing to the notifications.send topic. For each message, determine the notification type and dispatch a templated email via AWS SES to the appropriate recipients. Handle consumer failures by routing to the DLQ (notifications.send.dlq).\n\nNotification types and recipients:\n- SESSION_SCHEDULED: candidate and supporter\n- SESSION_IN_REVIEW: admin and marketer\n- SESSION_OUTCOME: admin and marketer\n- FEEDBACK_SUBMITTED: admin\n\nKey paths: <services/background-job/src/main/java/com/ims/job/NotificationConsumer.java>",
+      "labels": ["kafka", "ses", "notifications", "background-job", "phase-3"],
+      "priority": "High",
+      "storyPoints": 5,
+      "acceptanceCriteria": [
+        {
+          "scenario": "SESSION_SCHEDULED notification dispatches email to candidate and supporter",
+          "given": "a SESSION_SCHEDULED event is consumed from notifications.send",
+          "when": "the consumer processes the message",
+          "then": "an email is sent via AWS SES to both the candidate and the assigned supporter"
+        },
+        {
+          "scenario": "Consumer failure routes message to DLQ",
+          "given": "the SES API call throws an exception during notification dispatch",
+          "when": "the consumer exhausts its retry attempts",
+          "then": "the message is routed to notifications.send.dlq and not reprocessed"
+        },
+        {
+          "scenario": "Unknown notification type is handled gracefully",
+          "given": "a message with an unrecognised notification type is consumed",
+          "when": "the consumer processes the message",
+          "then": "an error is logged and the message is routed to the DLQ without crashing the consumer"
+        }
+      ],
+      "tasks": [
+        {
+          "summary": "Implement Kafka consumer for notifications.send",
+          "description": "Create a @KafkaListener subscribing to notifications.send with consumer group background-job.notification-sender. Deserialise the NotificationEvent payload."
+        },
+        {
+          "summary": "Implement AWS SES email dispatch per notification type",
+          "description": "Use AWS SDK v2 SesClient. Map each notification type to the correct recipient list and email template. Read sender address and template IDs from environment."
+        },
+        {
+          "summary": "Configure DLQ routing and retry policy",
+          "description": "Configure a SeekToCurrentErrorHandler with a fixed back-off and max retry attempts. Wire a DeadLetterPublishingRecoverer routing failed messages to notifications.send.dlq."
+        },
+        {
+          "summary": "Add integration test for notification consumer with Testcontainers Kafka",
+          "description": "Publish a test notification event to the topic and verify the correct SES call is made (via mock SesClient). Verify DLQ routing on simulated SES failure."
+        }
+      ]
+    },
+    {
+      "summary": "Implement full-text question search with PostgreSQL tsvector",
+      "description": "Add full-text search to the question bank using PostgreSQL tsvector and GIN indexing. Expose GET /questions?q=:term supporting full-text search across question text and topic fields. Update the search_vector column via a Flyway migration adding a tsvector generated column and GIN index. Use to_tsquery for query parsing with plainto_tsquery as a safe fallback.\n\nKey paths: <apps/api/src/main/java/com/ims/question/QuestionSearchService.java>, <apps/api/src/main/resources/db/migration>",
+      "labels": ["question", "full-text-search", "postgres", "tsvector", "phase-3"],
+      "priority": "Medium",
+      "storyPoints": 5,
+      "acceptanceCriteria": [
+        {
+          "scenario": "Full-text search returns relevant questions",
+          "given": "the question bank contains questions with varying topics and text",
+          "when": "GET /questions?q=java+concurrency is called",
+          "then": "only questions matching the search terms in their text or topic are returned, ranked by relevance"
+        },
+        {
+          "scenario": "Empty search term returns all questions paginated",
+          "given": "no q parameter is provided",
+          "when": "GET /questions is called",
+          "then": "all non-deleted questions are returned in paginated form"
+        },
+        {
+          "scenario": "Malformed search query does not crash the endpoint",
+          "given": "a q parameter contains special characters that would break a raw tsquery",
+          "when": "GET /questions?q=:!! is called",
+          "then": "plainto_tsquery sanitises the input and a valid response is returned"
+        }
+      ],
+      "tasks": [
+        {
+          "summary": "Add search_vector tsvector column and GIN index via Flyway migration",
+          "description": "Write a Flyway migration adding a generated tsvector column on the questions table combining question_text and topic. Create a GIN index on the column."
+        },
+        {
+          "summary": "Implement QuestionSearchService with tsvector query",
+          "description": "Use a native query with to_tsvector and plainto_tsquery for the search. Apply Spring Data pagination. Fall back to returning all questions when q is absent or blank."
+        },
+        {
+          "summary": "Expose GET /questions with optional q search parameter",
+          "description": "Add search query parameter to the existing QuestionController list endpoint. Route to QuestionSearchService when q is present."
+        },
+        {
+          "summary": "Add integration tests for full-text search",
+          "description": "Use Testcontainers Postgres with real GIN index. Cover: matching results returned, no results for non-matching term, empty q returns all, special character input handled safely."
+        }
+      ]
+    },
+    {
+      "summary": "Auto-generate OpenAPI docs and complete Testcontainers integration test suite",
+      "description": "Configure springdoc-openapi to auto-generate an OpenAPI 3.0 spec from all controllers. Annotate controllers and DTOs with OpenAPI annotations for accurate schema and security documentation. Ensure Testcontainers integration tests covering all API endpoints per role are complete and passing as the Phase 3 milestone requirement.\n\nKey paths: <apps/api/src/main/java/com/ims/config/OpenApiConfig.java>",
+      "labels": ["openapi", "documentation", "testing", "testcontainers", "phase-3"],
+      "priority": "Medium",
+      "storyPoints": 3,
+      "acceptanceCriteria": [
+        {
+          "scenario": "OpenAPI spec is accessible at runtime",
+          "given": "the application is running",
+          "when": "GET /v3/api-docs is called",
+          "then": "a valid OpenAPI 3.0 JSON document is returned listing all endpoints with request/response schemas"
+        },
+        {
+          "scenario": "Swagger UI is available in non-production environments",
+          "given": "the application is running in dev or staging profile",
+          "when": "GET /swagger-ui.html is accessed",
+          "then": "the Swagger UI renders all endpoints and allows test invocations with JWT auth"
+        },
+        {
+          "scenario": "All integration tests pass against Testcontainers",
+          "given": "the full test suite is run with Testcontainers providing Postgres, Redis, and Kafka",
+          "when": "mvn test is executed",
+          "then": "all integration tests pass with no failures"
+        }
+      ],
+      "tasks": [
+        {
+          "summary": "Add springdoc-openapi dependency and OpenAPI config",
+          "description": "Add springdoc-openapi-starter-webmvc-ui. Configure @OpenAPIDefinition with title, version, and JWT SecurityScheme. Disable Swagger UI in prod profile."
+        },
+        {
+          "summary": "Annotate controllers and DTOs with OpenAPI annotations",
+          "description": "Add @Operation, @ApiResponse, and @Schema annotations to all controllers and request/response DTOs to produce accurate schema documentation."
+        },
+        {
+          "summary": "Complete integration test coverage for all Phase 3 endpoints",
+          "description": "Audit all endpoints across auth, user, client, process, session, question, and feedback modules. Write any missing integration tests using Spring Boot Test + Testcontainers (Postgres + Redis + Kafka)."
+        }
+      ]
+    }
+  ]
+}

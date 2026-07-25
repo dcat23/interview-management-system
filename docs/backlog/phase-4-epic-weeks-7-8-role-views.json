@@ -1,0 +1,247 @@
+{
+  "summary": "Role Views — Candidate, Marketer, Supporter, Admin",
+  "description": "Build the full set of role-specific page views for all four user types. Each view fetches data from the Spring Boot API using React Query and the configured ApiClient, validates responses with Zod schemas, and renders role-appropriate UI using Tailwind CSS and shadcn/ui components. Auth, route guards, layouts, and Zod schemas are complete from Phase 4 Weeks 5-6. This epic wires those foundations to the actual page routes defined in the roadmap.\n\nCandidate routes: /candidate/processes, /candidate/processes/:id, /candidate/sessions/:id\nMarketer routes: /marketer/processes, /marketer/processes/new, /marketer/processes/:id, /marketer/sessions/new, /marketer/sessions/:id/status\nSupporter routes: /supporter/sessions, /supporter/sessions/:id, /supporter/sessions/:id/feedback\nAdmin routes: /admin/processes, /admin/questions, /admin/questions/new\n\nKey paths: <apps/web/app/candidate>, <apps/web/app/marketer>, <apps/web/app/supporter>, <apps/web/app/admin>",
+  "labels": ["candidate", "marketer", "supporter", "admin", "react-query", "zod", "phase-4"],
+  "priority": "High",
+  "userType": "all roles",
+  "functionality": "navigate role-specific pages to view, create, and manage interview processes, sessions, questions, and feedback",
+  "benefit": "delivers the full user-facing product for all four roles, completing the Phase 4 milestone",
+  "stories": [
+    {
+      "summary": "Build Candidate views — process list and session detail",
+      "description": "Implement the three candidate-facing pages. The process list shows all processes assigned to the authenticated candidate with session count and technology. The process detail shows a session timeline ordered by round. The session detail shows prep questions ordered by display_order.\n\nEndpoints consumed:\n- GET /processes (filtered to candidate's own)\n- GET /processes/:id\n- GET /processes/:id/sessions\n- GET /sessions/:id\n- GET /sessions/:id/questions\n\nKey paths: <apps/web/app/candidate/processes/page.tsx>, <apps/web/app/candidate/processes/[id]/page.tsx>, <apps/web/app/candidate/sessions/[id]/page.tsx>",
+      "labels": ["candidate", "processes", "sessions", "questions", "phase-4"],
+      "priority": "High",
+      "storyPoints": 5,
+      "acceptanceCriteria": [
+        {
+          "scenario": "Candidate sees only their own processes",
+          "given": "an authenticated candidate visits /candidate/processes",
+          "when": "the page loads",
+          "then": "only processes where the candidate ID matches the authenticated user are listed, each showing technology and session count"
+        },
+        {
+          "scenario": "Process detail shows session timeline ordered by round",
+          "given": "a candidate visits /candidate/processes/:id",
+          "when": "the page loads",
+          "then": "all sessions for the process are shown ordered by round, each displaying status, mode, and scheduled date"
+        },
+        {
+          "scenario": "Session detail shows questions ordered by display_order",
+          "given": "a candidate visits /candidate/sessions/:id",
+          "when": "the page loads",
+          "then": "prep questions linked to the session are listed in display_order ascending, showing body and topic"
+        },
+        {
+          "scenario": "Loading skeleton shown while data is fetching",
+          "given": "any candidate page is loading",
+          "when": "the React Query request is in flight",
+          "then": "a skeleton placeholder is rendered in place of the content"
+        },
+        {
+          "scenario": "Empty state shown when no processes exist",
+          "given": "a candidate has no processes assigned",
+          "when": "/candidate/processes loads",
+          "then": "an empty state message is displayed rather than an empty list"
+        }
+      ],
+      "tasks": [
+        {
+          "summary": "Define Zod schemas and React Query hooks for process and session endpoints",
+          "description": "Create or import interviewProcessResponseSchema and interviewSessionResponseSchema from lib/schemas. Write useProcesses, useProcess, useProcessSessions, useSession, and useSessionQuestions React Query hooks in lib/hooks/ using the configured apiClient singleton."
+        },
+        {
+          "summary": "Implement /candidate/processes page",
+          "description": "Create <apps/web/app/candidate/processes/page.tsx>. Use useProcesses hook. Render a card list with technology, status badge, and session count per process. Each card links to /candidate/processes/:id. Show loading skeleton and empty state."
+        },
+        {
+          "summary": "Implement /candidate/processes/:id page",
+          "description": "Create <apps/web/app/candidate/processes/[id]/page.tsx>. Use useProcess and useProcessSessions hooks. Render a page header with technology and status. Below, render sessions in a timeline ordered by round — each entry shows round label, status badge, mode, and scheduled date. Each session links to /candidate/sessions/:id."
+        },
+        {
+          "summary": "Implement /candidate/sessions/:id page",
+          "description": "Create <apps/web/app/candidate/sessions/[id]/page.tsx>. Use useSession and useSessionQuestions hooks. Show session metadata (round, mode, scheduled date, status). Below, list questions ordered by display_order with body and topic fields. Show empty state when no questions are linked."
+        }
+      ]
+    },
+    {
+      "summary": "Build Marketer views — process management and status transitions",
+      "description": "Implement the five marketer-facing pages. The process list includes filters for client, status, and technology. The create process form validates with Zod and posts to the backend. The process detail shows all sessions. The schedule session form posts to /processes/:id/sessions. The status transition page shows valid transitions and posts to /sessions/:id/transition.\n\nEndpoints consumed:\n- GET /processes (with query params: clientId, status, technology)\n- POST /processes\n- GET /processes/:id\n- GET /processes/:id/sessions\n- POST /processes/:id/sessions\n- GET /sessions/:id\n- GET /sessions/:id/transitions (available transitions for role)\n- POST /sessions/:id/transition\n- GET /clients (for process form client select)\n\nKey paths: <apps/web/app/marketer/processes>, <apps/web/app/marketer/sessions>",
+      "labels": ["marketer", "processes", "sessions", "transitions", "phase-4"],
+      "priority": "High",
+      "storyPoints": 8,
+      "acceptanceCriteria": [
+        {
+          "scenario": "Marketer can filter processes by client, status, and technology",
+          "given": "a marketer visits /marketer/processes and sets a status filter",
+          "when": "the filter is applied",
+          "then": "only processes matching the filter are shown and the URL search params are updated"
+        },
+        {
+          "scenario": "Create process form validates required fields before submission",
+          "given": "a marketer submits the new process form with a missing candidateId",
+          "when": "the Zod schema validates the form",
+          "then": "a field-level error is shown and no API call is made"
+        },
+        {
+          "scenario": "Successfully created process redirects to process detail",
+          "given": "a marketer fills in all required fields and submits /marketer/processes/new",
+          "when": "the POST /processes call succeeds",
+          "then": "the user is redirected to /marketer/processes/:id for the new process"
+        },
+        {
+          "scenario": "Status transition shows only valid next states for the marketer role",
+          "given": "a marketer visits /marketer/sessions/:id/status",
+          "when": "the page loads",
+          "then": "only transitions permitted for the MARKETER role from the current status are shown as selectable options"
+        },
+        {
+          "scenario": "Successful transition shows updated status",
+          "given": "a marketer applies a status transition",
+          "when": "POST /sessions/:id/transition succeeds",
+          "then": "the status badge on the page updates to the new status and a success toast is shown"
+        }
+      ],
+      "tasks": [
+        {
+          "summary": "Define Zod schemas and React Query hooks for marketer endpoints",
+          "description": "Create or import process and session schemas. Write useProcesses (with filter params), useProcess, useCreateProcess (mutation), useProcessSessions, useCreateSession (mutation), useSession, useTransitionSession (mutation) hooks."
+        },
+        {
+          "summary": "Implement /marketer/processes page with filters",
+          "description": "Create <apps/web/app/marketer/processes/page.tsx>. Read clientId, status, and technology from URL search params. Pass as query params to useProcesses. Render a filter bar (controlled select inputs for status and technology, searchable select for client). Render process rows with client name, technology, status badge, session count, and a link to the detail page. Link to /marketer/processes/new."
+        },
+        {
+          "summary": "Implement /marketer/processes/new page with create form",
+          "description": "Create <apps/web/app/marketer/processes/new/page.tsx>. Build a controlled form with candidateId (user search or UUID input), clientId (select from GET /clients), technology (text input), and description (textarea). Validate with createProcessRequestSchema on submit. Call useCreateProcess mutation. On success redirect to /marketer/processes/:id."
+        },
+        {
+          "summary": "Implement /marketer/processes/:id page with session list",
+          "description": "Create <apps/web/app/marketer/processes/[id]/page.tsx>. Show process metadata header (client, technology, status, marketer). Below, list all sessions as a table with round, supporter, scheduled date, status, and a link to /marketer/sessions/:id/status for each. Include a 'Schedule Session' button linking to /marketer/sessions/new?processId=:id."
+        },
+        {
+          "summary": "Implement /marketer/sessions/new page with schedule session form",
+          "description": "Create <apps/web/app/marketer/sessions/new/page.tsx>. Pre-populate processId from URL search param. Form fields: supporterId (user select), round (text), mode (select: ONLINE/IN_PERSON/HYBRID), durationMinutes (number), description (textarea), scheduledAt (datetime-local input). Validate with createSessionRequestSchema. Call useCreateSession. On success redirect to the process detail page."
+        },
+        {
+          "summary": "Implement /marketer/sessions/:id/status page with transition controls",
+          "description": "Create <apps/web/app/marketer/sessions/[id]/status/page.tsx>. Show current session status prominently. Render valid next-state buttons based on role (MARKETER can: CANCEL from SCHEDULED or IN_REVIEW; set PASSED, REJECTED, NO_SHOW from IN_REVIEW). Each button opens a confirmation dialog showing current → next state. On confirmation call useTransitionSession. Show success/error toast."
+        }
+      ]
+    },
+    {
+      "summary": "Build Supporter views — session list, question linking, and feedback submission",
+      "description": "Implement the three supporter-facing pages. The session list shows sessions where the supporter is assigned. The session detail shows session metadata and question linking UI. The feedback page shows the draft editor with submit action.\n\nEndpoints consumed:\n- GET /sessions (filtered to assigned supporter)\n- GET /sessions/:id\n- GET /sessions/:id/questions (linked questions with display_order)\n- GET /questions (for question search/link UI)\n- POST /sessions/:id/questions (link question)\n- DELETE /sessions/:id/questions/:questionId (unlink)\n- GET /sessions/:id/feedback (supporter's own feedback)\n- POST /sessions/:id/feedback (create draft)\n- PATCH /sessions/:id/feedback (update draft)\n- POST /sessions/:id/feedback/submit (lock and submit)\n\nKey paths: <apps/web/app/supporter/sessions>",
+      "labels": ["supporter", "sessions", "questions", "feedback", "phase-4"],
+      "priority": "High",
+      "storyPoints": 8,
+      "acceptanceCriteria": [
+        {
+          "scenario": "Supporter sees only their assigned sessions",
+          "given": "a supporter visits /supporter/sessions",
+          "when": "the page loads",
+          "then": "only sessions where the supporterId matches the authenticated user are listed"
+        },
+        {
+          "scenario": "Question linking UI allows search and link",
+          "given": "a supporter visits /supporter/sessions/:id and searches for a question",
+          "when": "a question result is selected and linked",
+          "then": "POST /sessions/:id/questions is called and the question appears in the linked list"
+        },
+        {
+          "scenario": "Feedback draft can be created and updated",
+          "given": "a supporter visits /supporter/sessions/:id/feedback with no existing feedback",
+          "when": "they type into the editor and save",
+          "then": "POST /sessions/:id/feedback creates a DRAFT record and the form auto-saves updates via PATCH"
+        },
+        {
+          "scenario": "Submitted feedback is locked and the editor is disabled",
+          "given": "a supporter has submitted their feedback",
+          "when": "they revisit /supporter/sessions/:id/feedback",
+          "then": "the feedback text is shown read-only and the submit button is hidden"
+        },
+        {
+          "scenario": "Submit confirmation dialog prevents accidental submission",
+          "given": "a supporter clicks Submit Feedback",
+          "when": "the confirmation dialog is shown",
+          "then": "the feedback is only submitted after the user confirms; cancelling returns to the editor"
+        }
+      ],
+      "tasks": [
+        {
+          "summary": "Define Zod schemas and React Query hooks for supporter endpoints",
+          "description": "Create feedbackResponseSchema (id, sessionId, status DRAFT|SUBMITTED, content, submittedAt). Write useSupporterSessions, useSession, useSessionQuestions, useQuestions (with search), useLinkQuestion (mutation), useUnlinkQuestion (mutation), useFeedback, useCreateFeedback (mutation), useUpdateFeedback (mutation), useSubmitFeedback (mutation) hooks."
+        },
+        {
+          "summary": "Implement /supporter/sessions page",
+          "description": "Create <apps/web/app/supporter/sessions/page.tsx>. List sessions assigned to the current user. Each row shows process technology, round, scheduled date, and status badge. Link each row to /supporter/sessions/:id."
+        },
+        {
+          "summary": "Implement /supporter/sessions/:id page with question linking UI",
+          "description": "Create <apps/web/app/supporter/sessions/[id]/page.tsx>. Show session metadata. Below, render a two-panel layout: left panel lists linked questions with drag-to-reorder (or number inputs for display_order) and an unlink button. Right panel has a search input that calls GET /questions?q=:term and renders results as linkable items. Link button calls POST /sessions/:id/questions. Include a link to /supporter/sessions/:id/feedback."
+        },
+        {
+          "summary": "Implement /supporter/sessions/:id/feedback page",
+          "description": "Create <apps/web/app/supporter/sessions/[id]/feedback/page.tsx>. Fetch existing feedback. If DRAFT, show a textarea with the current content and a Save (auto-debounced PATCH) and Submit buttons. Submit opens a confirmation dialog; on confirm, calls POST /sessions/:id/feedback/submit. If SUBMITTED, render content read-only with a submitted timestamp. If no feedback exists, initialise with POST on first keypress."
+        }
+      ]
+    },
+    {
+      "summary": "Build Admin views — process oversight and question bank management",
+      "description": "Implement the three admin-facing pages. The process list has advanced filters (all fields). The question bank supports client + topic + round + full-text search filters. The new question form creates a question linked to a client.\n\nEndpoints consumed:\n- GET /processes (with all filter params: candidateId, clientId, marketerId, status, technology)\n- GET /processes/:id\n- GET /questions (with q, clientId, topic, round, page, limit)\n- POST /questions\n- GET /clients (for filter selects)\n\nKey paths: <apps/web/app/admin/processes>, <apps/web/app/admin/questions>",
+      "labels": ["admin", "processes", "questions", "phase-4"],
+      "priority": "High",
+      "storyPoints": 5,
+      "acceptanceCriteria": [
+        {
+          "scenario": "Admin can filter processes by all available dimensions",
+          "given": "an admin visits /admin/processes",
+          "when": "they apply filters for client and status",
+          "then": "the process list updates to match and the filter state is reflected in the URL"
+        },
+        {
+          "scenario": "Full-text question search returns relevant results",
+          "given": "an admin enters a search term in the /admin/questions search bar",
+          "when": "the debounced query fires",
+          "then": "only questions matching the term in body or topic are shown, using the backend tsvector search"
+        },
+        {
+          "scenario": "Question list supports pagination",
+          "given": "the question bank has more than one page of results",
+          "when": "the admin clicks next page",
+          "then": "the next page of results is loaded and the page indicator updates"
+        },
+        {
+          "scenario": "Create question form validates and persists",
+          "given": "an admin fills in clientId, topic, round, and body and submits",
+          "when": "the Zod schema validates and POST /questions succeeds",
+          "then": "the user is redirected to /admin/questions with the new question visible"
+        },
+        {
+          "scenario": "Inactive questions are visually distinguished",
+          "given": "the admin question list includes inactive questions",
+          "when": "the list renders",
+          "then": "inactive questions are shown with a muted style and an 'Inactive' badge"
+        }
+      ],
+      "tasks": [
+        {
+          "summary": "Define Zod schemas and React Query hooks for admin endpoints",
+          "description": "Create or import interviewProcessResponseSchema and questionResponseSchema. Write useAdminProcesses (with all filter params), useAdminQuestions (with q, clientId, topic, round, pagination), useCreateQuestion (mutation) hooks. Use pageResponseSchema<T> for paginated results."
+        },
+        {
+          "summary": "Implement /admin/processes page with advanced filters",
+          "description": "Create <apps/web/app/admin/processes/page.tsx>. Render filter controls for clientId (select), marketerId (select), candidateId (text), status (select), and technology (text). All filters are synced to URL search params. Process table shows candidate email, client name, technology, status, marketer email, and session count. Rows link to /admin/processes/:id (reuse the process detail with full data visibility)."
+        },
+        {
+          "summary": "Implement /admin/questions page with search and filters",
+          "description": "Create <apps/web/app/admin/questions/page.tsx>. Render a search input (debounced 300ms, updates q param), a client filter select, a topic text filter, and a round text filter. Below, render a table of questions showing client, topic, round, a truncated body, version, and active badge. Pagination controls at the bottom. Each row links to a future question edit page. Include a 'New Question' button linking to /admin/questions/new."
+        },
+        {
+          "summary": "Implement /admin/questions/new page with create form",
+          "description": "Create <apps/web/app/admin/questions/new/page.tsx>. Form fields: clientId (select from GET /clients), topic (text input), round (text input), body (textarea). Validate with createQuestionRequestSchema. Call useCreateQuestion mutation. On success redirect to /admin/questions with a success toast."
+        }
+      ]
+    }
+  ]
+}
