@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Card, CardContent } from '@feature/ui/components/card';
-import { Building2, Calendar, ChevronRight, Clock } from 'lucide-react';
+import { Briefcase, Calendar, ChevronRight, Clock } from 'lucide-react';
 import { ModeBadge, StatusBadge } from './session-badges';
 import { sessionTitle, type Session } from '@app/web/lib/data/sessions';
 
@@ -27,7 +27,7 @@ export function SessionCard({ session }: { session: Session }) {
                 <StatusBadge status={session.status} />
               </div>
 
-              <p className="text-sm text-muted-foreground">{sessionTitle(session)}</p>
+              <p className="text-sm text-muted-foreground">{session.clientName}</p>
 
               <div className="space-y-2 text-sm text-muted-foreground">
                 <div className="flex items-center gap-2">
@@ -39,8 +39,8 @@ export function SessionCard({ session }: { session: Session }) {
                   <span>{session.time}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Building2 className="h-4 w-4" />
-                  <span>{session.clientName}</span>
+                  <Briefcase className="h-4 w-4" />
+                  <span>{sessionTitle(session)}</span>
                 </div>
               </div>
             </div>

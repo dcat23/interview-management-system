@@ -33,8 +33,8 @@ export function SessionSummaryHeader({ session }: { session: Session }) {
         <div className="grid gap-4 sm:grid-cols-2">
           <DetailItem icon={Calendar} label="Date" value={formatDate(session.date)} />
           <DetailItem icon={Clock} label="Time" value={session.time} />
-          <DetailItem icon={TableProperties} label="Round" value={session.round} />
           <DetailItem icon={Building2} label="Company" value={session.clientName} />
+          <DetailItem icon={TableProperties} label="Round" value={session.round} />
         </div>
         <div className="pt-2 border-t border-border">
           <p className="text-muted-foreground">{session.description}</p>
