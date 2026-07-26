@@ -1,42 +1,13 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@feature/ui/components/tabs';
 import { CalendarX } from 'lucide-react';
-import { SessionCard, type SessionCardData } from '@app/web/components/supporter/session-card';
+import { SessionCard } from '@app/web/components/supporter/session-card';
 import { EmptyState } from '@app/web/components/supporter/empty-state';
-import { getCandidates, getClients, getInterviewSessions, getProcessById } from '@feature/backend/server';
-import type { InterviewSession } from '@feature/base/server';
+import { getInterviewSessions } from '@feature/backend/server';
+import { buildSessionCards } from '@app/web/lib/supporter/session-cards';
 
 // No pagination UI on this page yet — fetch a generously large page so the
 // "all sessions" read-only view is effectively complete for current data volumes.
 const MAX_SESSIONS = 100;
-
-async function buildSessionCards(sessions: InterviewSession[]): Promise<SessionCardData[]> {
-  const uniqueProcessIds = [...new Set(sessions.map((s) => s.processId))];
-
-  const [processResults, clientsResult] = await Promise.all([
-    Promise.all(uniqueProcessIds.map((id) => getProcessById(id))),
-    getClients({ limit: MAX_SESSIONS }),
-  ]);
-
-  const processById = new Map(uniqueProcessIds.map((id, index) => [id, processResults[index].data]));
-  const clientNameById = new Map(clientsResult.data.data.map((c) => [c.id, c.name]));
-
-  const candidateIds = [...new Set([...processById.values()].map((p) => p.candidateId).filter(Boolean))];
-  const candidatesResult = await getCandidates({ ids: candidateIds, limit: Math.max(candidateIds.length, 1) });
-  const candidateNameById = new Map(candidatesResult.data.data.map((c) => [c.id, c.name]));
-
-  return sessions.map((session) => {
-    const process = processById.get(session.processId);
-    const candidateName = process?.candidateId ? candidateNameById.get(process.candidateId) : undefined;
-    const clientName = process?.clientId ? clientNameById.get(process.clientId) : undefined;
-
-    return {
-      ...session,
-      candidateName: candidateName ?? 'Unknown candidate',
-      clientName: clientName ?? 'Unknown client',
-      technology: process?.technology ?? 'Unknown role',
-    };
-  });
-}
 
 export default async function SessionsPage() {
   const { data: sessionPage } = await getInterviewSessions({ limit: MAX_SESSIONS });

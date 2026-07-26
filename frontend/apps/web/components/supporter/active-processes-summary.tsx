@@ -1,10 +1,10 @@
 import Link from 'next/link';
 import { Card, CardContent } from '@feature/ui/components/card';
 import { Briefcase, ArrowRight } from 'lucide-react';
-import type { Process } from '@app/web/lib/data/processes';
+import type { ProcessCardData } from '@app/web/components/supporter/process-card';
 
 interface Props {
-  processes: Process[];
+  processes: ProcessCardData[];
 }
 
 export function ActiveProcessesSummary(props: Props) {

@@ -4,21 +4,26 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Search, FileQuestionMark } from 'lucide-react';
 import { Input } from '@feature/ui/components/input';
-import { getClientById } from '@app/web/lib/data/clients';
-import { bankQuestions, type BankQuestionTopic } from '@app/web/lib/data/questions';
+import type { Client, Question } from '@feature/base/server';
 import { QuestionRow } from '@app/web/components/supporter/question-row';
 import { TopicFilterPills } from '@app/web/components/supporter/topic-filter-pills';
 import { ActiveFilterChip } from '@app/web/components/supporter/active-filter-chip';
 import { EmptyState } from '@app/web/components/supporter/empty-state';
 
-export function QuestionsBrowser() {
+interface Props {
+  questions: Question[];
+  clients: Client[];
+}
+
+export function QuestionsBrowser(props: Props) {
+  const { questions, clients } = props;
   const router = useRouter();
   const searchParams = useSearchParams();
   const clientParam = searchParams.get('client');
 
   const [rawQuery, setRawQuery] = useState('');
   const [query, setQuery] = useState('');
-  const [topic, setTopic] = useState<BankQuestionTopic | 'All'>('All');
+  const [topic, setTopic] = useState<string | 'All'>('All');
 
   // Debounce the search input
   useEffect(() => {
@@ -26,17 +31,19 @@ export function QuestionsBrowser() {
     return () => clearTimeout(t);
   }, [rawQuery]);
 
-  const activeClient = clientParam ? getClientById(clientParam) : undefined;
+  const clientById = useMemo(() => new Map(clients.map((c) => [c.id, c])), [clients]);
+  const activeClient = clientParam ? clientById.get(clientParam) : undefined;
+  const topics = useMemo(() => [...new Set(questions.map((q) => q.topic))].sort(), [questions]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return bankQuestions.filter((question) => {
+    return questions.filter((question) => {
       if (activeClient && question.clientId !== activeClient.id) return false;
       if (topic !== 'All' && question.topic !== topic) return false;
       if (!q) return true;
-      return question.text.toLowerCase().includes(q) || question.topic.toLowerCase().includes(q);
+      return question.body.toLowerCase().includes(q) || question.topic.toLowerCase().includes(q);
     });
-  }, [query, topic, activeClient]);
+  }, [questions, query, topic, activeClient]);
 
   function clearClientFilter() {
     router.replace('/supporter/questions');
@@ -50,7 +57,7 @@ export function QuestionsBrowser() {
       </div>
 
       <div className="space-y-4">
-        <TopicFilterPills active={topic} onChange={setTopic} />
+        <TopicFilterPills topics={topics} active={topic} onChange={setTopic} />
 
         <div className="relative">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -73,7 +80,7 @@ export function QuestionsBrowser() {
       {filtered.length > 0 ? (
         <ul className="space-y-3">
           {filtered.map((question) => (
-            <QuestionRow key={question.id} question={question} />
+            <QuestionRow key={question.id} question={question} clientName={clientById.get(question.clientId)?.name} />
           ))}
         </ul>
       ) : (

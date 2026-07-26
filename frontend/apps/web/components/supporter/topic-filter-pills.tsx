@@ -1,14 +1,14 @@
 import { Button } from '@feature/ui/components/button';
-import { bankTopics, type BankQuestionTopic } from '@app/web/lib/data/questions';
 
 interface Props {
-  active: BankQuestionTopic | 'All';
-  onChange: (topic: BankQuestionTopic | 'All') => void;
+  topics: string[];
+  active: string | 'All';
+  onChange: (topic: string | 'All') => void;
 }
 
 export function TopicFilterPills(props: Props) {
-  const { active, onChange } = props;
-  const options: (BankQuestionTopic | 'All')[] = ['All', ...bankTopics];
+  const { topics, active, onChange } = props;
+  const options: (string | 'All')[] = ['All', ...topics];
 
   return (
     <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by topic">

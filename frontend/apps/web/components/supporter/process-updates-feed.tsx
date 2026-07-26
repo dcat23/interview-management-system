@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@feature/ui/components/card';
 import { Activity, ArrowRight } from 'lucide-react';
-import type { ProcessUpdate } from '@app/web/lib/data/processes';
+import type { ActivityItem } from '@app/web/lib/supporter/activity-feed';
 
 function formatTimestamp(iso: string) {
   return new Date(iso).toLocaleDateString('en-US', {
@@ -13,7 +13,7 @@ function formatTimestamp(iso: string) {
 }
 
 interface Props {
-  updates: ProcessUpdate[];
+  updates: ActivityItem[];
 }
 
 export function ProcessUpdatesFeed(props: Props) {

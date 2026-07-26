@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@feature/ui/components/card';
 import { Briefcase, Calendar, Clock, ArrowRight, CalendarClock } from 'lucide-react';
-import { sessionTitle, type Session } from '@app/web/lib/data/sessions';
+import type { SessionCardData } from '@app/web/components/supporter/session-card';
 import { ModeBadge } from './session-badges';
 
 function formatDate(dateString: string) {
@@ -13,8 +13,15 @@ function formatDate(dateString: string) {
   });
 }
 
+function formatTime(scheduledAt: string, durationMinutes: number) {
+  const start = new Date(scheduledAt);
+  const end = new Date(start.getTime() + durationMinutes * 60_000);
+  const timeFormat: Intl.DateTimeFormatOptions = { hour: 'numeric', minute: '2-digit' };
+  return `${start.toLocaleTimeString('en-US', timeFormat)} - ${end.toLocaleTimeString('en-US', timeFormat)}`;
+}
+
 interface Props {
-  session: Session | null;
+  session: SessionCardData | null;
 }
 
 export function DashboardNextSessionCard(props: Props) {
@@ -59,15 +66,17 @@ export function DashboardNextSessionCard(props: Props) {
             <div className="mt-4 grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4" />
-                <span>{formatDate(session.date)}</span>
+                <span>{formatDate(session.scheduledAt)}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Clock className="h-4 w-4" />
-                <span>{session.time}</span>
+                <span>{formatTime(session.scheduledAt, session.durationMinutes)}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Briefcase className="h-4 w-4" />
-                <span>{sessionTitle(session)}</span>
+                <span>
+                  {session.technology} — {session.round}
+                </span>
               </div>
             </div>
           </Link>

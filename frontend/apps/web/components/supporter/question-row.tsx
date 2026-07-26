@@ -1,14 +1,14 @@
 import { Badge } from '@feature/ui/components/badge';
 import { cn } from '@feature/ui/lib/utils';
-import { getBankQuestionClientName, type BankQuestion } from '@app/web/lib/data/questions';
+import type { Question } from '@feature/base/server';
 
 interface Props {
-  question: BankQuestion;
+  question: Question;
+  clientName?: string;
 }
 
 export function QuestionRow(props: Props) {
-  const { question } = props;
-  const clientName = getBankQuestionClientName(question);
+  const { question, clientName } = props;
 
   return (
     <li
@@ -31,7 +31,7 @@ export function QuestionRow(props: Props) {
           </Badge>
         )}
       </div>
-      <p className="mt-2 line-clamp-2 text-sm leading-relaxed">{question.text}</p>
+      <p className="mt-2 line-clamp-2 text-sm leading-relaxed">{question.body}</p>
     </li>
   );
 }

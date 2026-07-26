@@ -3,7 +3,7 @@ import { Building2, ArrowUpRight } from 'lucide-react';
 import { Card, CardContent } from '@feature/ui/components/card';
 import { Badge } from '@feature/ui/components/badge';
 import { Button } from '@feature/ui/components/button';
-import type { Client } from '@app/web/lib/data/clients';
+import type { Client } from '@feature/base/server';
 
 interface Props {
   client: Client;
@@ -26,7 +26,7 @@ export function ClientCard(props: Props) {
 
         <div className="mt-4 flex-1">
           <h3 className="font-medium leading-tight text-pretty">{client.name}</h3>
-          <p className="mt-1 text-sm text-muted-foreground">{client.industry}</p>
+          <p className="mt-1 text-sm text-muted-foreground">{client.industry ?? 'Industry not set'}</p>
         </div>
 
         <Button asChild variant="secondary" size="sm" className="mt-4 w-full">
