@@ -11,6 +11,7 @@ public record InterviewProcessResponse(
         UUID clientId,
         UUID marketerId,
         String technology,
+        String jobId,
         String description,
         ProcessStatus status,
         Instant startedAt,

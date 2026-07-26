@@ -4,8 +4,12 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 import xyz.catuns.imp.api.session.entity.InterviewSession;
+import xyz.catuns.imp.api.session.entity.SessionStatus;
 
+import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
@@ -14,4 +18,11 @@ public interface InterviewSessionRepository extends JpaRepository<InterviewSessi
     List<InterviewSession> findByProcessIdOrderByRound(UUID processId);
 
     List<InterviewSession> findByProcessIdAndSupporterIdOrderByRound(UUID processId, UUID supporterId);
+
+    Optional<InterviewSession> findByProcessIdAndRoundIgnoreCase(UUID processId, String round);
+
+    List<InterviewSession> findBySupporterIdAndScheduledAtBetweenAndStatusNotIn(
+            UUID supporterId, Instant from, Instant to, Collection<SessionStatus> excludedStatuses);
+
+    long countBySupporterIdAndStatus(UUID supporterId, SessionStatus status);
 }

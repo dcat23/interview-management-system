@@ -20,6 +20,7 @@
     { "key": "accessToken",  "value": "",                            "type": "string" },
     { "key": "refreshToken", "value": "",                            "type": "string" },
     { "key": "userId",       "value": "",                            "type": "string" },
+    { "key": "candidateId",  "value": "",                            "type": "string" },
     { "key": "clientId",     "value": "",                            "type": "string" },
     { "key": "questionId",   "value": "",                            "type": "string" },
     { "key": "processId",    "value": "",                            "type": "string" },
@@ -112,6 +113,50 @@
             },
             "description": "Invalidate the current refresh token. Access token expires naturally after TTL.\n\n**Roles:** all\n\n**Response:** `204 No Content`"
           }
+        },
+        {
+          "name": "Get Me",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  pm.collectionVariables.set('userId', pm.response.json().id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "me"]
+            },
+            "description": "Returns full profile details for the authenticated user (real id, name, email, role, active, createdAt) — used to enrich the session with the real user id instead of the email-as-id placeholder set at login.\n\n**Roles:** all\n\n**Response:** `200`. Test script stores `id` → `userId`."
+          }
+        },
+        {
+          "name": "Update Me",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Jane Doe\",\n  \"email\": \"jane.doe@example.com\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "me"]
+            },
+            "description": "Partially updates the authenticated user's own name/email. All fields optional. Role and active status can only be changed by an admin via `PATCH /users/:id`.\n\nReturns `409` if the email is already in use.\n\n**Roles:** all\n\n**Response:** `200` — returns updated profile."
+          }
         }
       ]
     },
@@ -197,6 +242,42 @@
               "path": ["users", "{{userId}}"]
             },
             "description": "Update user fields. All fields optional.\n\n**Roles:** admin\n\n**Response:** `200` — returns updated user object."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Candidates",
+      "item": [
+        {
+          "name": "List Candidates",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/candidates?page=0&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["candidates"],
+              "query": [
+                { "key": "ids",   "value": "", "description": "Optional, repeatable — filter to specific candidate ids for batch name resolution", "disabled": true },
+                { "key": "page",  "value": "0" },
+                { "key": "limit", "value": "20" }
+              ]
+            },
+            "description": "Minimal, name-only candidate lookups for display purposes (e.g. rendering a candidate's name on a process/session card). Deliberately separate from `GET /users/:id`, which is admin/self-only.\n\n**Roles:** admin, marketer, supporter"
+          }
+        },
+        {
+          "name": "Get Candidate",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/candidates/{{candidateId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["candidates", "{{candidateId}}"]
+            },
+            "description": "Get a candidate by ID (id + name only).\n\nReturns `404` if the id does not exist or does not belong to a user with the `CANDIDATE` role.\n\n**Roles:** admin, marketer, supporter"
           }
         }
       ]
@@ -412,7 +493,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"candidateId\": \"{{userId}}\",\n  \"clientId\": \"{{clientId}}\",\n  \"marketerId\": \"{{userId}}\",\n  \"technology\": \"Java Full Stack\",\n  \"description\": \"Java and Spring Boot position at Acme Corp\"\n}",
+              "raw": "{\n  \"candidateId\": \"{{userId}}\",\n  \"clientId\": \"{{clientId}}\",\n  \"marketerId\": \"{{userId}}\",\n  \"technology\": \"Java Full Stack\",\n  \"jobId\": \"9548BR\",\n  \"description\": \"Java and Spring Boot position at Acme Corp\"\n}",
               "options": { "raw": { "language": "json" } }
             },
             "url": {
@@ -443,7 +524,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"technology\": \"React Full Stack\",\n  \"description\": \"Updated position description\",\n  \"status\": \"COMPLETED\",\n  \"closedAt\": \"2024-03-01T00:00:00Z\"\n}",
+              "raw": "{\n  \"technology\": \"React Full Stack\",\n  \"jobId\": \"9548BR\",\n  \"description\": \"Updated position description\",\n  \"status\": \"COMPLETED\",\n  \"closedAt\": \"2024-03-01T00:00:00Z\"\n}",
               "options": { "raw": { "language": "json" } }
             },
             "url": {
@@ -486,7 +567,27 @@
       "name": "Interview Sessions",
       "item": [
         {
-          "name": "List Sessions",
+          "name": "List All Sessions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/sessions?status=&processId=&supporterId=&page=0&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["sessions"],
+              "query": [
+                { "key": "status",       "value": "", "description": "Optional filter, e.g. SCHEDULED", "disabled": true },
+                { "key": "processId",    "value": "", "description": "Optional filter", "disabled": true },
+                { "key": "supporterId",  "value": "", "description": "Optional filter", "disabled": true },
+                { "key": "page",  "value": "0" },
+                { "key": "limit", "value": "20" }
+              ]
+            },
+            "description": "List sessions across all processes, paginated.\n\n**Roles:** admin, marketer, supporter\n\n**Response:** `200` — paginated envelope (unlike the process-scoped list below)."
+          }
+        },
+        {
+          "name": "List Sessions in Process",
           "request": {
             "method": "GET",
             "header": [],
@@ -495,7 +596,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["processes", "{{processId}}", "sessions"]
             },
-            "description": "List sessions within a process.\n\nRole constraints:\n- **Candidate:** own process only — 403 if process doesn't belong to them\n- **Supporter:** own assigned sessions only\n- **Admin / marketer:** all sessions\n\n**Roles:** admin, marketer, supporter, candidate\n\n**Response:** `200` — array of session objects (not paginated)"
+            "description": "List sessions within a process.\n\nRole constraints:\n- **Candidate:** own process only — 403 if process doesn't belong to them\n- **Admin / marketer / supporter:** all sessions in the process, regardless of assignment\n\n**Roles:** admin, marketer, supporter, candidate\n\n**Response:** `200` — array of session objects (not paginated)"
           }
         },
         {
@@ -539,7 +640,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["sessions", "{{sessionId}}"]
             },
-            "description": "Get session detail.\n\nRole constraints:\n- **Supporter:** own assigned sessions only\n- **Candidate:** sessions in their own process only\n- **Admin / marketer:** any session\n\n**Roles:** admin, marketer, supporter, candidate"
+            "description": "Get session detail.\n\nRole constraints:\n- **Candidate:** sessions in their own process only\n- **Admin / marketer / supporter:** any session, regardless of assignment\n\n**Roles:** admin, marketer, supporter, candidate"
           }
         },
         {
@@ -692,6 +793,30 @@
               "path": ["sessions", "{{sessionId}}", "feedback"]
             },
             "description": "Update or submit feedback. All fields optional.\n\nOnce `isSubmitted = true`, `body` becomes read-only. `submittedAt` set server-side on submission.\n\n**Roles:** supporter\n\n**Response:** `200` — returns updated feedback object."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Schedule Import",
+      "item": [
+        {
+          "name": "Import Interview Schedule CSV",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "file", "type": "file", "src": [] }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/imports/interview-schedule",
+              "host": ["{{baseUrl}}"],
+              "path": ["imports", "interview-schedule"]
+            },
+            "description": "Bulk-imports an interview schedule CSV (columns: Candidate Name, Lead Name, Technology, Interview Date, Time, Duration, Mode of interview, Client name, Interview Round, Status), reconciling it against users, end clients, interview processes, and interview sessions — creating or updating each as needed.\n\nCandidates and leads are matched by name; an unmatched name gets an inactive placeholder user (`<slug>.candidate@system.local` / `<slug>.marketer@system.local`, random password) for an admin to reconcile later. A job id embedded in `Technology` (e.g. `Java Developer (9548BR)`) groups rows into the same process across rounds; without one, rows are grouped by exact technology text instead. Sessions are upserted by `(process, round)`, so re-importing the same sheet (e.g. a rescheduled row) updates the existing session rather than duplicating it. If the caller isn't a supporter, one is auto-assigned per session (conflict-free, then least-loaded).\n\n**Roles:** admin, marketer, supporter\n\n**Response:** `200` — per-row `imported` / `updated` / `failed` summary; one bad row does not fail the whole batch."
           }
         }
       ]

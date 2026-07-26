@@ -5,8 +5,13 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 import xyz.catuns.imp.api.process.entity.InterviewProcess;
 
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
 public interface InterviewProcessRepository extends JpaRepository<InterviewProcess, UUID>, JpaSpecificationExecutor<InterviewProcess> {
+
+    Optional<InterviewProcess> findByCandidateIdAndClientIdAndJobId(UUID candidateId, UUID clientId, String jobId);
+
+    Optional<InterviewProcess> findByCandidateIdAndClientIdAndTechnologyIgnoreCase(UUID candidateId, UUID clientId, String technology);
 }

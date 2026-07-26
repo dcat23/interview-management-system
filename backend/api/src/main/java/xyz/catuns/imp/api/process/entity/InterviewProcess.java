@@ -34,6 +34,9 @@ public class InterviewProcess {
     @Column(name = "technology", nullable = false)
     private String technology;
 
+    @Column(name = "job_id")
+    private String jobId;
+
     @Column(name = "description")
     private String description;
 

@@ -10,6 +10,7 @@ public record CreateProcessRequest(
         @NotNull UUID clientId,
         @NotNull UUID marketerId,
         @NotBlank String technology,
+        String jobId,
         String description
 ) {
 }

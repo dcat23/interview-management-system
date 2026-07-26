@@ -6,6 +6,7 @@ import java.time.Instant;
 
 public record UpdateProcessRequest(
         String technology,
+        String jobId,
         String description,
         ProcessStatus status,
         Instant closedAt

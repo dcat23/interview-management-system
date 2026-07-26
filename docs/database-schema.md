@@ -88,6 +88,7 @@ CREATE TABLE interview_processes (
   end_client_id  uuid          NOT NULL REFERENCES end_clients(id),
   marketer_id    uuid          NOT NULL REFERENCES users(id),
   technology     varchar(255)  NOT NULL,
+  job_id         varchar(50),
   description    text,
   status         process_status NOT NULL DEFAULT 'active',
   started_at     timestamptz   NOT NULL DEFAULT now(),
@@ -101,10 +102,18 @@ CREATE INDEX idx_processes_client      ON interview_processes(end_client_id);
 CREATE INDEX idx_processes_marketer    ON interview_processes(marketer_id);
 CREATE INDEX idx_processes_status      ON interview_processes(status);
 CREATE INDEX idx_processes_started_at  ON interview_processes(started_at);
+CREATE INDEX idx_processes_job_id      ON interview_processes(job_id);
+
+-- Only applies when job_id is known; lets a candidate re-apply to the same
+-- client under a different requisition without tripping the constraint.
+CREATE UNIQUE INDEX uq_processes_candidate_client_job
+  ON interview_processes(candidate_id, end_client_id, job_id)
+  WHERE job_id IS NOT NULL;
 ```
 
 **Notes:**
 - `technology` is free text (e.g. "Java Full Stack", "React / Node.js") — not an enum. Controlled vocabulary can be introduced later via a lookup table without schema changes.
+- `job_id` is the requisition/job code, when known (e.g. extracted from a source like "Java Developer (9548BR)" → `9548BR`). Nullable — free-text technology strings don't always carry one. Used to group multiple interview rounds for the same candidate+client+requisition into one process without relying on round-name ordering.
 - `closed_at` is set when status transitions to `completed`, `withdrawn`, or `cancelled`.
 
 ---
@@ -309,6 +318,8 @@ V7__create_session_questions.sql
 V8__create_feedback.sql
 V9__create_status_history.sql
 V10__add_search_vector_trigger.sql
+V11__create_question_versions.sql
+V12__add_job_id_to_interview_processes.sql
 ```
 
 ---

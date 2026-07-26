@@ -102,6 +102,42 @@ Invalidate the current refresh token. Access token expires naturally after TTL.
 
 ---
 
+### `GET /auth/me` · all roles
+
+Returns full profile details for the authenticated user (real `id`, `name`, `email`, `role`, `active`, `createdAt`) — used to enrich a client session with the real user id instead of an email-as-id placeholder.
+
+**Response `200`**
+```json
+{
+  "id": "uuid",
+  "name": "string",
+  "email": "string",
+  "role": "supporter",
+  "active": true,
+  "createdAt": "2024-01-15T10:00:00Z"
+}
+```
+
+---
+
+### `PATCH /auth/me` · all roles
+
+Partially updates the authenticated user's own `name`/`email`. Role and active status can only be changed by an admin via `PATCH /users/:id`.
+
+**Request** (all fields optional)
+```json
+{
+  "name": "string",
+  "email": "string"
+}
+```
+
+Returns `409` if the email is already in use by another user.
+
+**Response `200`** — returns updated profile (same shape as `GET /auth/me`).
+
+---
+
 ## Users
 
 ### `GET /users` · `admin`
@@ -377,6 +413,7 @@ List interview processes.
       "clientId": "uuid",
       "marketerId": "uuid",
       "technology": "Java Full Stack",
+      "jobId": "9548BR",
       "description": "string",
       "status": "ACTIVE",
       "startedAt": "2024-01-01T00:00:00Z",
@@ -393,6 +430,8 @@ List interview processes.
 
 `status` values: `ACTIVE`, `COMPLETED`, `WITHDRAWN`, `CANCELLED`
 
+`jobId` is the requisition/job code, when known (e.g. `9548BR` extracted from a technology string like "Java Developer (9548BR)"). Nullable — not every process has one. Two processes for the same candidate + client are treated as the same engagement when their `jobId` matches; see [Schedule import](#schedule-import).
+
 ---
 
 ### `POST /processes` · `admin` `marketer`
@@ -406,6 +445,7 @@ Open a new interview process for a candidate.
   "clientId": "uuid",
   "marketerId": "uuid",
   "technology": "string",
+  "jobId": "string (optional)",
   "description": "string (optional)"
 }
 ```
@@ -436,6 +476,7 @@ Update process-level fields or close the process.
 ```json
 {
   "technology": "string",
+  "jobId": "string",
   "description": "string",
   "status": "COMPLETED | WITHDRAWN | CANCELLED",
   "closedAt": "2024-03-01T00:00:00Z"
@@ -780,6 +821,71 @@ Update or submit feedback.
 Once `isSubmitted = true`, `body` becomes read-only. `submittedAt` set server-side on submission.
 
 **Response `200`** — returns updated feedback object.
+
+---
+
+## Schedule import
+
+### `POST /imports/interview-schedule` · `admin` `marketer` `supporter`
+
+Bulk-imports an interview schedule CSV, reconciling it against `users`, `end_clients`, `interview_processes`, and `interview_sessions` — creating or updating each as needed instead of hand-entering rows through the endpoints above.
+
+**Request:** `multipart/form-data`, single part named `file` (a `.csv` file).
+
+CSV columns (header row required, in any order):
+
+| Column | Maps to |
+|---|---|
+| `Candidate Name` | Candidate user, matched/created by name |
+| `Lead Name` | Marketer user, matched/created by name |
+| `Technology` | `interview_processes.technology`; trailing `(...)` parsed as `jobId` when it contains a digit |
+| `Interview Date` | e.g. `01-Jul-26` (`dd-MMM-yy`) |
+| `Time` | e.g. `1 PM EST`, `2:30 PM EST` — interpreted in `America/New_York` |
+| `Duration` | e.g. `1 Hour`, `45 Min` — must match this shape or the row fails |
+| `Mode of interview` | `interview_sessions.mode` (free text) |
+| `Client name` | End client, matched/created by name |
+| `Interview Round` | `interview_sessions.round` (free text) |
+| `Status` | `Scheduled`/`Reschedule` → `SCHEDULED`; anything else defaults to `SCHEDULED` with a warning |
+
+**Matching rules:**
+- Candidate/marketer name matching is case-insensitive (falls back to first-token match). No match → an inactive placeholder user is created (`<slug>.candidate@system.local` / `<slug>.marketer@system.local`, random password) for an admin to reconcile later.
+- Rows are grouped into one `interview_process` by `(candidateId, clientId, jobId)` when a job id was parsed from `Technology`; otherwise by exact `(candidateId, clientId, technology)` text match. Round order is not validated — `jobId` (not round-name sequencing) is what ties multiple rows together, and chronological order simply follows each session's `scheduledAt`.
+- Sessions are upserted by `(processId, round)`: a row matching an existing session updates `scheduledAt`/`durationMinutes`/`mode` in place (covers reschedules and re-importing the same sheet) rather than duplicating.
+- Supporter assignment: if the caller has the `supporter` role, they're assigned to every session they import. Otherwise a supporter is auto-assigned per session — first excluding anyone with a conflicting time window, then picking the least-loaded remaining supporter. No supporter available → that row fails.
+
+**Response `200`**
+```json
+{
+  "totalRows": 53,
+  "imported": 48,
+  "updated": 3,
+  "failed": 2,
+  "results": [
+    {
+      "rowNumber": 2,
+      "outcome": "IMPORTED",
+      "candidateId": "uuid",
+      "processId": "uuid",
+      "sessionId": "uuid",
+      "warnings": [],
+      "error": null
+    },
+    {
+      "rowNumber": 53,
+      "outcome": "FAILED",
+      "candidateId": null,
+      "processId": null,
+      "sessionId": null,
+      "warnings": [],
+      "error": "Unrecognized duration format: Powerday"
+    }
+  ]
+}
+```
+
+`outcome` values: `IMPORTED`, `UPDATED`, `FAILED`. A failed row does not fail the batch or roll back rows already processed — check `results` for per-row detail.
+
+Returns `400` if no file is attached or the file isn't a `.csv`.
 
 ---
 

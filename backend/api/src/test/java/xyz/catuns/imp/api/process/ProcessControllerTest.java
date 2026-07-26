@@ -140,7 +140,7 @@ class ProcessControllerTest {
         @DisplayName("marketer creates process → 201 with ACTIVE status")
         void marketerCanCreate() throws Exception {
             CreateProcessRequest request = new CreateProcessRequest(
-                    candidate1Id, clientId, marketerId, "Go", null);
+                    candidate1Id, clientId, marketerId, "Go", null, null);
 
             mockMvc.perform(post("/processes")
                             .header("Authorization", "Bearer " + marketerToken)
@@ -156,7 +156,7 @@ class ProcessControllerTest {
         @DisplayName("admin creates process → 201")
         void adminCanCreate() throws Exception {
             CreateProcessRequest request = new CreateProcessRequest(
-                    candidate1Id, clientId, adminId, "Kotlin", null);
+                    candidate1Id, clientId, adminId, "Kotlin", null, null);
 
             mockMvc.perform(post("/processes")
                             .header("Authorization", "Bearer " + adminToken)
@@ -170,7 +170,7 @@ class ProcessControllerTest {
         @DisplayName("supporter cannot create → 403")
         void supporterCannotCreate() throws Exception {
             CreateProcessRequest request = new CreateProcessRequest(
-                    candidate1Id, clientId, marketerId, "Rust", null);
+                    candidate1Id, clientId, marketerId, "Rust", null, null);
 
             mockMvc.perform(post("/processes")
                             .header("Authorization", "Bearer " + supporterToken)
@@ -183,7 +183,7 @@ class ProcessControllerTest {
         @DisplayName("candidate cannot create → 403")
         void candidateCannotCreate() throws Exception {
             CreateProcessRequest request = new CreateProcessRequest(
-                    candidate1Id, clientId, marketerId, "Swift", null);
+                    candidate1Id, clientId, marketerId, "Swift", null, null);
 
             mockMvc.perform(post("/processes")
                             .header("Authorization", "Bearer " + candidate1Token)
@@ -216,7 +216,7 @@ class ProcessControllerTest {
         @DisplayName("unauthenticated → 401")
         void unauthenticatedCannotCreate() throws Exception {
             CreateProcessRequest request = new CreateProcessRequest(
-                    candidate1Id, clientId, marketerId, "Scala", null);
+                    candidate1Id, clientId, marketerId, "Scala", null, null);
 
             mockMvc.perform(post("/processes")
                             .contentType(MediaType.APPLICATION_JSON)
@@ -328,7 +328,7 @@ class ProcessControllerTest {
         @Test
         @DisplayName("marketer can update technology")
         void marketerCanUpdate() throws Exception {
-            UpdateProcessRequest request = new UpdateProcessRequest("TypeScript", null, null, null);
+            UpdateProcessRequest request = new UpdateProcessRequest("TypeScript", null, null, null, null);
 
             mockMvc.perform(patch("/processes/" + ownProcessId)
                             .header("Authorization", "Bearer " + marketerToken)
@@ -341,7 +341,7 @@ class ProcessControllerTest {
         @Test
         @DisplayName("admin can update status")
         void adminCanUpdateStatus() throws Exception {
-            UpdateProcessRequest request = new UpdateProcessRequest(null, null, ProcessStatus.COMPLETED, null);
+            UpdateProcessRequest request = new UpdateProcessRequest(null, null, null, ProcessStatus.COMPLETED, null);
 
             mockMvc.perform(patch("/processes/" + ownProcessId)
                             .header("Authorization", "Bearer " + adminToken)
@@ -354,7 +354,7 @@ class ProcessControllerTest {
         @Test
         @DisplayName("supporter cannot update → 403")
         void supporterCannotUpdate() throws Exception {
-            UpdateProcessRequest request = new UpdateProcessRequest("C++", null, null, null);
+            UpdateProcessRequest request = new UpdateProcessRequest("C++", null, null, null, null);
 
             mockMvc.perform(patch("/processes/" + ownProcessId)
                             .header("Authorization", "Bearer " + supporterToken)
@@ -366,7 +366,7 @@ class ProcessControllerTest {
         @Test
         @DisplayName("candidate cannot update → 403")
         void candidateCannotUpdate() throws Exception {
-            UpdateProcessRequest request = new UpdateProcessRequest("PHP", null, null, null);
+            UpdateProcessRequest request = new UpdateProcessRequest("PHP", null, null, null, null);
 
             mockMvc.perform(patch("/processes/" + ownProcessId)
                             .header("Authorization", "Bearer " + candidate1Token)
@@ -378,7 +378,7 @@ class ProcessControllerTest {
         @Test
         @DisplayName("non-existent process → 404")
         void notFoundForMissingProcess() throws Exception {
-            UpdateProcessRequest request = new UpdateProcessRequest("Ruby", null, null, null);
+            UpdateProcessRequest request = new UpdateProcessRequest("Ruby", null, null, null, null);
 
             mockMvc.perform(patch("/processes/" + UUID.randomUUID())
                             .header("Authorization", "Bearer " + adminToken)
