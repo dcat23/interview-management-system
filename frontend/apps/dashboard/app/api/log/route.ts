@@ -34,11 +34,11 @@ export async function POST(request: NextRequest) {
     logger.warn({ correlationId, source: 'browser' }, 'Failed to parse client log payload');
   }
 
-  const responseTime = Math.round(performance.now() - start);
-  logger.info(
-    { responseTime, correlationId },
-    `POST ${NEXT_PUBLIC_LOGGING_BEACON_PATH} 200`,
-  );
+  // const responseTime = Math.round(performance.now() - start);
+  // logger.info(
+  //   { responseTime, correlationId },
+  //   `POST ${NEXT_PUBLIC_LOGGING_BEACON_PATH} 200`,
+  // );
 
   return NextResponse.json({ ok: true });
 }

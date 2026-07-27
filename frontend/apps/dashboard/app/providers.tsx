@@ -5,7 +5,6 @@ import ReactQueryProvider from "../lib/providers/react-query-provider";
 import { ThemeProvider } from "../lib/providers/theme-provider";
 import { TooltipProvider } from "../components/ui/common/tooltip";
 
-
 interface Props {
   children: ReactNode;
 }
@@ -22,6 +21,7 @@ const Providers = ({ children }: Props) => {
         <ReactQueryProvider>
           <TooltipProvider>
             <Toaster position="bottom-right" />
+            {/* <GlobalErrorHandler /> */}
             {children}
           </TooltipProvider>
         </ReactQueryProvider>

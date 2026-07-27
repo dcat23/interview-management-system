@@ -77,6 +77,7 @@ import {
   SidebarTrigger,
 } from "@app/dashboard/components/ui/common/sidebar"
 import { Toaster } from "@app/dashboard/components/ui/common/sonner"
+import { PROJECT_NAME } from "@app/dashboard/lib/constants/metadata"
 
 const navItems = [
   { label: "Overview", icon: RiLayoutGridLine },
@@ -248,7 +249,7 @@ export default function AppShellBlock({
               />
             </svg>
             <span className="truncate text-base font-semibold group-data-[collapsible=icon]:hidden">
-              Acme
+              {PROJECT_NAME}
             </span>
           </div>
         </SidebarHeader>

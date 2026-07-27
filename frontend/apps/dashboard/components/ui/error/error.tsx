@@ -1,5 +1,3 @@
-"use client"
-
 import { RiErrorWarningLine, RiRefreshLine } from "@remixicon/react"
 
 import { Button } from "@app/dashboard/components/ui/common/button"
