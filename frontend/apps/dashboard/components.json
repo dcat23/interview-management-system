@@ -12,6 +12,8 @@
   },
   "iconLibrary": "phosphor",
   "rtl": false,
+  "menuColor": "default",
+  "menuAccent": "subtle",
   "aliases": {
     "components": "@app/dashboard/components/ui",
     "utils": "@app/dashboard/lib/ui/utils",
@@ -19,7 +21,7 @@
     "lib": "@app/dashboard/lib/ui",
     "hooks": "@app/dashboard/hooks/ui"
   },
-  "menuColor": "default",
-  "menuAccent": "subtle",
-  "registries": {}
+  "registries": {
+    "@7ovr": "https://7ovr.com/r/{name}.json"
+  }
 }

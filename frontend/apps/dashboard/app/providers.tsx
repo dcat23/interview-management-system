@@ -3,6 +3,7 @@ import { SessionProvider } from "next-auth/react";
 import { Toaster } from "sonner";
 import ReactQueryProvider from "../lib/providers/react-query-provider";
 import { ThemeProvider } from "../lib/providers/theme-provider";
+import { TooltipProvider } from "../components/ui/common/tooltip";
 
 
 interface Props {
@@ -19,8 +20,10 @@ const Providers = ({ children }: Props) => {
         disableTransitionOnChange
       >
         <ReactQueryProvider>
-          <Toaster position="bottom-right" />
-          {children}
+          <TooltipProvider>
+            <Toaster position="bottom-right" />
+            {children}
+          </TooltipProvider>
         </ReactQueryProvider>
       </ThemeProvider>
     </SessionProvider>
