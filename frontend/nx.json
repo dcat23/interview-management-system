@@ -74,8 +74,8 @@
     },
     "next-feature": {
       "component": {
-        "projectName": "dynamic-table",
-        "kind": "generic"
+        "projectName": "dashboard",
+        "infer-path": true
       },
       "feature": {
         "orgName": "feature"
@@ -84,7 +84,7 @@
         "useAuth": true
       },
       "declaration": {
-        "projectName": "dynamic-table"
+        "projectName": "dashboard"
       },
       "action": {
         "projectName": "backend",
@@ -92,7 +92,8 @@
       },
       "dotenv": {
         "projects": [
-          "web"
+          "web",
+          "dashboard"
         ]
       }
     },

@@ -10,25 +10,60 @@
     "importHelpers": true,
     "target": "es2015",
     "module": "esnext",
-    "lib": ["es2020", "dom"],
+    "lib": [
+      "es2020",
+      "dom"
+    ],
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@app/web/*": ["apps/web/*"],
-      "@feature/ui": ["features/ui/src/index.ts"],
-      "@feature/ui/server": ["features/ui/src/server.ts"],
-      "@feature/ui/*": ["features/ui/src/*"],
-      "@feature/base": ["features/base/src/index.ts"],
-      "@feature/base/server": ["features/base/src/server.ts"],
-      "@feature/base/*": ["features/base/src/*"],
-      "@feature/auth": ["features/auth/src/index.ts"],
-      "@feature/auth/server": ["features/auth/src/server.ts"],
-      "@feature/auth/*": ["features/auth/src/*"],
-      "@feature/backend": ["features/backend/src/index.ts"],
-      "@feature/backend/server": ["features/backend/src/server.ts"],
-      "@feature/backend/*": ["features/backend/src/*"]
+      "@app/web/*": [
+        "apps/web/*"
+      ],
+      "@feature/ui": [
+        "features/ui/src/index.ts"
+      ],
+      "@feature/ui/server": [
+        "features/ui/src/server.ts"
+      ],
+      "@feature/ui/*": [
+        "features/ui/src/*"
+      ],
+      "@feature/base": [
+        "features/base/src/index.ts"
+      ],
+      "@feature/base/server": [
+        "features/base/src/server.ts"
+      ],
+      "@feature/base/*": [
+        "features/base/src/*"
+      ],
+      "@feature/auth": [
+        "features/auth/src/index.ts"
+      ],
+      "@feature/auth/server": [
+        "features/auth/src/server.ts"
+      ],
+      "@feature/auth/*": [
+        "features/auth/src/*"
+      ],
+      "@feature/backend": [
+        "features/backend/src/index.ts"
+      ],
+      "@feature/backend/server": [
+        "features/backend/src/server.ts"
+      ],
+      "@feature/backend/*": [
+        "features/backend/src/*"
+      ],
+      "@app/dashboard/*": [
+        "apps/dashboard/*"
+      ]
     }
   },
-  "exclude": ["node_modules", "tmp"]
+  "exclude": [
+    "node_modules",
+    "tmp"
+  ]
 }
