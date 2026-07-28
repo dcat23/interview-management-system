@@ -7,6 +7,8 @@ import Link from "next/link"
 import { useEffect } from "react"
 import { logger } from "@next-feature/logging"
 
+const DEFAULT_ERROR_MESSAGE = "An unexpected error occurred while processing your request. Please try again, and contact support if the problem persists."
+
 export default function ErrorBlock({
   error,
   reset,
@@ -33,8 +35,7 @@ export default function ErrorBlock({
           Something went wrong
         </h1>
         <p className="max-w-md text-sm text-muted-foreground">
-          An unexpected error occurred while processing your request. Please try
-          again, and contact support if the problem persists.
+          {error.message ?? DEFAULT_ERROR_MESSAGE}
         </p>
       </div>
 

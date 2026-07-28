@@ -1,30 +1,29 @@
 'use client';
 
-import { useNavStore } from '@app/dashboard/stores/nav-store';
+import { useNav } from '@app/dashboard/stores/nav-context';
 import { NavItem } from '@feature/base/server';
 import { DynamicIcon } from 'lucide-react/dynamic';
+import Link from 'next/link';
 import { SidebarMenuButton, SidebarMenuItem } from '../ui/common/sidebar';
-import { useRouter } from 'next/navigation';
 
 interface Props {
   item: NavItem;
+  isActive: boolean;
 }
 
-export function AppSidebarItem({ item }: Props) {
-  const { activeNav, setNav} = useNavStore()
-  const router = useRouter()
+export function AppSidebarItem({ item, isActive }: Props) {
+  const { setNav } = useNav()
   return (
     <SidebarMenuItem>
       <SidebarMenuButton
-        isActive={activeNav?.name === item.name}
+        asChild
+        isActive={isActive}
         tooltip={item.name}
-        onClick={() => {
-          setNav(item)
-          router.push(item.href)
-        }}
       >
-        <DynamicIcon name={item.icon} />
-        <span>{item.name}</span>
+        <Link href={item.href} onClick={() => setNav(item)}>
+          <DynamicIcon name={item.icon} />
+          <span>{item.name}</span>
+        </Link>
       </SidebarMenuButton>
     </SidebarMenuItem>
   );

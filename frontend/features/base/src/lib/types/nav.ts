@@ -12,18 +12,21 @@ export interface NavItem {
     icon: IconName
 }
 
+export const DASHBOARD: NavItem = { 
+    name: 'Dashboard', href: '/dashboard', icon: 'layout-dashboard' 
+}
 /**
  * [role-nav-items]
  * next-feature@0.1.4-0
  * July 25th 2026, 3:10:39 am
  */
 const supporter: NavItem[] = [
-    { name: 'Dashboard', href: '/supporter', icon: 'layout-dashboard' },
-    { name: 'My Sessions', href: '/supporter/sessions', icon: 'calendar-check' },
+    { name: 'Sessions', href: '/supporter/sessions', icon: 'calendar-check' },
     { name: 'Processes', href: '/supporter/processes', icon: 'briefcase' },
     { name: 'Clients', href: '/supporter/clients', icon: 'building-2' },
     { name: 'Questions', href: '/supporter/questions', icon: 'book-open' },
-]
+] as const;
+
 export const ROLE_NAV: Record<Role, NavItem[]> = {
     candidate: [
         { name: 'My Processes', href: '/candidate/processes', icon: 'briefcase' },

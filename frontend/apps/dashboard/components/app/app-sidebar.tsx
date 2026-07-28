@@ -1,12 +1,10 @@
-'use client';
-
 import { Role, ROLE_NAV } from '@feature/base/server';
 import { ReactNode } from 'react';
 import { PROJECT_NAME } from '../../lib/constants/metadata';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarHeader, SidebarMenu, SidebarMenuItem } from '../ui/common/sidebar';
 import AccountMenu from './account-menu';
 import AppAccountMenuButton from './app-account-menu-button';
-import AppSidebarItem from './app-sidebar-item';
+import AppSidebarNav from './app-sidebar-nav';
 
 interface Props {
   role: Role;
@@ -62,14 +60,7 @@ export function AppSidebar(props: Props) {
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarMenu>
-            {navigation.map((item) => (
-              <AppSidebarItem 
-                key={item.name}
-                item={item}
-              />
-            ))}
-          </SidebarMenu>
+          <AppSidebarNav navigation={navigation} />
         </SidebarGroup>
       </SidebarContent>
 

@@ -18,26 +18,11 @@ import {
 import { ThemeToggle } from '@app/web/components/theme-toggle';
 import { useTheme } from '@app/web/lib/providers/theme-provider';
 import { signOutAction, ROLE_HOME, type Role } from '@feature/auth/server';
-import { ROLE_NAV, type NavItem } from '@feature/base/server';
+import { ROLE_NAV, getCurrentPage } from '@feature/base/server';
 
 interface Props {
   email?: string | null;
   role?: Role | null;
-}
-
-// Picks the longest-href match rather than the first, so a base route like
-// "/supporter" doesn't shadow more specific sibling routes like
-// "/supporter/sessions" that also prefix-match against it.
-function getCurrentPage(pathname: string, navigation: NavItem[]) {
-  let match: NavItem | null = null;
-  for (const item of navigation) {
-    if (pathname === item.href || pathname.startsWith(item.href + '/')) {
-      if (!match || item.href.length > match.href.length) {
-        match = item;
-      }
-    }
-  }
-  return match;
 }
 
 function initials(email: string) {
