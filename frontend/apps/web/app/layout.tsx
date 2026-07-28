@@ -2,7 +2,13 @@ import './global.css';
 import Providers from './providers';
 import { Layout } from '../components/layout';
 import { ReactNode } from 'react';
-import { Crimson_Pro, Source_Code_Pro } from 'next/font/google';
+import { Crimson_Pro, Source_Code_Pro, Oxanium, Geist } from 'next/font/google';
+import { cn } from "@app/web/lib/ui/utils";
+
+const geistHeading = Geist({subsets:['latin'],variable:'--font-heading'});
+
+const oxanium = Oxanium({subsets:['latin'],variable:'--font-sans'});
+
 
 // Next's font-loader compiler plugin requires the call be assigned to a
 // module-scope const. Unused otherwise — self-hosted @font-face injection
@@ -29,7 +35,7 @@ export default function RootLayout({
   children: ReactNode
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className={cn("font-sans", oxanium.variable, geistHeading.variable)}>
       <body className="font-sans antialiased">
         <Providers>
           <Layout>
