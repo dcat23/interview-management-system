@@ -1,4 +1,4 @@
-import { Role, ROLE_NAV } from '@feature/base/server';
+import { COMMON_NAV, Role, ROLE_NAV } from '@feature/base/server';
 import { ReactNode } from 'react';
 import { PROJECT_NAME } from '../../lib/constants/metadata';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarHeader, SidebarMenu, SidebarMenuItem } from '../ui/common/sidebar';
@@ -12,7 +12,7 @@ interface Props {
 }
 
 export function AppSidebar(props: Props) {
-  const navigation = props.role ? ROLE_NAV[props.role] : [];
+  const navigation = props.role ? ROLE_NAV[props.role] : COMMON_NAV;
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>

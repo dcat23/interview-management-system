@@ -1,7 +1,5 @@
 import { Fragment, ReactNode } from "react"
-import { RiDownloadLine } from "@remixicon/react"
 
-import { Badge } from "@app/dashboard/components/ui/common/badge"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -10,7 +8,6 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@app/dashboard/components/ui/common/breadcrumb"
-import { Button } from "@app/dashboard/components/ui/common/button"
 
 interface Crumb {
   label: string
@@ -23,7 +20,7 @@ interface Props {
   children?: ReactNode
 }
 
-export default function PageHeaderBlock({ title, breadcrumbs, children }: Props) {
+export default function AppPageHeader({ title, breadcrumbs, children }: Props) {
   const heading = title ?? breadcrumbs[breadcrumbs.length - 1]?.label
 
   return (

@@ -12,8 +12,20 @@ export interface NavItem {
     icon: IconName
 }
 
-export const DASHBOARD: NavItem = { 
+const DASHBOARD: NavItem = { 
     name: 'Dashboard', href: '/dashboard', icon: 'layout-dashboard' 
+}
+const QUESTIONS: NavItem = { 
+    name: 'Questions', href: '/questions', icon: 'book-open' 
+}
+const PROCESSES: NavItem = { 
+    name: 'Processes', href: '/processes', icon: 'briefcase'
+}
+const SESSIONS: NavItem = { 
+    name: 'Sessions', href: '/sessions', icon: 'calendar-check' 
+}
+const SETTINGS: NavItem = { 
+    name: 'Settings', href: '/settings', icon: 'settings' 
 }
 /**
  * [role-nav-items]
@@ -25,6 +37,7 @@ const supporter: NavItem[] = [
     { name: 'Processes', href: '/supporter/processes', icon: 'briefcase' },
     { name: 'Clients', href: '/supporter/clients', icon: 'building-2' },
     { name: 'Questions', href: '/supporter/questions', icon: 'book-open' },
+    SETTINGS,
 ] as const;
 
 export const ROLE_NAV: Record<Role, NavItem[]> = {
@@ -41,3 +54,10 @@ export const ROLE_NAV: Record<Role, NavItem[]> = {
         { name: 'Question Bank', href: '/admin/questions', icon: 'book-open' },
     ],
 } as const;
+
+export const COMMON_NAV: NavItem[] =[
+    DASHBOARD,
+    SETTINGS,
+]
+
+export { DASHBOARD }

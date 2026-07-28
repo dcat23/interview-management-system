@@ -19,7 +19,7 @@ export function AppSidebarNav({ navigation }: Props) {
   return (
     <SidebarMenu>
       {navigation.map((item) => (
-        <SidebarMenuItem>
+        <SidebarMenuItem key={item.name}>
           <SidebarMenuButton
             asChild
             isActive={item === currentPage}

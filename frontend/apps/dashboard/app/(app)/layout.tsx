@@ -13,7 +13,7 @@ async function AppLayout(props: Props) {
     <NavContextProvider>
       <SidebarProvider>
 
-        <AppSidebar role='supporter' />
+        <AppSidebar role={'supporter'} />
 
         <SidebarInset>
           <header className="flex h-16 shrink-0 items-center gap-3 border-b border-border bg-background px-4 sm:px-6">
@@ -23,10 +23,12 @@ async function AppLayout(props: Props) {
 
             <div className="ml-auto flex items-center gap-2">
               {/* Account menu */}
-              {/* Command listener */}
             </div>
           </header>
+
           {props.children}
+          
+          {/* Command listener */}
         </SidebarInset>
       </SidebarProvider>
     </NavContextProvider>

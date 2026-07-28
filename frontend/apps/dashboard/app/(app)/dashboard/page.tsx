@@ -1,5 +1,5 @@
 import { DASHBOARD } from "@feature/base/server";
-import PageHeaderBlock from "@app/dashboard/components/ui/page-header-block";
+import AppPageHeader from "@app/dashboard/components/app/app-page-header";
 
 interface Props {
   params: Promise<{}>;
@@ -11,7 +11,7 @@ async function AppDashboardPage(props: Props) {
 
   return (
     <>
-      <PageHeaderBlock
+      <AppPageHeader
         breadcrumbs={[
           { label: "Home", href: "/" },
           { label: DASHBOARD.name, href: DASHBOARD.href },
@@ -24,7 +24,7 @@ async function AppDashboardPage(props: Props) {
             </Button>
             <Button>Save Changes</Button>
           </div> */}
-      </PageHeaderBlock>
+      </AppPageHeader>
     </>
   );
 }
