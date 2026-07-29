@@ -8,6 +8,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import xyz.catuns.imp.api.client.entity.Client;
 import xyz.catuns.imp.api.client.repository.ClientRepository;
 import xyz.catuns.imp.api.process.dto.CreateProcessRequest;
 import xyz.catuns.imp.api.process.dto.InterviewProcessResponse;
@@ -19,7 +20,10 @@ import xyz.catuns.imp.api.user.entity.User;
 import xyz.catuns.imp.api.user.repository.UserRepository;
 import xyz.catuns.spring.base.exception.controller.NotFoundException;
 
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -38,14 +42,43 @@ public class InterviewProcessService {
             UUID candidateId = resolveUserId(authentication.getName());
             spec = spec.and((root, query, cb) -> cb.equal(root.get("candidateId"), candidateId));
         }
-        return processRepository.findAll(spec, pageable).map(processMapper::toResponse);
+
+        Page<InterviewProcess> processes = processRepository.findAll(spec, pageable);
+
+        List<UUID> candidateIds = processes.getContent().stream()
+                .map(InterviewProcess::getCandidateId)
+                .distinct()
+                .toList();
+        List<UUID> clientIds = processes.getContent().stream()
+                .map(InterviewProcess::getClientId)
+                .distinct()
+                .toList();
+
+        Map<UUID, String> candidateNamesById = userRepository.findAllById(candidateIds).stream()
+                .collect(Collectors.toMap(User::getId, User::getName));
+        Map<UUID, String> clientNamesById = clientRepository.findAllById(clientIds).stream()
+                .collect(Collectors.toMap(Client::getId, Client::getName));
+
+        return processes.map(process -> processMapper.toResponse(
+                process,
+                candidateNamesById.get(process.getCandidateId()),
+                clientNamesById.get(process.getClientId())
+        ));
     }
 
     @PreAuthorize("hasAnyRole('ADMIN','MARKETER','SUPPORTER') or @interviewProcessService.isCandidateOwner(#id, authentication.name)")
     public InterviewProcessResponse getById(UUID id) {
-        return processRepository.findById(id)
-                .map(processMapper::toResponse)
+        InterviewProcess process = processRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Process not found"));
+
+        String candidateName = userRepository.findById(process.getCandidateId())
+                .map(User::getName)
+                .orElse(null);
+        String clientName = clientRepository.findById(process.getClientId())
+                .map(Client::getName)
+                .orElse(null);
+
+        return processMapper.toResponse(process, candidateName, clientName);
     }
 
     @PreAuthorize("hasAnyRole('ADMIN','MARKETER')")

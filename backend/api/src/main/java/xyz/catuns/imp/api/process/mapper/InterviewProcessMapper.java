@@ -15,7 +15,13 @@ import xyz.catuns.imp.api.process.entity.InterviewProcess;
 )
 public interface InterviewProcessMapper {
 
+    @Mapping(target = "candidateName", ignore = true)
+    @Mapping(target = "clientName", ignore = true)
     InterviewProcessResponse toResponse(InterviewProcess process);
+
+    @Mapping(target = "candidateName", source = "candidateName")
+    @Mapping(target = "clientName", source = "clientName")
+    InterviewProcessResponse toResponse(InterviewProcess process, String candidateName, String clientName);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "status", ignore = true)

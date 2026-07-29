@@ -8,7 +8,9 @@ import java.util.UUID;
 public record InterviewProcessResponse(
         UUID id,
         UUID candidateId,
+        String candidateName,
         UUID clientId,
+        String clientName,
         UUID marketerId,
         String technology,
         String jobId,
