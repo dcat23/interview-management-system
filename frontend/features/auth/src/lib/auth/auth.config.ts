@@ -1,7 +1,7 @@
+import { logger } from '@next-feature/logging/server';
 import type { NextAuthConfig } from 'next-auth';
 import { authorized, jwt, redirect, session } from './callbacks';
-import { ApiError } from '@next-feature/client';
-import { logger } from '@next-feature/logging/server';
+import { ApiAuthError } from './error';
 
 const log = logger.child({ module: 'auth-config' });
 const VERCEL_DEPLOYMENT = !!process.env.VERCEL_URL;
@@ -38,7 +38,7 @@ export const authConfig = {
   },
   logger: {
     error(error) {
-      if (error instanceof ApiError) {
+      if (error instanceof ApiAuthError) {
         log.error(error.body);
         return;
       }

@@ -1,4 +1,4 @@
-import { LoginForm } from "@app/web/components/ui/login-form";
+import { LoginForm } from "@app/web/components/auth/login-form";
 import { GalleryVerticalEndIcon } from "lucide-react";
 
 interface Props {
