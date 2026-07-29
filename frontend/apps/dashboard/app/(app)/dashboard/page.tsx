@@ -13,8 +13,8 @@ async function AppDashboardPage(props: Props) {
     <>
       <AppPageHeader
         breadcrumbs={[
-          { label: "Home", href: "/" },
-          { label: DASHBOARD.name, href: DASHBOARD.href },
+          { label: "Home", href: DASHBOARD.href },
+          // { label: DASHBOARD.name, href: DASHBOARD.href },
         ]}
       >
         {/* <div className="flex items-center gap-2">
