@@ -22,6 +22,8 @@ import { ApiResponse } from "@next-feature/client"
 import { loginFormAction, LoginRequest } from "@feature/auth/server"
 import { useRouter } from "next/navigation"
 import { useActionState, useEffect } from "react"
+import { toast } from "sonner"
+import { LoginButton } from "./login-button"
 
 interface Props<T> extends React.ComponentProps<"div"> {
   action?: (
@@ -51,6 +53,18 @@ export function LoginForm({
     }
   }, [formState.success, router]);
 
+  useEffect(() => {
+    if (!formState.message) return;
+
+    if (formState.success) {
+      toast.success(formState.message, {
+        description: "Redirecting..."
+      });
+    } else if (formState.error) {
+      toast.error(formState.message);
+    } 
+  }, [formState.message, formState.success, formState.error]);
+
   const displayError = (key: string) => {
     if (formState?.error?.body?.errors && formState.error.body.errors[key]) {
       return (
@@ -58,22 +72,6 @@ export function LoginForm({
       );
     }
     return null;
-  };
-
-  const displayMessage = () => {
-    if (!formState.message) return null;
-
-    const colorClasses = formState.success
-      ? 'bg-green-50 text-green-700'
-      : formState.error
-        ? 'bg-red-50 text-red-700'
-        : 'bg-primary/10 text-primary';
-
-    return (
-      <div className={`rounded-md p-3 text-sm ${colorClasses}`}>
-        {formState.message}
-      </div>
-    );
   };
 
   return (
@@ -110,7 +108,6 @@ export function LoginForm({
               <FieldSeparator className="*:data-[slot=field-separator-content]:bg-card">
                 Or continue with
               </FieldSeparator>
-              {displayMessage()}
               <Field data-invalid={!!formState.error?.body?.errors?.['email']}>
                 <FieldLabel htmlFor="email">Email</FieldLabel>
                 <Input
@@ -120,7 +117,7 @@ export function LoginForm({
                   defaultValue={formState.data.email ?? ''}
                   aria-invalid={!!formState.error?.body?.errors?.['email']}
                   disabled={isPending}
-                  placeholder="m@example.com"
+                  placeholder="me@evaitcs.com"
                   required
                 />
                 {displayError('email')}
@@ -139,6 +136,7 @@ export function LoginForm({
                   id="password"
                   name="password"
                   type="password"
+                  placeholder="*******"
                   defaultValue={formState.data.password ?? ''}
                   aria-invalid={!!formState.error?.body?.errors?.['password']}
                   disabled={isPending}
@@ -147,9 +145,7 @@ export function LoginForm({
                 {displayError('password')}
               </Field>
               <Field>
-                <Button type="submit" disabled={isPending}>
-                  {isPending ? 'Signing in..' : 'Login'}
-                </Button>
+                <LoginButton success={formState.success} />
                 <FieldDescription className="text-center">
                   Don&apos;t have an account? <a href="#">Sign up</a>
                 </FieldDescription>
