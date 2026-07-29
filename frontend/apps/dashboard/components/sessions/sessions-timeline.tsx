@@ -1,6 +1,8 @@
 'use client';
 
 import { ReactNode } from 'react';
+import { TimelineProvider, Timeline, TimelineGrid, TimelineHeader, TimelineRow, TimelineSlot, TimelineSlotLabel, TimelineSlotContent, TimelineCurrentTime, TimelineRowData, TimelineSlotData } from '../ui/timeline';
+import SessionTimelineSlot from './session-timeline-slot';
 
 interface Props {
   data?: unknown;
@@ -8,51 +10,38 @@ interface Props {
 }
 
 export function SessionsTimeline(props: Props) {
+  const rows: TimelineRowData[] = []
+  const slots: TimelineSlotData[] = []
+
+  function moveSlot(slotId: string, newTime: string, newRowId: string): boolean | Promise<boolean> {
+    throw new Error('Function not implemented.');
+  }
+
   return (
     <TimelineProvider
-      config={{ startHour: 8, endHour: 18, snapIntervalMinutes: 15 }}
-      onSlotClick={(slotId) => {
-        setSelectedSlot(slots.find((slot) => slot.id === slotId) ?? null);
-      }}
+      config={{ startHour: 8, endHour: 18, snapIntervalMinutes: 30 }}
+      percentageInView={72}
+      onValidateDrop={(_slotId, newTime, newRowId) =>
+        !(newRowId === "studio-c" && newTime < "12:00")
+      }
       onSlotPositionChange={moveSlot}
-      onSlotResize={resizeSlot}
     >
       <Timeline slots={slots} rows={rows}>
         <TimelineGrid>
-          <TimelineHeader columnLabel="Room" />
+          <TimelineHeader columnLabel="Team" />
+          <TimelineCurrentTime />
           {rows.map((row) => (
-            <TimelineRow key={row.id} row={row} slots={slots}>
-              {(slot) => (
-                <TimelineSlot slot={slot}>
-                  <ContextMenu>
-                    <ContextMenuTrigger asChild>
-                      <div className="flex h-full flex-col justify-center px-3">
-                        <TimelineSlotLabel>
-                          {String(slot.title)}
-                        </TimelineSlotLabel>
-                        <TimelineSlotContent>
-                          {slot.startTime}
-                        </TimelineSlotContent>
-                      </div>
-                    </ContextMenuTrigger>
-                    <ContextMenuContent>
-                      <ContextMenuItem onSelect={() => setSelectedSlot(slot)}>
-                        Open details
-                      </ContextMenuItem>
-                      <ContextMenuItem onSelect={() => duplicateSlot(slot)}>
-                        Duplicate slot
-                      </ContextMenuItem>
-                      <ContextMenuItem
-                        variant="destructive"
-                        className="bg-destructive/10 text-destructive"
-                        onSelect={() => deleteSlot(slot)}
-                      >
-                        Delete slot
-                      </ContextMenuItem>
-                    </ContextMenuContent>
-                  </ContextMenu>
-                </TimelineSlot>
-              )}
+            <TimelineRow
+              key={row.id}
+              row={row}
+              slots={slots}
+              renderRowExtras={(item) =>
+                item.id === "studio-c" ? (
+                  <div className="absolute top-0 bottom-0 left-0 w-[240px] bg-muted/40" />
+                ) : null
+              }
+            >
+              {(slot) => <SessionTimelineSlot slot={slot} />}
             </TimelineRow>
           ))}
         </TimelineGrid>

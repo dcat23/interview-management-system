@@ -1,5 +1,5 @@
 import { Badge } from '@feature/ui/components/badge';
-import { cn } from '@feature/ui/lib/utils';
+import { cn } from '@feature/ui/lib/ui/utils';
 import type { FeedbackState } from '@app/web/lib/data/sessions';
 import type { SessionStatus } from '@feature/base/server';
 

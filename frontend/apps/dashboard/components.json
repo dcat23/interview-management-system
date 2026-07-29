@@ -22,6 +22,7 @@
     "hooks": "@app/dashboard/hooks/ui"
   },
   "registries": {
-    "@7ovr": "https://7ovr.com/r/{name}.json"
+    "@7ovr": "https://7ovr.com/r/{name}.json",
+    "@blocks-so": "https://blocks.so/r/{name}.json"
   }
 }

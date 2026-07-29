@@ -8,7 +8,9 @@
 export interface InterviewProcess {
   id: string;
   candidateId: string;
+  candidateName: string | null;
   clientId: string;
+  clientName: string | null;
   marketerId: string;
   technology: string;
   description: string | null;

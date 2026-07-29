@@ -24,7 +24,7 @@ export default function AppPageHeader({ title, breadcrumbs, children }: Props) {
   const heading = title ?? breadcrumbs[breadcrumbs.length - 1]?.label
 
   return (
-    <section className="min-h-svh w-full bg-background px-4 py-12 text-foreground">
+    <section className="min-h-svh w-full bg-background px-2 py-6 text-foreground">
       <div className="mx-auto w-full max-w-5xl">
         <Breadcrumb className="mb-4">
           <BreadcrumbList>

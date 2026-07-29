@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { Menu, X, LogOut, Moon, Sun } from 'lucide-react';
 import { DynamicIcon } from 'lucide-react/dynamic';
 import { useRef, useState } from 'react';
-import { cn } from '@feature/ui/lib/utils';
+import { cn } from '@feature/ui/lib/ui/utils';
 import { Button } from '@feature/ui/components/button';
 import { Avatar, AvatarFallback } from '@feature/ui/components/avatar';
 import {
