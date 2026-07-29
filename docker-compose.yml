@@ -9,6 +9,8 @@ services:
       SPRING_PROFILES_ACTIVE: docker,seed-data
       JWT_SECRET: ${JWT_SECRET}
       FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://web:4200}
+      JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=75.0
+    mem_limit: 1g
     depends_on:
       postgres:
         condition: service_healthy
@@ -59,6 +61,7 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: "1"
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: "1"
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: "0"
+    mem_limit: 1500m
     volumes:
       - kafka-1-data:/var/lib/kafka/data
       - ./infra/kafka/server.properties:/opt/kafka/config/server.properties
@@ -79,6 +82,7 @@ services:
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-password}
       POSTGRES_DB: ${DATABASE_NAME:-ims}
       PGDATA: /data/postgres
+    mem_limit: 512m
     volumes:
       - postgres:/data/postgres
       - ./infra/postgres:/docker-entrypoint-initdb.d
@@ -95,6 +99,7 @@ services:
 
   redis:
     image: redis
+    mem_limit: 256m
     ports:
       - "${REDIS_PORT:-6379}:6379"
     networks:
