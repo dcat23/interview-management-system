@@ -53,7 +53,9 @@
     },
     "shadcn": {
       "executor": "next-feature:shadcn",
-      "options": {}
+      "options": {
+        "args": "apply --preset b3a06ikKH2"
+      }
     }
   }
 }

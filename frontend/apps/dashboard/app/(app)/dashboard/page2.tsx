@@ -10,7 +10,7 @@ async function AppDashboardPage(props: Props) {
   const params = await props.params;
 
   return (
-    <>
+    <div>
       <AppPageHeader
         breadcrumbs={[
           { label: "Home", href: DASHBOARD.href },
@@ -25,7 +25,7 @@ async function AppDashboardPage(props: Props) {
             <Button>Save Changes</Button>
           </div> */}
       </AppPageHeader>
-    </>
+    </div>
   );
 }
 

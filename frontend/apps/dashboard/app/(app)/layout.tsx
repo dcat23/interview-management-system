@@ -3,6 +3,7 @@ import { SidebarInset, SidebarProvider, SidebarTrigger } from '@app/dashboard/co
 import { ReactNode } from 'react';
 import AppSidebar from '../../components/app/app-sidebar';
 import NavContextProvider from '../../stores/nav-context';
+import { Separator } from '@app/dashboard/components/ui/common/separator';
 
 interface Props {
   children: ReactNode;
@@ -11,7 +12,7 @@ interface Props {
 async function AppLayout(props: Props) {
   return (
     <NavContextProvider>
-      <SidebarProvider>
+      <SidebarProvider defaultOpen className='min-h-svh'>
 
         <AppSidebar role={'supporter'} />
 
@@ -22,11 +23,15 @@ async function AppLayout(props: Props) {
             <CommandButton />
 
             <div className="ml-auto flex items-center gap-2">
+              {/* Notification menu */}
               {/* Account menu */}
             </div>
           </header>
-
-          {props.children}
+          <main className='flex-1 overflow-auto p-4 sm:p-6'>
+            <div className="mx-auto w-full max-w-5xl space-y-6">
+              {props.children}
+            </div>
+          </main>
           
           {/* Command listener */}
         </SidebarInset>

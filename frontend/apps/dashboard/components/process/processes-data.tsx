@@ -98,6 +98,21 @@ const columns2: DataTableColumn<Project>[] = [
   },
 ]
 
+const data: Project[] = [
+  {
+    id: '1',
+    name: '',
+    status: 'Ready',
+    owner: 'd'
+  },
+  {
+    id: '2',
+    name: '',
+    status: 'Ready',
+    owner: 'me'
+  }
+]
+
 export function ProcessesData() {
   const [page, setPage] = useState(0);
   const [limit, setLimit] = useState(DEFAULT_PAGE_SIZE);
@@ -108,9 +123,7 @@ export function ProcessesData() {
     <section className="min-h-svh w-full bg-background px-4 py-6 text-foreground">
       <div className="mx-auto w-full max-w-5xl">
         <DataTable 
-        columns={columns2} data={[]} getRowId={function (row: unknown): string {
-        throw new Error("Function not implemented.");
-      } } 
+        columns={columns2} data={data} getRowId={(row) => row.id} 
       />
       <ProcessDataTable
         pageResponse={pageResponse}
@@ -122,6 +135,7 @@ export function ProcessesData() {
         }}
         columns={columns}
         getRowId={(row) => row.id}
+        enableRowSelection
         enableSorting
         searchPlaceholder="Search processes"
         searchableText={(process) => [

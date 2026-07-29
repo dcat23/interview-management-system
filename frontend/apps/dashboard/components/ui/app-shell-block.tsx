@@ -78,6 +78,7 @@ import {
 } from "@app/dashboard/components/ui/common/sidebar"
 import { Toaster } from "@app/dashboard/components/ui/common/sonner"
 import { PROJECT_NAME } from "@app/dashboard/lib/constants/metadata"
+import { Separator } from "./common/separator"
 
 const navItems = [
   { label: "Overview", icon: RiLayoutGridLine },
@@ -310,7 +311,7 @@ export default function AppShellBlock({
       <SidebarInset>
         <header className="flex h-16 shrink-0 items-center gap-3 border-b border-border bg-background px-4 sm:px-6">
           <SidebarTrigger className="-ml-1" />
-
+          <Separator orientation="vertical" className="mr-2 h-4" />
           <button
             type="button"
             onClick={() => setCommandOpen(true)}
@@ -449,6 +450,7 @@ export default function AppShellBlock({
         <main className="flex-1 overflow-auto p-4 sm:p-6">
           {children ?? (
             <div className="mx-auto w-full max-w-5xl space-y-6">
+              {/* Active nav */}
               <div className="flex flex-wrap items-end justify-between gap-3">
                 <div>
                   <h1 className="text-2xl font-semibold tracking-tight">
@@ -463,7 +465,7 @@ export default function AppShellBlock({
                   Live
                 </Badge>
               </div>
-
+              {/* Stats */}
               <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
                 {stats.map((stat) => (
                   <Card key={stat.label}>
@@ -491,7 +493,7 @@ export default function AppShellBlock({
                   </Card>
                 ))}
               </div>
-
+              {/* Grid */}
               <div className="grid gap-4 md:grid-cols-3">
                 <Card className="md:col-span-2">
                   <CardHeader>
