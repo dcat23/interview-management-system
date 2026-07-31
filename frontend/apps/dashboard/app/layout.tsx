@@ -5,8 +5,12 @@ import { ReactNode } from 'react';
 import './global.css';
 import Providers from './providers';
 import { Layout } from '../components/layout';
-import { JetBrains_Mono } from "next/font/google";
+import { JetBrains_Mono, Oxanium, Geist } from "next/font/google";
 import { cn } from "@app/dashboard/lib/ui/utils";
+
+const geistHeading = Geist({subsets:['latin'],variable:'--font-heading'});
+
+const oxanium = Oxanium({subsets:['latin'],variable:'--font-sans'});
 
 const jetbrainsMono = JetBrains_Mono({subsets:['latin'],variable:'--font-mono'});
 
@@ -55,7 +59,7 @@ export default function RootLayout({
   children: ReactNode
 }) {
   return (
-    <html lang="en" suppressHydrationWarning className={cn("font-mono", jetbrainsMono.variable)}>
+    <html lang="en" suppressHydrationWarning className={cn( jetbrainsMono.variable, "font-sans", oxanium.variable, geistHeading.variable)}>
       <body>
         <Providers>
           <Layout>

@@ -6,14 +6,12 @@
   "tailwind": {
     "config": "",
     "css": "app/global.css",
-    "baseColor": "neutral",
+    "baseColor": "stone",
     "cssVariables": true,
     "prefix": ""
   },
-  "iconLibrary": "phosphor",
+  "iconLibrary": "lucide",
   "rtl": false,
-  "menuColor": "default",
-  "menuAccent": "subtle",
   "aliases": {
     "components": "@app/dashboard/components/ui",
     "utils": "@app/dashboard/lib/ui/utils",
@@ -21,6 +19,8 @@
     "lib": "@app/dashboard/lib/ui",
     "hooks": "@app/dashboard/hooks/ui"
   },
+  "menuColor": "default-translucent",
+  "menuAccent": "subtle",
   "registries": {
     "@7ovr": "https://7ovr.com/r/{name}.json",
     "@blocks-so": "https://blocks.so/r/{name}.json"

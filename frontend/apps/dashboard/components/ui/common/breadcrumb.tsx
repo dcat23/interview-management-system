@@ -1,10 +1,8 @@
-"use client"
-
 import * as React from "react"
 import { Slot } from "radix-ui"
 
 import { cn } from "@app/dashboard/lib/ui/utils"
-import { CaretRightIcon, DotsThreeIcon } from "@phosphor-icons/react"
+import { ChevronRightIcon, MoreHorizontalIcon } from "lucide-react"
 
 function Breadcrumb({ className, ...props }: React.ComponentProps<"nav">) {
   return (
@@ -85,7 +83,7 @@ function BreadcrumbSeparator({
       {...props}
     >
       {children ?? (
-        <CaretRightIcon />
+        <ChevronRightIcon />
       )}
     </li>
   )
@@ -106,7 +104,7 @@ function BreadcrumbEllipsis({
       )}
       {...props}
     >
-      <DotsThreeIcon
+      <MoreHorizontalIcon
       />
       <span className="sr-only">More</span>
     </span>

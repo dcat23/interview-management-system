@@ -1,5 +1,5 @@
-import { Role } from "./user";
-import { type IconName } from "lucide-react/dynamic"
+import type { Role } from "./user";
+import type { IconName } from "lucide-react/dynamic"
 
 /**
  * [nav-item]
@@ -13,7 +13,7 @@ export interface NavItem {
 }
 
 export const DASHBOARD: NavItem = { 
-    name: 'Dashboard', href: '/dashboard', icon: 'layout-dashboard' 
+    name: 'Home', href: '/dashboard', icon: 'layout-dashboard' 
 }
 export const QUESTIONS: NavItem = { 
     name: 'Questions', href: '/questions', icon: 'book-open' 
@@ -60,11 +60,15 @@ export const COMMON_NAV: NavItem[] =[
     SESSIONS,
     PROCESSES,
     QUESTIONS,
-    SETTINGS,
 ]
 
 export const AVAILABLE_NAV: NavItem[] =[
     DASHBOARD,
     SESSIONS,
     PROCESSES
+]
+
+
+export const SECONDARY_NAV: NavItem[] =[
+    SETTINGS
 ]

@@ -26,6 +26,7 @@ export const jwt: Callbacks['jwt'] = async ({ token, user }) => {
   // Dynamic import avoids a static cycle through lib/auth/index.ts (which
   // pulls in the credentials provider and its `login` action) — auth.config.ts
   // must stay importable without that provider graph.
+  log.info(`token expires in ${(Date.now() - token.expiration / 1000)}s`)
   const { refresh } = await import('../actions/auth');
   const response = await refresh({ refreshToken: token.refreshToken });
 

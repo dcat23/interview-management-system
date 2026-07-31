@@ -1,9 +1,8 @@
-import CommandButton from '@app/dashboard/components/app/command-button';
-import { SidebarInset, SidebarProvider, SidebarTrigger } from '@app/dashboard/components/ui/common/sidebar';
+import AppHeader from '@app/dashboard/components/app/app-header';
+import { AppSidebar } from '@app/dashboard/components/app/app-sidebar';
+import { SidebarInset, SidebarProvider } from '@app/dashboard/components/ui/common/sidebar';
+import NavContextProvider from '@app/dashboard/stores/nav-context';
 import { ReactNode } from 'react';
-import AppSidebar from '../../components/app/app-sidebar';
-import NavContextProvider from '../../stores/nav-context';
-import { Separator } from '@app/dashboard/components/ui/common/separator';
 
 interface Props {
   children: ReactNode;
@@ -12,23 +11,21 @@ interface Props {
 async function AppLayout(props: Props) {
   return (
     <NavContextProvider>
-      <SidebarProvider defaultOpen className='min-h-svh'>
-
-        <AppSidebar role={'supporter'} />
+      <SidebarProvider defaultOpen 
+        style={
+          {
+            "--sidebar-width": "calc(var(--spacing) * 72)",
+            "--header-height": "calc(var(--spacing) * 12)",
+          } as React.CSSProperties
+        }
+      >
+        <AppSidebar variant="inset" />
 
         <SidebarInset>
-          <header className="flex h-16 shrink-0 items-center gap-3 border-b border-border bg-background px-4 sm:px-6">
-            <SidebarTrigger className="-ml-1" />
-
-            <CommandButton />
-
-            <div className="ml-auto flex items-center gap-2">
-              {/* Notification menu */}
-              {/* Account menu */}
-            </div>
-          </header>
-          <main className='flex-1 overflow-auto p-4 sm:p-6'>
-            <div className="mx-auto w-full max-w-5xl space-y-6">
+          <AppHeader />
+          
+          <main className='flex flex-1 flex-col'>
+            <div className="@container/main flex flex-1 flex-col gap-2">
               {props.children}
             </div>
           </main>

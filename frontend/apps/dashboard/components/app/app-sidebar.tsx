@@ -1,80 +1,57 @@
-import { AVAILABLE_NAV, Role, ROLE_NAV } from '@feature/base/server';
+import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@app/dashboard/components/ui/common/sidebar';
+import { PROJECT_NAME } from '@app/dashboard/lib/constants/metadata';
+import { DASHBOARD_NAV } from '@app/dashboard/lib/constants/navigation';
+import { auth, User } from '@feature/auth/server';
+import { Role, SECONDARY_NAV } from '@feature/base/server';
+import { CommandIcon } from 'lucide-react';
+import Link from 'next/link';
 import { ReactNode } from 'react';
-import { PROJECT_NAME } from '../../lib/constants/metadata';
-import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarHeader, SidebarMenu, SidebarMenuItem } from '../ui/common/sidebar';
-import AccountMenu from './account-menu';
-import AppAccountMenuButton from './app-account-menu-button';
-import AppSidebarNav from './app-sidebar-nav';
+import { AppSidebarNavMain } from './app-sidebar-nav-main';
+import { AppSidebarNavSecondary } from './app-sidebar-nav-secondary';
+import { AppSidebarNavUser } from './app-sidebar-nav-user';
 
-interface Props {
-  role: Role;
+interface Props extends React.ComponentProps<typeof Sidebar> {
+  role?: Role;
   children?: ReactNode;
 }
 
-export function AppSidebar(props: Props) {
-  // const navigation = props.role ? ROLE_NAV[props.role] : COMMON_NAV;
-  const navigation = AVAILABLE_NAV;
+export async function AppSidebar({ role, ...props }: Props) {
+  const session = await auth();
+  const user = session?.user ?? {} as User;
+
+  const navMain = DASHBOARD_NAV[user.role] || [];
+  
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
-        <div className="flex h-10 items-center gap-2 px-1 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
-          <svg
-            viewBox="0 0 24 24"
-            fill="currentColor"
-            aria-hidden="true"
-            className="size-5 shrink-0 text-foreground"
-          >
-            <rect
-              x="3"
-              y="3"
-              width="8"
-              height="8"
-              transform="rotate(-6 7 7)"
-            />
-            <rect
-              x="3"
-              y="13"
-              width="8"
-              height="8"
-              transform="rotate(5 7 17)"
-            />
-            <rect
-              x="13"
-              y="13"
-              width="8"
-              height="8"
-              transform="rotate(-4 17 17)"
-            />
-            <rect
-              x="13"
-              y="3"
-              width="8"
-              height="8"
-              transform="rotate(15 17 7)"
-            />
-          </svg>
-          <span className="truncate text-base font-semibold group-data-[collapsible=icon]:hidden">
-            {PROJECT_NAME}
-          </span>
-        </div>
-      </SidebarHeader>
-
-      <SidebarContent>
-        <SidebarGroup>
-          <AppSidebarNav navigation={navigation} />
-        </SidebarGroup>
-      </SidebarContent>
-
-      <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <AccountMenu
-              trigger={
-                <AppAccountMenuButton />
-              }
-            />
+            <SidebarMenuButton
+              asChild
+              className="data-[slot=sidebar-menu-button]:p-1.5!"
+            >
+              <Link href="/">
+                <CommandIcon className="size-5!" />
+                <span className="text-base font-semibold">{PROJECT_NAME}</span>
+              </Link>
+            </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
+      </SidebarHeader>
+      <SidebarContent>
+        {/* Main nav */}
+        <AppSidebarNavMain items={navMain} />
+        {/* <AppSidebarNavDocuments items={data.documents} /> */}
+        <AppSidebarNavSecondary items={SECONDARY_NAV} className="mt-auto" />
+      </SidebarContent>
+      <SidebarFooter>
+        <AppSidebarNavUser 
+          user={{
+            name: user.name as string,
+            email: user.email as string,
+            image: user.image as string,
+          }} 
+        />
       </SidebarFooter>
     </Sidebar>
   );

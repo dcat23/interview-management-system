@@ -3,7 +3,7 @@
  * next-feature@0.1.3-2
  * March 11th 2026, 2:32:32 am
  */
-export const PROJECT_NAME = "dashboard";
+export const PROJECT_NAME = "Interview Portal";
 
 /**
  * [project-description]

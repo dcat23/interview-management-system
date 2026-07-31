@@ -22,7 +22,7 @@ import {
 } from "@app/dashboard/components/ui/common/sidebar"
 import { DotsThreeVerticalIcon, UserCircleIcon, CreditCardIcon, BellIcon, SignOutIcon } from "@phosphor-icons/react"
 
-export function NavUser({
+export function AppSidebarNavUser({
   user,
 }: {
   user: {

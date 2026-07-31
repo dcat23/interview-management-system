@@ -7,3 +7,4 @@ export * from './lib/types/session';
 export * from './lib/types/user';
 export * from './lib/utils/api';
 export * from './lib/utils/index';
+export * from './lib/utils/strings';
