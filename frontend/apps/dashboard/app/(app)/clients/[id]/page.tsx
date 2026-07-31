@@ -24,7 +24,7 @@ async function AppClientsIdPage(props: Props) {
   return (
     <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
       <AppPageHeader
-        title="Interview Processes"
+        title={client.name}
         breadcrumbs={[
           { label: 'Home', href: DASHBOARD.href },
           { label: 'Clients', href: '/clients' },

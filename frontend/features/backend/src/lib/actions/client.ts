@@ -28,3 +28,16 @@ export const getClients = withApi(
     fallbackData: { data: [], total: 0, page: 0, limit: 0 },
   },
 );
+/**
+ * [get-client-by-id]
+ * next-feature@0.1.4-2
+ * July 31st 2026, 10:22:07 am
+ */
+
+export type GetClientByIdResponse = Client;
+
+export const getClientById = withApi(async (id: string) => {
+  const endpoint = '/clients/' + id;
+
+  return await api.get<GetClientByIdResponse>(endpoint);
+}, {});

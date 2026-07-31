@@ -16,13 +16,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../ui/common/select';
-import {
-  DataTableColumn,
-  DataTableSortState,
-  ProcessDataTable,
-} from './process-data-table';
+import { DataTable, DataTableColumn, DataTableSortState } from '../data-table';
 import { useRouter } from 'next/navigation';
-import {AnimatedCalendar} from "@app/dashboard/components/ui/common/calender";
+import { AnimatedCalendar } from '@app/dashboard/components/ui/common/calender';
 
 const DEFAULT_PAGE_SIZE = 10;
 const ALL_STATUSES = 'all';
@@ -117,8 +113,12 @@ export function ProcessesData() {
     search: debouncedSearch.trim() || undefined,
     status,
     clientId,
-    startedFrom: dateRange?.from ? moment(dateRange.from).format('YYYY-MM-DD') : undefined,
-    startedTo: dateRange?.to ? moment(dateRange.to).format('YYYY-MM-DD') : undefined,
+    startedFrom: dateRange?.from
+      ? moment(dateRange.from).format('YYYY-MM-DD')
+      : undefined,
+    startedTo: dateRange?.to
+      ? moment(dateRange.to).format('YYYY-MM-DD')
+      : undefined,
     sort: sortState
       ? `${sortState.columnId},${sortState.direction}`
       : undefined,
@@ -127,7 +127,7 @@ export function ProcessesData() {
   return (
     <section className="min-h-svh w-full bg-background px-4 py-6 text-foreground">
       <div className="mx-auto w-full max-w-5xl">
-        <ProcessDataTable
+        <DataTable
           pageResponse={pageResponse}
           isLoading={isLoading}
           onPageChange={setPage}

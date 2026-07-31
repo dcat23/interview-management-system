@@ -197,7 +197,7 @@ function formatCellValue(value: ReactNode): ReactNode {
   return value
 }
 
-export function ProcessDataTable<TData>({
+export function DataTable<TData>({
   columns,
   data: dataProp,
   getRowId,
