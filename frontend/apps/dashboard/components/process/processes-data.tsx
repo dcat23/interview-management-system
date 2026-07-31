@@ -22,6 +22,7 @@ import {
   ProcessDataTable,
 } from './process-data-table';
 import { useRouter } from 'next/navigation';
+import {AnimatedCalendar} from "@app/dashboard/components/ui/common/calender";
 
 const DEFAULT_PAGE_SIZE = 10;
 const ALL_STATUSES = 'all';
@@ -101,6 +102,10 @@ export function ProcessesData() {
   const [status, setStatus] = useState<ProcessStatus | undefined>(undefined);
   const [clientId, setClientId] = useState<string | undefined>(undefined);
   const [sortState, setSortState] = useState<DataTableSortState>(null);
+  const [dateRange, setDateRange] = useState<{
+    from: Date | undefined;
+    to: Date | undefined;
+  }>();
   const debouncedSearch = useDebouncedValue(search, 400);
   const router = useRouter();
 
@@ -112,6 +117,8 @@ export function ProcessesData() {
     search: debouncedSearch.trim() || undefined,
     status,
     clientId,
+    startedFrom: dateRange?.from ? moment(dateRange.from).format('YYYY-MM-DD') : undefined,
+    startedTo: dateRange?.to ? moment(dateRange.to).format('YYYY-MM-DD') : undefined,
     sort: sortState
       ? `${sortState.columnId},${sortState.direction}`
       : undefined,
@@ -145,6 +152,16 @@ export function ProcessesData() {
           }}
           toolbarActions={() => (
             <>
+              <AnimatedCalendar
+                mode="range"
+                className="h-8 w-44"
+                value={dateRange}
+                onChange={(value) => {
+                  setDateRange(value);
+                  setPage(0);
+                }}
+                placeholder="Select date range"
+              />
               <Select
                 value={status ?? ALL_STATUSES}
                 onValueChange={(value) => {

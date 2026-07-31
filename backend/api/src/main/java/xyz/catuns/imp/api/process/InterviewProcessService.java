@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import xyz.catuns.imp.api.client.entity.Client;
 import xyz.catuns.imp.api.client.repository.ClientRepository;
+import xyz.catuns.imp.api.common.util.DateRangeUtil;
 import xyz.catuns.imp.api.process.dto.CreateProcessRequest;
 import xyz.catuns.imp.api.process.dto.InterviewProcessResponse;
 import xyz.catuns.imp.api.process.dto.UpdateProcessRequest;
@@ -29,6 +30,8 @@ import xyz.catuns.imp.api.user.repository.UserRepository;
 import xyz.catuns.spring.base.exception.controller.BadRequestException;
 import xyz.catuns.spring.base.exception.controller.NotFoundException;
 
+import java.time.Instant;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -59,7 +62,12 @@ public class InterviewProcessService {
 
     @PreAuthorize("isAuthenticated()")
     public Page<InterviewProcessResponse> list(String search, ProcessStatus status, UUID clientId,
+                                                LocalDate startedFrom, LocalDate startedTo,
                                                 Pageable pageable, Authentication authentication) {
+        if (startedFrom != null && startedTo != null && startedFrom.isAfter(startedTo)) {
+            throw new BadRequestException("startedFrom must not be after startedTo");
+        }
+
         Specification<InterviewProcess> spec = Specification.unrestricted();
         if (isCandidate(authentication)) {
             UUID candidateId = resolveUserId(authentication.getName());
@@ -70,6 +78,14 @@ public class InterviewProcessService {
         }
         if (clientId != null) {
             spec = spec.and((root, query, cb) -> cb.equal(root.get("clientId"), clientId));
+        }
+        if (startedFrom != null) {
+            Instant from = DateRangeUtil.startOfDayUtc(startedFrom);
+            spec = spec.and((root, query, cb) -> cb.greaterThanOrEqualTo(root.get("startedAt"), from));
+        }
+        if (startedTo != null) {
+            Instant toExclusive = DateRangeUtil.startOfNextDayUtc(startedTo);
+            spec = spec.and((root, query, cb) -> cb.lessThan(root.get("startedAt"), toExclusive));
         }
         if (search != null && !search.isBlank()) {
             String pattern = "%" + search.trim().toLowerCase(Locale.ROOT) + "%";

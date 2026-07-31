@@ -18,6 +18,7 @@ import xyz.catuns.imp.api.process.dto.UpdateProcessRequest;
 import xyz.catuns.imp.api.process.entity.ProcessStatus;
 
 import java.net.URI;
+import java.time.LocalDate;
 import java.util.UUID;
 
 @RestController
@@ -33,24 +34,27 @@ public class ProcessController {
     @Operation(
             summary = "List processes",
             description = "Returns paginated processes. Candidates see only their own. Supports free-text "
-                    + "search (candidate/client name, technology, job id), status/client filters, and sorting "
+                    + "search (candidate/client name, technology, job id), status/client/startedAt-range "
+                    + "filters (startedFrom/startedTo as yyyy-MM-dd, inclusive), and sorting "
                     + "(?sort=field,asc|desc - candidateName, clientName, technology, status, startedAt, "
                     + "closedAt, createdAt, updatedAt)."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Paginated process list"),
-            @ApiResponse(responseCode = "400", description = "Unsortable field requested"),
+            @ApiResponse(responseCode = "400", description = "Unsortable field requested, or startedFrom after startedTo"),
             @ApiResponse(responseCode = "401", description = "Unauthenticated")
     })
     public ResponseEntity<PageResponse<InterviewProcessResponse>> list(
             @RequestParam(required = false) String search,
             @RequestParam(required = false) ProcessStatus status,
             @RequestParam(required = false) UUID clientId,
+            @RequestParam(required = false) LocalDate startedFrom,
+            @RequestParam(required = false) LocalDate startedTo,
             Pageable pageable,
             Authentication authentication
     ) {
         return ResponseEntity.ok(
-                PageResponse.from(processService.list(search, status, clientId, pageable, authentication))
+                PageResponse.from(processService.list(search, status, clientId, startedFrom, startedTo, pageable, authentication))
         );
     }
 

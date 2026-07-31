@@ -14,6 +14,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import xyz.catuns.imp.api.common.util.DateRangeUtil;
 import xyz.catuns.imp.api.config.CacheConfig;
 import xyz.catuns.imp.api.process.entity.InterviewProcess;
 import xyz.catuns.imp.api.process.repository.InterviewProcessRepository;
@@ -30,6 +31,7 @@ import xyz.catuns.spring.base.exception.controller.BadRequestException;
 import xyz.catuns.spring.base.exception.controller.NotFoundException;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -94,7 +96,12 @@ public class InterviewSessionService {
 
     @PreAuthorize("hasAnyRole('ADMIN','MARKETER','SUPPORTER')")
     public Page<InterviewSessionResponse> list(String search, SessionStatus status, UUID processId,
-                                                UUID supporterId, Pageable pageable) {
+                                                UUID supporterId, LocalDate scheduledFrom, LocalDate scheduledTo,
+                                                Pageable pageable) {
+        if (scheduledFrom != null && scheduledTo != null && scheduledFrom.isAfter(scheduledTo)) {
+            throw new BadRequestException("scheduledFrom must not be after scheduledTo");
+        }
+
         Specification<InterviewSession> spec = Specification.unrestricted();
         if (status != null) {
             spec = spec.and((root, query, cb) -> cb.equal(root.get("status"), status));
@@ -104,6 +111,14 @@ public class InterviewSessionService {
         }
         if (supporterId != null) {
             spec = spec.and((root, query, cb) -> cb.equal(root.get("supporterId"), supporterId));
+        }
+        if (scheduledFrom != null) {
+            Instant from = DateRangeUtil.startOfDayUtc(scheduledFrom);
+            spec = spec.and((root, query, cb) -> cb.greaterThanOrEqualTo(root.get("scheduledAt"), from));
+        }
+        if (scheduledTo != null) {
+            Instant toExclusive = DateRangeUtil.startOfNextDayUtc(scheduledTo);
+            spec = spec.and((root, query, cb) -> cb.lessThan(root.get("scheduledAt"), toExclusive));
         }
         if (search != null && !search.isBlank()) {
             String pattern = "%" + search.trim().toLowerCase(Locale.ROOT) + "%";

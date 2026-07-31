@@ -332,6 +332,7 @@ class SessionControllerTest {
     class ListSessions {
 
         private UUID searchFixtureSessionId;
+        private UUID pastScheduledSessionId;
 
         @BeforeEach
         void seedSearchFixtures() {
@@ -349,6 +350,57 @@ class SessionControllerTest {
                         return sessionRepository.save(fixture);
                     });
             searchFixtureSessionId = session.getId();
+
+            InterviewSession pastSession = sessionRepository.findByProcessIdOrderByRound(candidate1ProcessId).stream()
+                    .filter(s -> "DateRange-Fixture-Round".equalsIgnoreCase(s.getRound()))
+                    .findFirst()
+                    .orElseGet(() -> {
+                        InterviewSession fixture = new InterviewSession();
+                        fixture.setProcessId(candidate1ProcessId);
+                        fixture.setSupporterId(supporter1Id);
+                        fixture.setRound("DateRange-Fixture-Round");
+                        fixture.setMode("Video");
+                        fixture.setDurationMinutes(30);
+                        fixture.setScheduledAt(Instant.parse("2020-01-15T12:00:00Z"));
+                        return sessionRepository.save(fixture);
+                    });
+            pastScheduledSessionId = pastSession.getId();
+        }
+
+        @Test
+        @DisplayName("filters by scheduledAt date range")
+        void filtersByScheduledAtRange() throws Exception {
+            mockMvc.perform(get("/sessions")
+                            .param("scheduledFrom", "2020-01-01")
+                            .param("scheduledTo", "2020-01-31")
+                            .header("Authorization", "Bearer " + adminToken))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data[*].id",
+                            org.hamcrest.Matchers.hasItem(pastScheduledSessionId.toString())))
+                    .andExpect(jsonPath("$.data[*].id",
+                            org.hamcrest.Matchers.not(org.hamcrest.Matchers.hasItem(searchFixtureSessionId.toString()))));
+        }
+
+        @Test
+        @DisplayName("scheduledTo is inclusive of the whole day")
+        void scheduledToIsInclusiveOfWholeDay() throws Exception {
+            mockMvc.perform(get("/sessions")
+                            .param("scheduledFrom", "2020-01-15")
+                            .param("scheduledTo", "2020-01-15")
+                            .header("Authorization", "Bearer " + adminToken))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data[*].id",
+                            org.hamcrest.Matchers.hasItem(pastScheduledSessionId.toString())));
+        }
+
+        @Test
+        @DisplayName("scheduledFrom after scheduledTo → 400")
+        void invalidScheduledRangeReturns400() throws Exception {
+            mockMvc.perform(get("/sessions")
+                            .param("scheduledFrom", "2025-01-01")
+                            .param("scheduledTo", "2020-01-01")
+                            .header("Authorization", "Bearer " + adminToken))
+                    .andExpect(status().isBadRequest());
         }
 
         @Test

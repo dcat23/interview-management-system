@@ -52,7 +52,8 @@
     "@dnd-kit/modifiers": "^9.0.0",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
-    "vaul": "^1.1.2"
+    "vaul": "^1.1.2",
+    "date-fns": "^4.4.0"
   },
   "devDependencies": {
     "@babel/core": "^7.14.5",

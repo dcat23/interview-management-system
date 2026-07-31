@@ -10,14 +10,18 @@ interface UseProcessesParams {
   search?: string
   status?: ProcessStatus
   clientId?: string
+  /** yyyy-MM-dd, inclusive - filters on startedAt. */
+  startedFrom?: string
+  /** yyyy-MM-dd, inclusive - filters on startedAt. */
+  startedTo?: string
   sort?: string
 }
 
-export function useProcesses({ page, limit, search, status, clientId, sort }: UseProcessesParams) {
+export function useProcesses({ page, limit, search, status, clientId, startedFrom, startedTo, sort }: UseProcessesParams) {
   return useQuery({
-    queryKey: ["processes", { page, limit, search, status, clientId, sort }],
+    queryKey: ["processes", { page, limit, search, status, clientId, startedFrom, startedTo, sort }],
     queryFn: async () => {
-      const { data } = await getInterviewProcesses({ page, limit, search, status, clientId, sort })
+      const { data } = await getInterviewProcesses({ page, limit, search, status, clientId, startedFrom, startedTo, sort })
       return data
     },
     placeholderData: keepPreviousData,

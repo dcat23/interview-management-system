@@ -15,6 +15,10 @@ export type GetInterviewProcessesRequest = Pageable & {
   search?: string;
   status?: ProcessStatus;
   clientId?: string;
+  /** yyyy-MM-dd, inclusive - filters on startedAt. */
+  startedFrom?: string;
+  /** yyyy-MM-dd, inclusive - filters on startedAt. */
+  startedTo?: string;
   /** e.g. "candidateName,asc" - see GET /processes in the API reference for sortable fields. */
   sort?: string;
 };

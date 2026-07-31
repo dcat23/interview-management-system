@@ -17,6 +17,10 @@ export type GetInterviewSessionsRequest = Pageable & {
   processId?: string;
   supporterId?: string;
   search?: string;
+  /** yyyy-MM-dd, inclusive - filters on scheduledAt. */
+  scheduledFrom?: string;
+  /** yyyy-MM-dd, inclusive - filters on scheduledAt. */
+  scheduledTo?: string;
   /** e.g. "scheduledAt,asc" - see GET /sessions in the API reference for sortable fields. */
   sort?: string;
 };

@@ -8,6 +8,7 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: docker,seed-data
       JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: 10h
       FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://web:4200}
       JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=75.0
     mem_limit: 1g

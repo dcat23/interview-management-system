@@ -413,10 +413,11 @@ List interview processes.
 | `search`   | Free text, matched (case-insensitive, substring) against candidate name, client name, technology, and job id.                                                                            |
 | `status`   | Exact match: `ACTIVE`, `COMPLETED`, `WITHDRAWN`, `CANCELLED`.                                                                                                                            |
 | `clientId` | Exact match on `clientId`.                                                                                                                                                               |
+| `startedFrom` / `startedTo` | `yyyy-MM-dd` (plain date, no time/zone). Filters on `startedAt`, inclusive on both ends - `startedTo` covers the entire day (interpreted as UTC day boundaries). `400` if `startedFrom` is after `startedTo`. |
 | `sort`     | `field,asc\|desc`, repeatable. Sortable fields: `candidateName`, `clientName`, `technology`, `status`, `startedAt`, `closedAt`, `createdAt`, `updatedAt`. Any other field returns `400`. |
 
 **Role constraints:**
-- Candidate: own processes only (filtered automatically by JWT identity) — `search`/`status`/`clientId` further narrow within that set
+- Candidate: own processes only (filtered automatically by JWT identity) — `search`/`status`/`clientId`/date-range further narrow within that set
 - Admin / marketer / supporter: all processes
 
 **Response `200`**
@@ -569,6 +570,7 @@ List sessions across all processes, paginated.
 | `status` / `processId` / `supporterId` | Optional exact-match filters.                                                                                                                                                            |
 | `page` / `limit`                       | Default `0` / `20`.                                                                                                                                                                      |
 | `search`                               | Free text, matched (case-insensitive, substring) against round, mode, and description.                                                                                                   |
+| `scheduledFrom` / `scheduledTo`        | `yyyy-MM-dd` (plain date, no time/zone). Filters on `scheduledAt`, inclusive on both ends - `scheduledTo` covers the entire day (interpreted as UTC day boundaries). `400` if `scheduledFrom` is after `scheduledTo`. |
 | `sort`                                 | `field,asc\|desc`, repeatable. Sortable fields: `round`, `mode`, `durationMinutes`, `status`, `scheduledAt`, `statusChangedAt`, `createdAt`, `updatedAt`. Any other field returns `400`. |
 
 **Response `200`**

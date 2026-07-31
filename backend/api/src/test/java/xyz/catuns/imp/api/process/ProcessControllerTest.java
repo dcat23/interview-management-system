@@ -29,6 +29,7 @@ import xyz.catuns.imp.api.user.entity.User;
 import xyz.catuns.imp.api.user.entity.UserRole;
 import xyz.catuns.imp.api.user.repository.UserRepository;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -240,6 +241,7 @@ class ProcessControllerTest {
         private UUID otherClientId;
         private UUID otherClientProcessId;
         private UUID completedProcessId;
+        private UUID pastStartedProcessId;
 
         @BeforeEach
         void seedFilterFixtures() {
@@ -249,6 +251,46 @@ class ProcessControllerTest {
             InterviewProcess completedProcess = seedProcess(candidate2Id, clientId, marketerId, "Completed-Search-Fixture");
             completedProcess.setStatus(ProcessStatus.COMPLETED);
             completedProcessId = processRepository.save(completedProcess).getId();
+
+            InterviewProcess pastProcess = seedProcess(candidate1Id, clientId, marketerId, "DateRange-Search-Fixture");
+            pastProcess.setStartedAt(Instant.parse("2020-01-15T12:00:00Z"));
+            pastStartedProcessId = processRepository.save(pastProcess).getId();
+        }
+
+        @Test
+        @DisplayName("filters by startedAt date range")
+        void filtersByStartedAtRange() throws Exception {
+            mockMvc.perform(get("/processes")
+                            .param("startedFrom", "2020-01-01")
+                            .param("startedTo", "2020-01-31")
+                            .header("Authorization", "Bearer " + adminToken))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data[*].id",
+                            org.hamcrest.Matchers.hasItem(pastStartedProcessId.toString())))
+                    .andExpect(jsonPath("$.data[*].id",
+                            org.hamcrest.Matchers.not(org.hamcrest.Matchers.hasItem(ownProcessId.toString()))));
+        }
+
+        @Test
+        @DisplayName("startedTo is inclusive of the whole day")
+        void startedToIsInclusiveOfWholeDay() throws Exception {
+            mockMvc.perform(get("/processes")
+                            .param("startedFrom", "2020-01-15")
+                            .param("startedTo", "2020-01-15")
+                            .header("Authorization", "Bearer " + adminToken))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data[*].id",
+                            org.hamcrest.Matchers.hasItem(pastStartedProcessId.toString())));
+        }
+
+        @Test
+        @DisplayName("startedFrom after startedTo → 400")
+        void invalidStartedRangeReturns400() throws Exception {
+            mockMvc.perform(get("/processes")
+                            .param("startedFrom", "2025-01-01")
+                            .param("startedTo", "2020-01-01")
+                            .header("Authorization", "Bearer " + adminToken))
+                    .andExpect(status().isBadRequest());
         }
 
         @Test

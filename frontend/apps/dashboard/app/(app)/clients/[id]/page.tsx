@@ -1,6 +1,7 @@
 import AppPageHeader from '@app/dashboard/components/app/app-page-header';
-import { DASHBOARD,  } from '@feature/base/server';
+import { DASHBOARD } from '@feature/base/server';
 import ProcessesData from '@app/dashboard/components/process/processes-data';
+import { getClientById } from '@feature/backend/server';
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -8,7 +9,17 @@ interface Props {
 }
 
 async function AppClientsIdPage(props: Props) {
-  const {  id  } = await props.params;
+  const { id } = await props.params;
+  const response = await getClientById(id);
+  if (response.error) {
+    throw response.error;
+  }
+
+  if (!response.success) {
+    throw new Error(response.message);
+  }
+
+  const client = response.data;
 
   return (
     <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
@@ -17,11 +28,10 @@ async function AppClientsIdPage(props: Props) {
         breadcrumbs={[
           { label: 'Home', href: DASHBOARD.href },
           { label: 'Clients', href: '/clients' },
-          { label: 'Clients', href: '/clients' },
+          { label: client.name, href: '#' },
         ]}
       />
 
-      <ProcessesData />
     </div>
   );
 }
