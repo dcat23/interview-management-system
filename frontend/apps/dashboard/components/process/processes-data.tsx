@@ -4,14 +4,24 @@ import { useState } from 'react';
 import moment from 'moment';
 
 import { useProcesses } from '@app/dashboard/hooks/process/use-processes';
+import { useClients } from '@app/dashboard/hooks/client/use-clients';
+import { useDebouncedValue } from '@app/dashboard/hooks/ui/use-debounced-value';
 import { cn } from '@app/dashboard/lib/ui/utils';
 import { InterviewProcess, ProcessStatus } from '@feature/base/server';
 import { Badge } from '../ui/common/badge';
-import { DataTableColumn, ProcessDataTable } from './process-data-table';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../ui/common/select';
+import { DataTableColumn, DataTableSortState, ProcessDataTable } from './process-data-table';
 import { DataTable } from '../ui/data-table';
 
 const DEFAULT_PAGE_SIZE = 10;
-
+const ALL_STATUSES = "all";
+const ALL_CLIENTS = "all";
 
 const statusConfig: Record<ProcessStatus, { label: string; className: string }> = {
   ACTIVE: {
@@ -76,8 +86,22 @@ const columns: DataTableColumn<InterviewProcess>[] = [
 export function ProcessesData() {
   const [page, setPage] = useState(0);
   const [limit, setLimit] = useState(DEFAULT_PAGE_SIZE);
+  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState<ProcessStatus | undefined>(undefined);
+  const [clientId, setClientId] = useState<string | undefined>(undefined);
+  const [sortState, setSortState] = useState<DataTableSortState>(null);
+  const debouncedSearch = useDebouncedValue(search, 400);
 
-  const { data: pageResponse, isLoading } = useProcesses({ page, limit });
+  const { data: clientsPage } = useClients();
+
+  const { data: pageResponse, isLoading } = useProcesses({
+    page,
+    limit,
+    search: debouncedSearch.trim() || undefined,
+    status,
+    clientId,
+    sort: sortState ? `${sortState.columnId},${sortState.direction}` : undefined,
+  });
 
   return (
     <section className="min-h-svh w-full bg-background px-4 py-6 text-foreground">
@@ -94,16 +118,60 @@ export function ProcessesData() {
           getRowId={(row) => row.id}
           enableRowSelection
           enableSorting
+          sortState={sortState}
+          onSortStateChange={(nextSortState) => {
+            setSortState(nextSortState);
+            setPage(0);
+          }}
           searchPlaceholder="Search processes"
-          searchableText={(process) => [
-            process.candidateName,
-            process.clientName,
-            process.status,
-            process.technology,
-            moment(process.startedAt).format("MMM D, YYYY"),
-          ]
-            .filter(Boolean)
-            .join(" ")}
+          searchValue={search}
+          onSearchValueChange={(value) => {
+            setSearch(value);
+            setPage(0);
+          }}
+          toolbarActions={() => (
+            <>
+              <Select
+                value={status ?? ALL_STATUSES}
+                onValueChange={(value) => {
+                  setStatus(value === ALL_STATUSES ? undefined : (value as ProcessStatus));
+                  setPage(0);
+                }}
+              >
+                <SelectTrigger className="h-9 w-40">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ALL_STATUSES}>All statuses</SelectItem>
+                  {Object.entries(statusConfig).map(([value, config]) => (
+                    <SelectItem key={value} value={value}>
+                      {config.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select
+                value={clientId ?? ALL_CLIENTS}
+                onValueChange={(value) => {
+                  setClientId(value === ALL_CLIENTS ? undefined : value);
+                  setPage(0);
+                }}
+              >
+                <SelectTrigger className="h-9 w-44">
+                  <SelectValue placeholder="Client" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ALL_CLIENTS}>All clients</SelectItem>
+                  {clientsPage?.data.map((client) => (
+                    <SelectItem key={client.id} value={client.id}>
+                      {client.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </>
+          )}
           emptyMessage="No processes yet."
         />
       </div>

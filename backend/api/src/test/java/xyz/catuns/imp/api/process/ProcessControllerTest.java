@@ -1,5 +1,6 @@
 package xyz.catuns.imp.api.process;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -26,8 +27,11 @@ import xyz.catuns.imp.api.user.entity.User;
 import xyz.catuns.imp.api.user.entity.UserRole;
 import xyz.catuns.imp.api.user.repository.UserRepository;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -228,6 +232,108 @@ class ProcessControllerTest {
     @Nested
     @DisplayName("GET /processes")
     class ListProcesses {
+
+        private UUID otherClientId;
+        private UUID otherClientProcessId;
+        private UUID completedProcessId;
+
+        @BeforeEach
+        void seedFilterFixtures() {
+            otherClientId = seedClient("Process Filter Corp", "Retail").getId();
+            otherClientProcessId = seedProcess(candidate1Id, otherClientId, marketerId, "Rust-Search-Fixture").getId();
+
+            InterviewProcess completedProcess = seedProcess(candidate2Id, clientId, marketerId, "Completed-Search-Fixture");
+            completedProcess.setStatus(ProcessStatus.COMPLETED);
+            completedProcessId = processRepository.save(completedProcess).getId();
+        }
+
+        @Test
+        @DisplayName("filters by status")
+        void filtersByStatus() throws Exception {
+            mockMvc.perform(get("/processes")
+                            .param("status", "COMPLETED")
+                            .header("Authorization", "Bearer " + adminToken))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data[*].status",
+                            org.hamcrest.Matchers.everyItem(org.hamcrest.Matchers.is("COMPLETED"))))
+                    .andExpect(jsonPath("$.data[*].id",
+                            org.hamcrest.Matchers.hasItem(completedProcessId.toString())));
+        }
+
+        @Test
+        @DisplayName("filters by clientId")
+        void filtersByClientId() throws Exception {
+            mockMvc.perform(get("/processes")
+                            .param("clientId", otherClientId.toString())
+                            .header("Authorization", "Bearer " + adminToken))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data[*].clientId",
+                            org.hamcrest.Matchers.everyItem(org.hamcrest.Matchers.is(otherClientId.toString()))))
+                    .andExpect(jsonPath("$.data[*].id",
+                            org.hamcrest.Matchers.hasItem(otherClientProcessId.toString())));
+        }
+
+        @Test
+        @DisplayName("search matches candidate name")
+        void searchMatchesCandidateName() throws Exception {
+            mockMvc.perform(get("/processes")
+                            .param("search", "Proc Candidate1")
+                            .header("Authorization", "Bearer " + adminToken))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data").isNotEmpty())
+                    .andExpect(jsonPath("$.data[*].candidateId",
+                            org.hamcrest.Matchers.everyItem(org.hamcrest.Matchers.is(candidate1Id.toString()))));
+        }
+
+        @Test
+        @DisplayName("search matches technology")
+        void searchMatchesTechnology() throws Exception {
+            mockMvc.perform(get("/processes")
+                            .param("search", "Rust-Search-Fixture")
+                            .header("Authorization", "Bearer " + adminToken))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data[*].id",
+                            org.hamcrest.Matchers.hasItem(otherClientProcessId.toString())));
+        }
+
+        @Test
+        @DisplayName("search matches client name")
+        void searchMatchesClientName() throws Exception {
+            mockMvc.perform(get("/processes")
+                            .param("search", "Process Filter Corp")
+                            .header("Authorization", "Bearer " + adminToken))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data[*].id",
+                            org.hamcrest.Matchers.hasItem(otherClientProcessId.toString())));
+        }
+
+        @Test
+        @DisplayName("sorts by candidateName ascending")
+        void sortsByCandidateNameAscending() throws Exception {
+            String response = mockMvc.perform(get("/processes")
+                            .param("sort", "candidateName,asc")
+                            .param("limit", "100")
+                            .header("Authorization", "Bearer " + adminToken))
+                    .andExpect(status().isOk())
+                    .andReturn().getResponse().getContentAsString();
+
+            JsonNode data = objectMapper.readTree(response).get("data");
+            List<String> candidateNames = new ArrayList<>();
+            data.forEach(node -> candidateNames.add(node.get("candidateName").asText()));
+
+            List<String> expectedOrder = new ArrayList<>(candidateNames);
+            expectedOrder.sort(String::compareTo);
+            assertThat(candidateNames).isEqualTo(expectedOrder);
+        }
+
+        @Test
+        @DisplayName("unsortable field → 400")
+        void unsortableFieldReturns400() throws Exception {
+            mockMvc.perform(get("/processes")
+                            .param("sort", "marketerId,asc")
+                            .header("Authorization", "Bearer " + adminToken))
+                    .andExpect(status().isBadRequest());
+        }
 
         @Test
         @DisplayName("admin sees all processes")

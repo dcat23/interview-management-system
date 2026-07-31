@@ -397,10 +397,19 @@ Soft-delete a question. Sets `active = false`. The question remains in the datab
 
 List interview processes.
 
-**Query params:** `page` (default `0`), `limit` (default `20`)
+**Query params:**
+
+| Param | Notes |
+|---|---|
+| `page` | Default `0`. |
+| `limit` | Default `20`. |
+| `search` | Free text, matched (case-insensitive, substring) against candidate name, client name, technology, and job id. |
+| `status` | Exact match: `ACTIVE`, `COMPLETED`, `WITHDRAWN`, `CANCELLED`. |
+| `clientId` | Exact match on `clientId`. |
+| `sort` | `field,asc\|desc`, repeatable. Sortable fields: `candidateName`, `clientName`, `technology`, `status`, `startedAt`, `closedAt`, `createdAt`, `updatedAt`. Any other field returns `400`. |
 
 **Role constraints:**
-- Candidate: own processes only (filtered automatically by JWT identity)
+- Candidate: own processes only (filtered automatically by JWT identity) — `search`/`status`/`clientId` further narrow within that set
 - Admin / marketer / supporter: all processes
 
 **Response `200`**

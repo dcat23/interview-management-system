@@ -3,7 +3,7 @@
 import { withApi, withForm } from '@next-feature/client/server';
 import { z } from 'zod';
 import api from '../config/client';
-import { InterviewProcess, Page, Pageable, toRecord } from '@feature/base/server';
+import { InterviewProcess, Page, Pageable, ProcessStatus, toRecord } from '@feature/base/server';
 
 /**
  * [get-interview-processes]
@@ -11,7 +11,13 @@ import { InterviewProcess, Page, Pageable, toRecord } from '@feature/base/server
  * July 25th 2026, 2:55:10 pm
  */
 
-export type GetInterviewProcessesRequest = Pageable;
+export type GetInterviewProcessesRequest = Pageable & {
+  search?: string;
+  status?: ProcessStatus;
+  clientId?: string;
+  /** e.g. "candidateName,asc" - see GET /processes in the API reference for sortable fields. */
+  sort?: string;
+};
 export type GetInterviewProcessesResponse = Page<InterviewProcess>;
 
 export const getInterviewProcesses = withApi(

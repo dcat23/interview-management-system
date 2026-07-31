@@ -7,7 +7,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -15,6 +15,7 @@ import xyz.catuns.imp.api.common.dto.PageResponse;
 import xyz.catuns.imp.api.process.dto.CreateProcessRequest;
 import xyz.catuns.imp.api.process.dto.InterviewProcessResponse;
 import xyz.catuns.imp.api.process.dto.UpdateProcessRequest;
+import xyz.catuns.imp.api.process.entity.ProcessStatus;
 
 import java.net.URI;
 import java.util.UUID;
@@ -29,18 +30,27 @@ public class ProcessController {
     private final InterviewProcessService processService;
 
     @GetMapping
-    @Operation(summary = "List processes", description = "Returns paginated processes. Candidates see only their own.")
+    @Operation(
+            summary = "List processes",
+            description = "Returns paginated processes. Candidates see only their own. Supports free-text "
+                    + "search (candidate/client name, technology, job id), status/client filters, and sorting "
+                    + "(?sort=field,asc|desc - candidateName, clientName, technology, status, startedAt, "
+                    + "closedAt, createdAt, updatedAt)."
+    )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Paginated process list"),
+            @ApiResponse(responseCode = "400", description = "Unsortable field requested"),
             @ApiResponse(responseCode = "401", description = "Unauthenticated")
     })
     public ResponseEntity<PageResponse<InterviewProcessResponse>> list(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int limit,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) ProcessStatus status,
+            @RequestParam(required = false) UUID clientId,
+            Pageable pageable,
             Authentication authentication
     ) {
         return ResponseEntity.ok(
-                PageResponse.from(processService.list(PageRequest.of(page, limit), authentication))
+                PageResponse.from(processService.list(search, status, clientId, pageable, authentication))
         );
     }
 

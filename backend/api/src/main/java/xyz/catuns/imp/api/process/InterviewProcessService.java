@@ -1,8 +1,12 @@
 package xyz.catuns.imp.api.process;
 
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -14,14 +18,19 @@ import xyz.catuns.imp.api.process.dto.CreateProcessRequest;
 import xyz.catuns.imp.api.process.dto.InterviewProcessResponse;
 import xyz.catuns.imp.api.process.dto.UpdateProcessRequest;
 import xyz.catuns.imp.api.process.entity.InterviewProcess;
+import xyz.catuns.imp.api.process.entity.ProcessStatus;
 import xyz.catuns.imp.api.process.mapper.InterviewProcessMapper;
 import xyz.catuns.imp.api.process.repository.InterviewProcessRepository;
 import xyz.catuns.imp.api.user.entity.User;
 import xyz.catuns.imp.api.user.repository.UserRepository;
+import xyz.catuns.spring.base.exception.controller.BadRequestException;
 import xyz.catuns.spring.base.exception.controller.NotFoundException;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -30,20 +39,48 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class InterviewProcessService {
 
+    private static final Set<String> SORTABLE_PROPERTIES = Set.of(
+            "candidateName", "clientName", "technology", "status", "startedAt", "closedAt", "createdAt", "updatedAt"
+    );
+    private static final Map<String, String> SORT_PROPERTY_ALIASES = Map.of(
+            "candidateName", "candidate.name",
+            "clientName", "client.name"
+    );
+
     private final InterviewProcessRepository processRepository;
     private final InterviewProcessMapper processMapper;
     private final UserRepository userRepository;
     private final ClientRepository clientRepository;
 
     @PreAuthorize("isAuthenticated()")
-    public Page<InterviewProcessResponse> list(Pageable pageable, Authentication authentication) {
+    public Page<InterviewProcessResponse> list(String search, ProcessStatus status, UUID clientId,
+                                                Pageable pageable, Authentication authentication) {
         Specification<InterviewProcess> spec = Specification.unrestricted();
         if (isCandidate(authentication)) {
             UUID candidateId = resolveUserId(authentication.getName());
             spec = spec.and((root, query, cb) -> cb.equal(root.get("candidateId"), candidateId));
         }
+        if (status != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("status"), status));
+        }
+        if (clientId != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("clientId"), clientId));
+        }
+        if (search != null && !search.isBlank()) {
+            String pattern = "%" + search.trim().toLowerCase(Locale.ROOT) + "%";
+            spec = spec.and((root, query, cb) -> {
+                Join<InterviewProcess, User> candidateJoin = root.join("candidate", JoinType.LEFT);
+                Join<InterviewProcess, Client> clientJoin = root.join("client", JoinType.LEFT);
+                return cb.or(
+                        cb.like(cb.lower(candidateJoin.get("name")), pattern),
+                        cb.like(cb.lower(clientJoin.get("name")), pattern),
+                        cb.like(cb.lower(root.get("technology")), pattern),
+                        cb.like(cb.lower(cb.coalesce(root.get("jobId"), "")), pattern)
+                );
+            });
+        }
 
-        Page<InterviewProcess> processes = processRepository.findAll(spec, pageable);
+        Page<InterviewProcess> processes = processRepository.findAll(spec, remapSort(pageable));
 
         List<UUID> candidateIds = processes.getContent().stream()
                 .map(InterviewProcess::getCandidateId)
@@ -109,6 +146,21 @@ public class InterviewProcessService {
         return processRepository.findById(processId)
                 .map(p -> p.getCandidateId().equals(userId))
                 .orElse(false);
+    }
+
+    private static Pageable remapSort(Pageable pageable) {
+        if (pageable.getSort().isUnsorted()) {
+            return pageable;
+        }
+        List<Sort.Order> orders = new ArrayList<>();
+        for (Sort.Order order : pageable.getSort()) {
+            if (!SORTABLE_PROPERTIES.contains(order.getProperty())) {
+                throw new BadRequestException("Unsortable field: " + order.getProperty());
+            }
+            orders.add(new Sort.Order(order.getDirection(),
+                    SORT_PROPERTY_ALIASES.getOrDefault(order.getProperty(), order.getProperty())));
+        }
+        return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by(orders));
     }
 
     private boolean isCandidate(Authentication authentication) {
