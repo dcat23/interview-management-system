@@ -435,7 +435,8 @@ List interview processes.
       "startedAt": "2024-01-01T00:00:00Z",
       "closedAt": null,
       "createdAt": "2024-01-01T00:00:00Z",
-      "updatedAt": "2024-01-15T12:00:00Z"
+      "updatedAt": "2024-01-15T12:00:00Z",
+      "sessions": null
     }
   ],
   "total": 15,
@@ -443,6 +444,8 @@ List interview processes.
   "limit": 20
 }
 ```
+
+`sessions` is always `null` here — it's only populated by `GET /processes/:id` (see below), to avoid an extra query per row.
 
 `status` values: `ACTIVE`, `COMPLETED`, `WITHDRAWN`, `CANCELLED`
 
@@ -480,7 +483,7 @@ Get process by ID.
 - Candidate: own process only
 - Admin / marketer / supporter: any process
 
-**Response `200`** — returns process object (same shape as list item).
+**Response `200`** — same shape as a list item, plus a populated `sessions` array (the process's sessions, ordered by `scheduledAt`; `[]` if none). `sessions` is `null` on list responses (`GET /processes`) to avoid an extra query per row.
 
 ---
 
@@ -604,7 +607,7 @@ List sessions within a process.
 - Candidate: own process only; denied 403 if the process does not belong to them
 - Admin / marketer / supporter: all sessions in the process, regardless of assignment
 
-**Response `200`** — array of session objects.
+**Response `200`** — array of session objects, ordered by `scheduledAt`.
 
 ```json
 [

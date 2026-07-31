@@ -21,6 +21,9 @@ import xyz.catuns.imp.api.process.entity.InterviewProcess;
 import xyz.catuns.imp.api.process.entity.ProcessStatus;
 import xyz.catuns.imp.api.process.mapper.InterviewProcessMapper;
 import xyz.catuns.imp.api.process.repository.InterviewProcessRepository;
+import xyz.catuns.imp.api.session.dto.InterviewSessionResponse;
+import xyz.catuns.imp.api.session.mapper.InterviewSessionMapper;
+import xyz.catuns.imp.api.session.repository.InterviewSessionRepository;
 import xyz.catuns.imp.api.user.entity.User;
 import xyz.catuns.imp.api.user.repository.UserRepository;
 import xyz.catuns.spring.base.exception.controller.BadRequestException;
@@ -51,6 +54,8 @@ public class InterviewProcessService {
     private final InterviewProcessMapper processMapper;
     private final UserRepository userRepository;
     private final ClientRepository clientRepository;
+    private final InterviewSessionRepository sessionRepository;
+    private final InterviewSessionMapper sessionMapper;
 
     @PreAuthorize("isAuthenticated()")
     public Page<InterviewProcessResponse> list(String search, ProcessStatus status, UUID clientId,
@@ -114,8 +119,11 @@ public class InterviewProcessService {
         String clientName = clientRepository.findById(process.getClientId())
                 .map(Client::getName)
                 .orElse(null);
+        List<InterviewSessionResponse> sessions = sessionRepository.findByProcessIdOrderByScheduledAt(id).stream()
+                .map(sessionMapper::toResponse)
+                .toList();
 
-        return processMapper.toResponse(process, candidateName, clientName);
+        return processMapper.toResponse(process, candidateName, clientName, sessions);
     }
 
     @PreAuthorize("hasAnyRole('ADMIN','MARKETER')")

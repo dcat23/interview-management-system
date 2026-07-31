@@ -8,6 +8,8 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@app/dashboard/components/ui/common/breadcrumb"
+import { Badge, badgeVariants } from '@app/dashboard/components/ui/common/badge';
+import type { VariantProps } from 'class-variance-authority';
 
 interface Crumb {
   label: string
@@ -15,17 +17,18 @@ interface Crumb {
 }
 
 interface Props {
-  title?: string
-  breadcrumbs: Crumb[]
-  children?: ReactNode
+  title?: string;
+  badge?: string;
+  badgeVariant?: VariantProps<typeof badgeVariants>;
+  breadcrumbs: Crumb[];
+  children?: ReactNode;
 }
 
-export default function AppPageHeader({ title, breadcrumbs, children }: Props) {
+export default function AppPageHeader({ title, breadcrumbs, badge, badgeVariant = "secondary", children }: Props) {
   const heading = title ?? breadcrumbs[breadcrumbs.length - 1]?.label
 
   return (
     <section className="w-full flex-col justify-start gap-6 bg-background text-foreground">
-    {/* <section className="min-h-svh w-full bg-background px-2 py-6 text-foreground"> */}
       <div className="mx-auto w-full max-w-5xl">
         <Breadcrumb className="mb-4">
           <BreadcrumbList>
@@ -35,7 +38,9 @@ export default function AppPageHeader({ title, breadcrumbs, children }: Props) {
                   {index === breadcrumbs.length - 1 ? (
                     <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
                   ) : (
-                    <BreadcrumbLink href={crumb.href}>{crumb.label}</BreadcrumbLink>
+                    <BreadcrumbLink href={crumb.href}>
+                      {crumb.label}
+                    </BreadcrumbLink>
                   )}
                 </BreadcrumbItem>
                 {index < breadcrumbs.length - 1 && <BreadcrumbSeparator />}
@@ -49,12 +54,11 @@ export default function AppPageHeader({ title, breadcrumbs, children }: Props) {
             <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
               {heading}
             </h1>
-            {/* <Badge variant="secondary">Active</Badge> */}
+            {badge && <Badge variant={badgeVariant}>{badge}</Badge>}
           </div>
           {children}
         </div>
-
       </div>
     </section>
-  )
+  );
 }

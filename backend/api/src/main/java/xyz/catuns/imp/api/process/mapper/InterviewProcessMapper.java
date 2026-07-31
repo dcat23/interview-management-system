@@ -8,6 +8,9 @@ import xyz.catuns.imp.api.process.dto.CreateProcessRequest;
 import xyz.catuns.imp.api.process.dto.InterviewProcessResponse;
 import xyz.catuns.imp.api.process.dto.UpdateProcessRequest;
 import xyz.catuns.imp.api.process.entity.InterviewProcess;
+import xyz.catuns.imp.api.session.dto.InterviewSessionResponse;
+
+import java.util.List;
 
 @Mapper(
         componentModel = "spring",
@@ -17,11 +20,19 @@ public interface InterviewProcessMapper {
 
     @Mapping(target = "candidateName", ignore = true)
     @Mapping(target = "clientName", ignore = true)
+    @Mapping(target = "sessions", ignore = true)
     InterviewProcessResponse toResponse(InterviewProcess process);
 
     @Mapping(target = "candidateName", source = "candidateName")
     @Mapping(target = "clientName", source = "clientName")
+    @Mapping(target = "sessions", ignore = true)
     InterviewProcessResponse toResponse(InterviewProcess process, String candidateName, String clientName);
+
+    @Mapping(target = "candidateName", source = "candidateName")
+    @Mapping(target = "clientName", source = "clientName")
+    @Mapping(target = "sessions", source = "sessions")
+    InterviewProcessResponse toResponse(InterviewProcess process, String candidateName, String clientName,
+                                         List<InterviewSessionResponse> sessions);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "status", ignore = true)

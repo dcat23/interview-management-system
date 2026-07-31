@@ -1,3 +1,5 @@
+import type { InterviewSession } from './session';
+
 /**
  * [interview-process]
  * next-feature@0.1.4-0
@@ -19,6 +21,8 @@ export interface InterviewProcess {
   closedAt: string | null;
   createdAt: string;
   updatedAt: string;
+  /** Only populated by GET /processes/:id - null on list responses (GET /processes). */
+  sessions: InterviewSession[] | null;
 }
 
 /**

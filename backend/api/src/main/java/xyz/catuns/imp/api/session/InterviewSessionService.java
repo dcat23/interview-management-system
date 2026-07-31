@@ -88,7 +88,7 @@ public class InterviewSessionService {
 
     @Cacheable(value = CacheConfig.SESSIONS_BY_PROCESS, key = "#processId")
     public List<InterviewSessionResponse> loadAllByProcess(UUID processId) {
-        return sessionRepository.findByProcessIdOrderByRound(processId)
+        return sessionRepository.findByProcessIdOrderByScheduledAt(processId)
                 .stream().map(sessionMapper::toResponse).toList();
     }
 
