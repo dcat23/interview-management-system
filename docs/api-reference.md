@@ -261,7 +261,14 @@ Returns `404` if the id does not exist or does not belong to a user with the `CA
 
 List end clients.
 
-**Query params:** `isActive` (boolean, default `true`), `page`, `limit`
+**Query params:**
+
+| Param            | Notes                                                                                                                     |
+|------------------|---------------------------------------------------------------------------------------------------------------------------|
+| `isActive`       | Boolean, default `true`.                                                                                                  |
+| `page` / `limit` | Default `0` / `20`.                                                                                                       |
+| `search`         | Free text, matched (case-insensitive, substring) against name and industry.                                               |
+| `sort`           | `field,asc\|desc`, repeatable. Sortable fields: `name`, `industry`, `active`, `createdAt`. Any other field returns `400`. |
 
 **Response `200`**
 ```json
@@ -307,12 +314,12 @@ List active questions with optional filters.
 
 **Query params**
 
-| Param | Type | Description |
-|---|---|---|
-| `clientId` | uuid | Filter by end client |
-| `topic` | string | Partial match on topic |
-| `page` | int | Default `0` |
-| `limit` | int | Default `20` |
+| Param      | Type   | Description            |
+|------------|--------|------------------------|
+| `clientId` | uuid   | Filter by end client   |
+| `topic`    | string | Partial match on topic |
+| `page`     | int    | Default `0`            |
+| `limit`    | int    | Default `20`           |
 
 **Response `200`**
 ```json
@@ -399,14 +406,14 @@ List interview processes.
 
 **Query params:**
 
-| Param | Notes |
-|---|---|
-| `page` | Default `0`. |
-| `limit` | Default `20`. |
-| `search` | Free text, matched (case-insensitive, substring) against candidate name, client name, technology, and job id. |
-| `status` | Exact match: `ACTIVE`, `COMPLETED`, `WITHDRAWN`, `CANCELLED`. |
-| `clientId` | Exact match on `clientId`. |
-| `sort` | `field,asc\|desc`, repeatable. Sortable fields: `candidateName`, `clientName`, `technology`, `status`, `startedAt`, `closedAt`, `createdAt`, `updatedAt`. Any other field returns `400`. |
+| Param      | Notes                                                                                                                                                                                    |
+|------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `page`     | Default `0`.                                                                                                                                                                             |
+| `limit`    | Default `20`.                                                                                                                                                                            |
+| `search`   | Free text, matched (case-insensitive, substring) against candidate name, client name, technology, and job id.                                                                            |
+| `status`   | Exact match: `ACTIVE`, `COMPLETED`, `WITHDRAWN`, `CANCELLED`.                                                                                                                            |
+| `clientId` | Exact match on `clientId`.                                                                                                                                                               |
+| `sort`     | `field,asc\|desc`, repeatable. Sortable fields: `candidateName`, `clientName`, `technology`, `status`, `startedAt`, `closedAt`, `createdAt`, `updatedAt`. Any other field returns `400`. |
 
 **Role constraints:**
 - Candidate: own processes only (filtered automatically by JWT identity) — `search`/`status`/`clientId` further narrow within that set
@@ -552,7 +559,14 @@ All submitted feedback across all rounds in a process, ordered by `scheduledAt` 
 
 List sessions across all processes, paginated.
 
-**Query params:** `status`, `processId`, `supporterId` (all optional filters), `page` (default `0`), `limit` (default `20`)
+**Query params:**
+
+| Param                                  | Notes                                                                                                                                                                                    |
+|----------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `status` / `processId` / `supporterId` | Optional exact-match filters.                                                                                                                                                            |
+| `page` / `limit`                       | Default `0` / `20`.                                                                                                                                                                      |
+| `search`                               | Free text, matched (case-insensitive, substring) against round, mode, and description.                                                                                                   |
+| `sort`                                 | `field,asc\|desc`, repeatable. Sortable fields: `round`, `mode`, `durationMinutes`, `status`, `scheduledAt`, `statusChangedAt`, `createdAt`, `updatedAt`. Any other field returns `400`. |
 
 **Response `200`**
 ```json
@@ -681,14 +695,14 @@ Transition session status. Role constraints are enforced server-side.
 
 **Permitted transitions by role**
 
-| From | To | Roles |
-|---|---|---|
-| `SCHEDULED` | `IN_REVIEW` | `supporter` |
-| `SCHEDULED` | `CANCELLED` | `marketer`, `admin` |
-| `IN_REVIEW` | `PASSED` | `supporter`, `marketer` |
-| `IN_REVIEW` | `REJECTED` | `supporter`, `marketer` |
-| `IN_REVIEW` | `NO_SHOW` | `supporter`, `marketer` |
-| `IN_REVIEW` | `CANCELLED` | `marketer`, `admin` |
+| From        | To          | Roles                   |
+|-------------|-------------|-------------------------|
+| `SCHEDULED` | `IN_REVIEW` | `supporter`             |
+| `SCHEDULED` | `CANCELLED` | `marketer`, `admin`     |
+| `IN_REVIEW` | `PASSED`    | `supporter`, `marketer` |
+| `IN_REVIEW` | `REJECTED`  | `supporter`, `marketer` |
+| `IN_REVIEW` | `NO_SHOW`   | `supporter`, `marketer` |
+| `IN_REVIEW` | `CANCELLED` | `marketer`, `admin`     |
 
 Returns `409` if the transition is not permitted from the current status.
 Returns `403` if the caller's role is not permitted for the requested transition.
@@ -843,18 +857,18 @@ Bulk-imports an interview schedule CSV, reconciling it against `users`, `end_cli
 
 CSV columns (header row required, in any order):
 
-| Column | Maps to |
-|---|---|
-| `Candidate Name` | Candidate user, matched/created by name |
-| `Lead Name` | Marketer user, matched/created by name |
-| `Technology` | `interview_processes.technology`; trailing `(...)` parsed as `jobId` when it contains a digit |
-| `Interview Date` | e.g. `01-Jul-26` (`dd-MMM-yy`) |
-| `Time` | e.g. `1 PM EST`, `2:30 PM EST` — interpreted in `America/New_York` |
-| `Duration` | e.g. `1 Hour`, `45 Min` — must match this shape or the row fails |
-| `Mode of interview` | `interview_sessions.mode` (free text) |
-| `Client name` | End client, matched/created by name |
-| `Interview Round` | `interview_sessions.round` (free text) |
-| `Status` | `Scheduled`/`Reschedule` → `SCHEDULED`; anything else defaults to `SCHEDULED` with a warning |
+| Column              | Maps to                                                                                       |
+|---------------------|-----------------------------------------------------------------------------------------------|
+| `Candidate Name`    | Candidate user, matched/created by name                                                       |
+| `Lead Name`         | Marketer user, matched/created by name                                                        |
+| `Technology`        | `interview_processes.technology`; trailing `(...)` parsed as `jobId` when it contains a digit |
+| `Interview Date`    | e.g. `01-Jul-26` (`dd-MMM-yy`)                                                                |
+| `Time`              | e.g. `1 PM EST`, `2:30 PM EST` — interpreted in `America/New_York`                            |
+| `Duration`          | e.g. `1 Hour`, `45 Min` — must match this shape or the row fails                              |
+| `Mode of interview` | `interview_sessions.mode` (free text)                                                         |
+| `Client name`       | End client, matched/created by name                                                           |
+| `Interview Round`   | `interview_sessions.round` (free text)                                                        |
+| `Status`            | `Scheduled`/`Reschedule` → `SCHEDULED`; anything else defaults to `SCHEDULED` with a warning  |
 
 **Matching rules:**
 - Candidate/marketer name matching is case-insensitive (falls back to first-token match). No match → an inactive placeholder user is created (`<slug>.candidate@system.local` / `<slug>.marketer@system.local`, random password) for an admin to reconcile later.
@@ -918,9 +932,9 @@ All list endpoints that return paginated results use:
 
 ## Rate limiting
 
-| Scope | Limit |
-|---|---|
-| `POST /auth/login` | 10 requests / minute per IP |
+| Scope               | Limit                          |
+|---------------------|--------------------------------|
+| `POST /auth/login`  | 10 requests / minute per IP    |
 | All other endpoints | 300 requests / minute per user |
 
 Rate limit headers returned on every response:

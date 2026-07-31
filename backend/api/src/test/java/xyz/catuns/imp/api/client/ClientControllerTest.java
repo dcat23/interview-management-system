@@ -105,6 +105,61 @@ class ClientControllerTest {
     @DisplayName("GET /clients")
     class ListClients {
 
+        @BeforeEach
+        void seedSearchFixtures() {
+            seedClient("Sort-Fixture-B Corp", "Distinctive-Search-Industry");
+            seedClient("Sort-Fixture-A Corp", "Retail");
+        }
+
+        @Test
+        @DisplayName("search matches client name")
+        void searchMatchesName() throws Exception {
+            mockMvc.perform(get("/clients")
+                            .param("search", "Sort-Fixture-A")
+                            .header("Authorization", "Bearer " + adminToken))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data[*].name",
+                            org.hamcrest.Matchers.hasItem("Sort-Fixture-A Corp")));
+        }
+
+        @Test
+        @DisplayName("search matches industry")
+        void searchMatchesIndustry() throws Exception {
+            mockMvc.perform(get("/clients")
+                            .param("search", "Distinctive-Search-Industry")
+                            .header("Authorization", "Bearer " + adminToken))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data[*].name",
+                            org.hamcrest.Matchers.hasItem("Sort-Fixture-B Corp")));
+        }
+
+        @Test
+        @DisplayName("sorts by name ascending")
+        void sortsByNameAscending() throws Exception {
+            String response = mockMvc.perform(get("/clients")
+                            .param("search", "Sort-Fixture-")
+                            .param("sort", "name,asc")
+                            .header("Authorization", "Bearer " + adminToken))
+                    .andExpect(status().isOk())
+                    .andReturn().getResponse().getContentAsString();
+
+            com.fasterxml.jackson.databind.JsonNode data = objectMapper.readTree(response).get("data");
+            java.util.List<String> names = new java.util.ArrayList<>();
+            data.forEach(node -> names.add(node.get("name").asText()));
+
+            org.assertj.core.api.Assertions.assertThat(names)
+                    .containsExactly("Sort-Fixture-A Corp", "Sort-Fixture-B Corp");
+        }
+
+        @Test
+        @DisplayName("unsortable field → 400")
+        void unsortableFieldReturns400() throws Exception {
+            mockMvc.perform(get("/clients")
+                            .param("sort", "updatedAt,asc")
+                            .header("Authorization", "Bearer " + adminToken))
+                    .andExpect(status().isBadRequest());
+        }
+
         @Test
         @DisplayName("returns 200 for admin")
         void adminCanListClients() throws Exception {

@@ -10,6 +10,9 @@ import { toRecord } from '@feature/base/server';
  */
 export type GetClientsRequest = Pageable & {
   isActive?: boolean;
+  search?: string;
+  /** e.g. "name,asc" - see GET /clients in the API reference for sortable fields. */
+  sort?: string;
 };
 
 export type GetClientsResponse = Page<Client>;

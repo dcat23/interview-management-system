@@ -331,6 +331,57 @@ class SessionControllerTest {
     @DisplayName("GET /sessions")
     class ListSessions {
 
+        private UUID searchFixtureSessionId;
+
+        @BeforeEach
+        void seedSearchFixtures() {
+            InterviewSession session = sessionRepository.findByProcessIdOrderByRound(candidate1ProcessId).stream()
+                    .filter(s -> "Search-Fixture-Round".equalsIgnoreCase(s.getRound()))
+                    .findFirst()
+                    .orElseGet(() -> {
+                        InterviewSession fixture = new InterviewSession();
+                        fixture.setProcessId(candidate1ProcessId);
+                        fixture.setSupporterId(supporter1Id);
+                        fixture.setRound("Search-Fixture-Round");
+                        fixture.setMode("Distinctive-Search-Mode");
+                        fixture.setDurationMinutes(30);
+                        fixture.setScheduledAt(Instant.now().plus(60, ChronoUnit.DAYS));
+                        return sessionRepository.save(fixture);
+                    });
+            searchFixtureSessionId = session.getId();
+        }
+
+        @Test
+        @DisplayName("search matches round")
+        void searchMatchesRound() throws Exception {
+            mockMvc.perform(get("/sessions")
+                            .param("search", "Search-Fixture-Round")
+                            .header("Authorization", "Bearer " + adminToken))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data[*].id",
+                            org.hamcrest.Matchers.hasItem(searchFixtureSessionId.toString())));
+        }
+
+        @Test
+        @DisplayName("search matches mode")
+        void searchMatchesMode() throws Exception {
+            mockMvc.perform(get("/sessions")
+                            .param("search", "Distinctive-Search-Mode")
+                            .header("Authorization", "Bearer " + adminToken))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data[*].id",
+                            org.hamcrest.Matchers.hasItem(searchFixtureSessionId.toString())));
+        }
+
+        @Test
+        @DisplayName("unsortable field → 400")
+        void unsortableFieldReturns400() throws Exception {
+            mockMvc.perform(get("/sessions")
+                            .param("sort", "processId,asc")
+                            .header("Authorization", "Bearer " + adminToken))
+                    .andExpect(status().isBadRequest());
+        }
+
         @Test
         @DisplayName("admin lists sessions across all processes, paginated")
         void adminListsAll() throws Exception {

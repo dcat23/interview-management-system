@@ -16,6 +16,9 @@ export type GetInterviewSessionsRequest = Pageable & {
   status?: SessionStatus;
   processId?: string;
   supporterId?: string;
+  search?: string;
+  /** e.g. "scheduledAt,asc" - see GET /sessions in the API reference for sortable fields. */
+  sort?: string;
 };
 
 export type GetInterviewSessionsResponse = Page<InterviewSession>;

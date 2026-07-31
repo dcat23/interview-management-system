@@ -7,6 +7,7 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -25,16 +26,24 @@ import xyz.catuns.imp.api.session.mapper.InterviewSessionMapper;
 import xyz.catuns.imp.api.session.repository.InterviewSessionRepository;
 import xyz.catuns.imp.api.user.entity.User;
 import xyz.catuns.imp.api.user.repository.UserRepository;
+import xyz.catuns.spring.base.exception.controller.BadRequestException;
 import xyz.catuns.spring.base.exception.controller.NotFoundException;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class InterviewSessionService {
+
+    private static final Set<String> SORTABLE_PROPERTIES = Set.of(
+            "round", "mode", "durationMinutes", "status", "scheduledAt",
+            "statusChangedAt", "createdAt", "updatedAt"
+    );
 
     private final InterviewSessionRepository sessionRepository;
     private final InterviewSessionMapper sessionMapper;
@@ -84,7 +93,8 @@ public class InterviewSessionService {
     }
 
     @PreAuthorize("hasAnyRole('ADMIN','MARKETER','SUPPORTER')")
-    public Page<InterviewSessionResponse> list(SessionStatus status, UUID processId, UUID supporterId, Pageable pageable) {
+    public Page<InterviewSessionResponse> list(String search, SessionStatus status, UUID processId,
+                                                UUID supporterId, Pageable pageable) {
         Specification<InterviewSession> spec = Specification.unrestricted();
         if (status != null) {
             spec = spec.and((root, query, cb) -> cb.equal(root.get("status"), status));
@@ -95,7 +105,24 @@ public class InterviewSessionService {
         if (supporterId != null) {
             spec = spec.and((root, query, cb) -> cb.equal(root.get("supporterId"), supporterId));
         }
-        return sessionRepository.findAll(spec, pageable).map(sessionMapper::toResponse);
+        if (search != null && !search.isBlank()) {
+            String pattern = "%" + search.trim().toLowerCase(Locale.ROOT) + "%";
+            spec = spec.and((root, query, cb) -> cb.or(
+                    cb.like(cb.lower(root.get("round")), pattern),
+                    cb.like(cb.lower(root.get("mode")), pattern),
+                    cb.like(cb.lower(cb.coalesce(root.get("description"), "")), pattern)
+            ));
+        }
+        return sessionRepository.findAll(spec, validateSort(pageable)).map(sessionMapper::toResponse);
+    }
+
+    private static Pageable validateSort(Pageable pageable) {
+        for (Sort.Order order : pageable.getSort()) {
+            if (!SORTABLE_PROPERTIES.contains(order.getProperty())) {
+                throw new BadRequestException("Unsortable field: " + order.getProperty());
+            }
+        }
+        return pageable;
     }
 
     @PreAuthorize("hasAnyRole('ADMIN','MARKETER','SUPPORTER') " +
