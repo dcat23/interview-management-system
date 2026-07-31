@@ -73,46 +73,6 @@ const columns: DataTableColumn<InterviewProcess>[] = [
   },
 ];
 
-
-type Project = {
-  id: string
-  name: string
-  status: "Ready" | "Queued" | "Blocked"
-  owner: string
-}
- 
-const columns2: DataTableColumn<Project>[] = [
-  {
-    id: "name",
-    header: "Project",
-    cell: (project) => project.name,
-    sortValue: (project) => project.name,
-    sortable: true,
-  },
-  {
-    id: "owner",
-    header: "Owner",
-    cell: (project) => project.owner,
-    sortValue: (project) => project.owner,
-    sortable: true,
-  },
-]
-
-const data: Project[] = [
-  {
-    id: '1',
-    name: '',
-    status: 'Ready',
-    owner: 'd'
-  },
-  {
-    id: '2',
-    name: '',
-    status: 'Ready',
-    owner: 'me'
-  }
-]
-
 export function ProcessesData() {
   const [page, setPage] = useState(0);
   const [limit, setLimit] = useState(DEFAULT_PAGE_SIZE);
@@ -122,35 +82,32 @@ export function ProcessesData() {
   return (
     <section className="min-h-svh w-full bg-background px-4 py-6 text-foreground">
       <div className="mx-auto w-full max-w-5xl">
-        <DataTable 
-        columns={columns2} data={data} getRowId={(row) => row.id} 
-      />
-      <ProcessDataTable
-        pageResponse={pageResponse}
-        isLoading={isLoading}
-        onPageChange={setPage}
-        onPageSizeChange={(nextLimit) => {
-          setLimit(nextLimit);
-          setPage(0);
-        }}
-        columns={columns}
-        getRowId={(row) => row.id}
-        enableRowSelection
-        enableSorting
-        searchPlaceholder="Search processes"
-        searchableText={(process) => [
-          process.candidateName,
-          process.clientName,
-          process.status,
-          process.technology,
-          moment(process.startedAt).format("MMM D, YYYY"),
-        ]
-          .filter(Boolean)
-          .join(" ")}
-        emptyMessage="No processes yet."
-      />
+        <ProcessDataTable
+          pageResponse={pageResponse}
+          isLoading={isLoading}
+          onPageChange={setPage}
+          onPageSizeChange={(nextLimit) => {
+            setLimit(nextLimit);
+            setPage(0);
+          }}
+          columns={columns}
+          getRowId={(row) => row.id}
+          enableRowSelection
+          enableSorting
+          searchPlaceholder="Search processes"
+          searchableText={(process) => [
+            process.candidateName,
+            process.clientName,
+            process.status,
+            process.technology,
+            moment(process.startedAt).format("MMM D, YYYY"),
+          ]
+            .filter(Boolean)
+            .join(" ")}
+          emptyMessage="No processes yet."
+        />
       </div>
-      </section>
+    </section>
   );
 }
 

@@ -2,7 +2,7 @@ import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, Sid
 import { PROJECT_NAME } from '@app/dashboard/lib/constants/metadata';
 import { DASHBOARD_NAV } from '@app/dashboard/lib/constants/navigation';
 import { auth, User } from '@feature/auth/server';
-import { Role, SECONDARY_NAV } from '@feature/base/server';
+import { capitalize, Role, SECONDARY_NAV } from '@feature/base/server';
 import { CommandIcon } from 'lucide-react';
 import Link from 'next/link';
 import { ReactNode } from 'react';
@@ -32,7 +32,7 @@ export async function AppSidebar({ role, ...props }: Props) {
             >
               <Link href="/">
                 <CommandIcon className="size-5!" />
-                <span className="text-base font-semibold">{PROJECT_NAME}</span>
+                <span className="text-base font-semibold">{capitalize(user.role)} Portal</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>

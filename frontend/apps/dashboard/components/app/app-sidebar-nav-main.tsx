@@ -7,9 +7,9 @@ import {
   SidebarMenuItem,
 } from "@app/dashboard/components/ui/common/sidebar"
 import { NavItem } from "@feature/base/server"
-import AppSidebarNavMenu from "./app-sidebar-nav-menu"
-import { Lightbulb, PlusCircleIcon, Search, SearchAlert } from "lucide-react"
+import { PlusCircleIcon, Search } from "lucide-react"
 import { Button } from "../ui/common/button"
+import AppSidebarNavMenu from "./app-sidebar-nav-menu"
 
 export function AppSidebarNavMain({
   items,

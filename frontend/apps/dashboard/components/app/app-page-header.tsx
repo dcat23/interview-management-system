@@ -24,7 +24,8 @@ export default function AppPageHeader({ title, breadcrumbs, children }: Props) {
   const heading = title ?? breadcrumbs[breadcrumbs.length - 1]?.label
 
   return (
-    <section className="min-h-svh w-full bg-background px-2 py-6 text-foreground">
+    <section className="w-full flex-col justify-start gap-6 bg-background text-foreground">
+    {/* <section className="min-h-svh w-full bg-background px-2 py-6 text-foreground"> */}
       <div className="mx-auto w-full max-w-5xl">
         <Breadcrumb className="mb-4">
           <BreadcrumbList>
@@ -53,11 +54,6 @@ export default function AppPageHeader({ title, breadcrumbs, children }: Props) {
           {children}
         </div>
 
-        {/* <div className="mt-6 grid gap-4 sm:grid-cols-3">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="h-28 border border-border bg-muted/30" />
-          ))}
-        </div> */}
       </div>
     </section>
   )
