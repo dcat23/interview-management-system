@@ -450,7 +450,7 @@ Open a new interview process for a candidate.
 }
 ```
 
-`status` defaults to `ACTIVE`. `startedAt` set server-side.
+`status` defaults to `ACTIVE`. `startedAt` set server-side — initially the creation time, then kept in sync with the earliest session's `scheduledAt` once a session is created for the process (via `POST /processes/:id/sessions` or CSV import; see [Schedule import](#schedule-import)).
 
 **Response `201`** — returns created process object.
 
@@ -852,6 +852,7 @@ CSV columns (header row required, in any order):
 - Rows are grouped into one `interview_process` by `(candidateId, clientId, jobId)` when a job id was parsed from `Technology`; otherwise by exact `(candidateId, clientId, technology)` text match. Round order is not validated — `jobId` (not round-name sequencing) is what ties multiple rows together, and chronological order simply follows each session's `scheduledAt`.
 - Sessions are upserted by `(processId, round)`: a row matching an existing session updates `scheduledAt`/`durationMinutes`/`mode` in place (covers reschedules and re-importing the same sheet) rather than duplicating.
 - Supporter assignment: if the caller has the `supporter` role, they're assigned to every session they import. Otherwise a supporter is auto-assigned per session — first excluding anyone with a conflicting time window, then picking the least-loaded remaining supporter. No supporter available → that row fails.
+- After each row, the process's `startedAt` is recomputed as `MIN(scheduledAt)` across its sessions — so it reflects the earliest imported round regardless of row order in the sheet, not the moment the CSV happened to be uploaded.
 
 **Response `200`**
 ```json

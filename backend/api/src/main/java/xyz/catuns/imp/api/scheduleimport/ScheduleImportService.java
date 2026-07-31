@@ -211,7 +211,18 @@ public class ScheduleImportService {
         }
 
         session = sessionRepository.save(session);
+        process = syncProcessStartedAt(process);
         return new RowWriteResult(process.getId(), session.getId(), created);
+    }
+
+    private InterviewProcess syncProcessStartedAt(InterviewProcess process) {
+        Instant earliestScheduledAt = sessionRepository.findEarliestScheduledAtByProcessId(process.getId())
+                .orElse(process.getStartedAt());
+        if (!earliestScheduledAt.equals(process.getStartedAt())) {
+            process.setStartedAt(earliestScheduledAt);
+            process = processRepository.save(process);
+        }
+        return process;
     }
 
     private UUID resolveCallerSupporterId(Authentication authentication) {

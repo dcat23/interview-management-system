@@ -115,6 +115,7 @@ CREATE UNIQUE INDEX uq_processes_candidate_client_job
 - `technology` is free text (e.g. "Java Full Stack", "React / Node.js") — not an enum. Controlled vocabulary can be introduced later via a lookup table without schema changes.
 - `job_id` is the requisition/job code, when known (e.g. extracted from a source like "Java Developer (9548BR)" → `9548BR`). Nullable — free-text technology strings don't always carry one. Used to group multiple interview rounds for the same candidate+client+requisition into one process without relying on round-name ordering.
 - `closed_at` is set when status transitions to `completed`, `withdrawn`, or `cancelled`.
+- `started_at` defaults to `now()` at row creation, but is kept in sync with `MIN(interview_sessions.scheduled_at)` for the process once a session exists — see `interview_sessions` notes below. Only processes with no sessions yet keep the creation-time default.
 
 ---
 
@@ -155,6 +156,7 @@ CREATE INDEX idx_sessions_job_query
 - `mode` is free text (e.g. "Microsoft Teams", "Zoom", "On-site", "Phone"). Not an enum — client preferences vary.
 - `status_changed_by` is `NULL` when the background job performs the transition.
 - The partial index `idx_sessions_job_query` optimises the background job's query significantly at scale.
+- Creating, updating, or CSV-importing a session recomputes the parent process's `started_at` as `MIN(scheduled_at)` across its sessions — so `started_at` always reflects the earliest interview round, moving backward when an earlier round is added and never drifting forward on its own. Backfilled for pre-existing rows in `V13__backfill_started_at_from_sessions.sql`.
 
 ---
 

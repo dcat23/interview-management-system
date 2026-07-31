@@ -14,6 +14,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import xyz.catuns.imp.api.config.CacheConfig;
+import xyz.catuns.imp.api.process.entity.InterviewProcess;
 import xyz.catuns.imp.api.process.repository.InterviewProcessRepository;
 import xyz.catuns.imp.api.session.dto.CreateSessionRequest;
 import xyz.catuns.imp.api.session.dto.InterviewSessionResponse;
@@ -26,6 +27,7 @@ import xyz.catuns.imp.api.user.entity.User;
 import xyz.catuns.imp.api.user.repository.UserRepository;
 import xyz.catuns.spring.base.exception.controller.NotFoundException;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -48,14 +50,16 @@ public class InterviewSessionService {
     @Transactional
     @CacheEvict(value = CacheConfig.SESSIONS_BY_PROCESS, key = "#processId")
     public InterviewSessionResponse create(UUID processId, CreateSessionRequest request) {
-        processRepository.findById(processId)
+        InterviewProcess process = processRepository.findById(processId)
                 .orElseThrow(() -> new NotFoundException("Process not found"));
         userRepository.findById(request.supporterId())
                 .orElseThrow(() -> new NotFoundException("Supporter not found"));
 
         InterviewSession session = sessionMapper.toEntity(request);
         session.setProcessId(processId);
-        return sessionMapper.toResponse(sessionRepository.save(session));
+        session = sessionRepository.save(session);
+        syncProcessStartedAt(process);
+        return sessionMapper.toResponse(session);
     }
 
     @PreAuthorize("isAuthenticated()")
@@ -109,7 +113,19 @@ public class InterviewSessionService {
         InterviewSession session = sessionRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Session not found"));
         sessionMapper.update(request, session);
-        return sessionMapper.toResponse(sessionRepository.save(session));
+        session = sessionRepository.save(session);
+
+        processRepository.findById(session.getProcessId()).ifPresent(this::syncProcessStartedAt);
+        return sessionMapper.toResponse(session);
+    }
+
+    private void syncProcessStartedAt(InterviewProcess process) {
+        Instant earliestScheduledAt = sessionRepository.findEarliestScheduledAtByProcessId(process.getId())
+                .orElse(process.getStartedAt());
+        if (!earliestScheduledAt.equals(process.getStartedAt())) {
+            process.setStartedAt(earliestScheduledAt);
+            processRepository.save(process);
+        }
     }
 
     public boolean isCandidateOwnerOfSession(UUID sessionId, String email) {

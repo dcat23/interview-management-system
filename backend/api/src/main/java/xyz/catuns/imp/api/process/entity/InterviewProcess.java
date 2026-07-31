@@ -7,8 +7,11 @@ import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.UpdateTimestamp;
+import xyz.catuns.imp.api.session.entity.InterviewSession;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -44,7 +47,7 @@ public class InterviewProcess {
     @Column(name = "status", nullable = false)
     private ProcessStatus status = ProcessStatus.ACTIVE;
 
-    @Column(name = "started_at", nullable = false, updatable = false)
+    @Column(name = "started_at", nullable = false)
     private Instant startedAt = Instant.now();
 
     @Column(name = "closed_at")
@@ -57,4 +60,7 @@ public class InterviewProcess {
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
+
+    @OneToMany(mappedBy = "process", fetch = FetchType.LAZY)
+    private List<InterviewSession> sessions = new ArrayList<>();
 }

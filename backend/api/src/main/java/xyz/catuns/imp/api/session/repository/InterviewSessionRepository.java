@@ -2,6 +2,8 @@ package xyz.catuns.imp.api.session.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import xyz.catuns.imp.api.session.entity.InterviewSession;
 import xyz.catuns.imp.api.session.entity.SessionStatus;
@@ -16,6 +18,9 @@ import java.util.UUID;
 public interface InterviewSessionRepository extends JpaRepository<InterviewSession, UUID>, JpaSpecificationExecutor<InterviewSession> {
 
     List<InterviewSession> findByProcessIdOrderByRound(UUID processId);
+
+    @Query("SELECT MIN(s.scheduledAt) FROM InterviewSession s WHERE s.processId = :processId")
+    Optional<Instant> findEarliestScheduledAtByProcessId(@Param("processId") UUID processId);
 
     List<InterviewSession> findByProcessIdAndSupporterIdOrderByRound(UUID processId, UUID supporterId);
 

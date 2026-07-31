@@ -7,6 +7,7 @@ import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.UpdateTimestamp;
+import xyz.catuns.imp.api.process.entity.InterviewProcess;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -24,6 +25,10 @@ public class InterviewSession {
 
     @Column(name = "process_id", nullable = false)
     private UUID processId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "process_id", insertable = false, updatable = false)
+    private InterviewProcess process;
 
     @Column(name = "supporter_id", nullable = false)
     private UUID supporterId;
