@@ -1,6 +1,7 @@
 import AppPageHeader from '@app/dashboard/components/app/app-page-header';
 import { DASHBOARD } from '@feature/base/server';
 import FileUpload06 from '@app/dashboard/components/file-upload-06';
+import ScheduleImport from '@app/dashboard/components/schedule-import';
 
 interface Props {
   params: Promise<{}>;
@@ -19,7 +20,7 @@ async function AppUploadPage(props: Props) {
           { label: 'Upload', href: '#' },
         ]}
       ></AppPageHeader>
-      <FileUpload06 />
+      <ScheduleImport />
     </div>
   );
 }

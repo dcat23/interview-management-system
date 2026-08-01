@@ -9,6 +9,11 @@ const { composePlugins, withNx } = require('@nx/next');
  **/
 const nextConfig = {
   serverExternalPackages: ['pino', 'pino-pretty', 'thread-stream'],
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '10mb',
+    },
+  },
   // Use this to set Nx-specific options
   // See: https://nx.dev/recipes/next/next-config-setup
   nx: {},

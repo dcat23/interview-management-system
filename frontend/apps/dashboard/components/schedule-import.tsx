@@ -3,11 +3,13 @@
 import { CheckCircle, FileText, Loader2, Upload, X } from 'lucide-react';
 import type React from 'react';
 import { useRef, useState } from 'react';
+import { toast } from 'sonner';
 import { Button } from '@app/dashboard/components/ui/common/button';
 import { Card } from '@app/dashboard/components/ui/common/card';
 import { Progress } from '@app/dashboard/components/ui/common/progress';
 import { Separator } from '@app/dashboard/components/ui/common/separator';
 import { logger } from '@next-feature/logging';
+import { importCsv, ImportSummaryResponse } from '@feature/backend/server';
 
 const log = logger.child({ module: 'schedule-import' });
 
@@ -15,41 +17,76 @@ interface UploadItem {
   id: string;
   name: string;
   progress: number;
-  status: 'uploading' | 'completed';
+  status: 'uploading' | 'completed' | 'error';
+  summary?: ImportSummaryResponse;
+  error?: string;
 }
 
 export default function ScheduleImport() {
-  const [uploads, setUploads] = useState<UploadItem[]>([
-    {
-      id: 'a1',
-      name: 'design-mock-landing.png',
-      progress: 62,
-      status: 'uploading',
-    },
-    {
-      id: 'b2',
-      name: 'team-headshot-2025-01-09.jpg',
-      progress: 28,
-      status: 'uploading',
-    },
-    {
-      id: 'c3',
-      name: 'logo-v3-final.gif',
-      progress: 100,
-      status: 'completed',
-    },
-  ]);
+  const [uploads, setUploads] = useState<UploadItem[]>([]);
   const filePickerRef = useRef<HTMLInputElement>(null);
 
   const openFilePicker = () => {
     filePickerRef.current?.click();
   };
 
+  const uploadFile = (file: File) => {
+    const id = crypto.randomUUID();
+
+    setUploads((current) => [
+      ...current,
+      { id, name: file.name, progress: 40, status: 'uploading' },
+    ]);
+
+    importCsv(file)
+      .then((response) => {
+        if (!response.success) {
+          throw response.error ?? new Error(response.message);
+        }
+
+        setUploads((current) =>
+          current.map((upload) =>
+            upload.id === id
+              ? {
+                  ...upload,
+                  progress: 100,
+                  status: 'completed',
+                  summary: response.data,
+                }
+              : upload,
+          ),
+        );
+      })
+      .catch((error) => {
+        log.error(`Failed to import ${file.name}\n'${error.message}'`);
+        toast.error(`Failed to import ${file.name}`, {
+          description: error?.message,
+        });
+        setUploads((current) =>
+          current.map((upload) =>
+            upload.id === id
+              ? {
+                  ...upload,
+                  progress: 100,
+                  status: 'error',
+                  error: error?.message ?? 'Import failed',
+                }
+              : upload,
+          ),
+        );
+      });
+  };
+
+  const uploadFiles = (files: FileList) => {
+    Array.from(files).forEach(uploadFile);
+  };
+
   const onFileInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = event.target.files;
-    if (selectedFiles) {
-      log.info(selectedFiles, 'Files selected:');
+    if (selectedFiles?.length) {
+      uploadFiles(selectedFiles);
     }
+    event.target.value = '';
   };
 
   const onDragOver = (event: React.DragEvent) => {
@@ -59,19 +96,17 @@ export default function ScheduleImport() {
   const onDropFiles = (event: React.DragEvent) => {
     event.preventDefault();
     const droppedFiles = event.dataTransfer.files;
-    if (droppedFiles) {
-      log.info(droppedFiles, 'Files dropped:');
+    if (droppedFiles?.length) {
+      uploadFiles(droppedFiles);
     }
   };
 
   const removeUploadById = (id: string) => {
-    setUploads(uploads.filter((file) => file.id !== id));
+    setUploads((current) => current.filter((file) => file.id !== id));
   };
 
   const activeUploads = uploads.filter((file) => file.status === 'uploading');
-  const completedUploads = uploads.filter(
-    (file) => file.status === 'completed',
-  );
+  const finishedUploads = uploads.filter((file) => file.status !== 'uploading');
 
   return (
     <div className="mx-auto flex w-full max-w-sm flex-col gap-y-6">
@@ -98,7 +133,7 @@ export default function ScheduleImport() {
           </div>
         </div>
         <input
-          accept="image/png,image/jpeg,image/gif"
+          accept="text/csv,.csv"
           className="hidden"
           multiple
           onChange={onFileInputChange}
@@ -106,7 +141,7 @@ export default function ScheduleImport() {
           type="file"
         />
         <span className="mt-2 block text-base/6 text-muted-foreground group-disabled:opacity-50 sm:text-xs">
-          Supported: JPG, PNG, GIF (max 10 MB)
+          Supported: CSV
         </span>
       </Card>
 
@@ -152,18 +187,18 @@ export default function ScheduleImport() {
           </div>
         )}
 
-        {activeUploads.length > 0 && completedUploads.length > 0 && (
+        {activeUploads.length > 0 && finishedUploads.length > 0 && (
           <Separator className="my-0" />
         )}
 
-        {completedUploads.length > 0 && (
+        {finishedUploads.length > 0 && (
           <div>
             <h2 className="mb-4 flex items-center text-balance font-mono font-normal text-foreground text-lg uppercase sm:text-xs">
               <CheckCircle className="mr-1 size-4" />
               Finished
             </h2>
             <div className="-mt-2 divide-y">
-              {completedUploads.map((file) => (
+              {finishedUploads.map((file) => (
                 <div className="group flex items-center py-4" key={file.id}>
                   <div className="mr-3 grid size-10 shrink-0 place-content-center rounded border bg-muted">
                     <FileText className="inline size-4 group-hover:hidden" />
@@ -183,13 +218,21 @@ export default function ScheduleImport() {
                         {file.name}
                       </span>
                       <span className="text-muted-foreground text-sm tabular-nums">
-                        {file.progress}%
+                        {file.status === 'error'
+                          ? 'Failed'
+                          : `${file.summary?.imported ?? 0} imported, ${file.summary?.updated ?? 0} updated`}
                       </span>
                     </div>
-                    <Progress
-                      className="mt-1 h-2 min-w-64"
-                      value={file.progress}
-                    />
+                    {file.status === 'error' ? (
+                      <span className="text-destructive text-xs">
+                        {file.error}
+                      </span>
+                    ) : (
+                      <Progress
+                        className="mt-1 h-2 min-w-64"
+                        value={file.progress}
+                      />
+                    )}
                   </div>
                 </div>
               ))}
