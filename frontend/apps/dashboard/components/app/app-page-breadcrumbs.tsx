@@ -1,4 +1,4 @@
-import { Fragment, ReactNode } from 'react';
+import { Fragment } from 'react';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -6,16 +6,16 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from "@app/dashboard/components/ui/common/breadcrumb"
+} from '@app/dashboard/components/ui/common/breadcrumb';
 
 interface Crumb {
-  label: string
-  href: string
+  label: string;
+  href: string;
 }
 
 interface Props {
-  title?: string
-  breadcrumbs: Crumb[]
+  title?: string;
+  breadcrumbs: Crumb[];
 }
 
 export function AppPageBreadcrumbs({ breadcrumbs }: Props) {

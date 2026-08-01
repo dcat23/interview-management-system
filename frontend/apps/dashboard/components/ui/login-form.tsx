@@ -1,27 +1,27 @@
-import { cn } from "@app/dashboard/lib/ui/utils"
-import { Button } from "@app/dashboard/components/ui/common/button"
+import { cn } from '@app/dashboard/lib/ui/utils';
+import { Button } from '@app/dashboard/components/ui/common/button';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@app/dashboard/components/ui/common/card"
+} from '@app/dashboard/components/ui/common/card';
 import {
   Field,
   FieldDescription,
   FieldGroup,
   FieldLabel,
   FieldSeparator,
-} from "@app/dashboard/components/ui/common/field"
-import { Input } from "@app/dashboard/components/ui/common/input"
+} from '@app/dashboard/components/ui/common/field';
+import { Input } from '@app/dashboard/components/ui/common/input';
 
 export function LoginForm({
   className,
   ...props
-}: React.ComponentProps<"div">) {
+}: React.ComponentProps<'div'>) {
   return (
-    <div className={cn("flex flex-col gap-6", className)} {...props}>
+    <div className={cn('flex flex-col gap-6', className)} {...props}>
       <Card>
         <CardHeader className="text-center">
           <CardTitle className="text-xl">Welcome back</CardTitle>
@@ -87,9 +87,9 @@ export function LoginForm({
         </CardContent>
       </Card>
       <FieldDescription className="px-6 text-center">
-        By clicking continue, you agree to our <a href="#">Terms of Service</a>{" "}
+        By clicking continue, you agree to our <a href="#">Terms of Service</a>{' '}
         and <a href="#">Privacy Policy</a>.
       </FieldDescription>
     </div>
-  )
+  );
 }

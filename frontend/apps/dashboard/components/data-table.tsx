@@ -1,12 +1,12 @@
-"use client"
+'use client';
 
 import {
+  type DragEvent,
+  type ReactNode,
   useEffect,
   useMemo,
   useState,
-  type DragEvent,
-  type ReactNode,
-} from "react"
+} from 'react';
 import {
   ArrowDown,
   ArrowUp,
@@ -17,7 +17,7 @@ import {
   ChevronsRight,
   GripVertical,
   MoreHorizontal,
-} from "lucide-react"
+} from 'lucide-react';
 
 import {
   AlertDialog,
@@ -28,9 +28,9 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@app/dashboard/components/ui/common/alert-dialog"
-import { Button } from "@app/dashboard/components/ui/common/button"
-import { Checkbox } from "@app/dashboard/components/ui/common/checkbox"
+} from '@app/dashboard/components/ui/common/alert-dialog';
+import { Button } from '@app/dashboard/components/ui/common/button';
+import { Checkbox } from '@app/dashboard/components/ui/common/checkbox';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,17 +38,17 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@app/dashboard/components/ui/common/dropdown-menu"
-import { Input } from "@app/dashboard/components/ui/common/input"
-import { Label } from "@app/dashboard/components/ui/common/label"
+} from '@app/dashboard/components/ui/common/dropdown-menu';
+import { Input } from '@app/dashboard/components/ui/common/input';
+import { Label } from '@app/dashboard/components/ui/common/label';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@app/dashboard/components/ui/common/select"
-import { Skeleton } from "@app/dashboard/components/ui/common/skeleton"
+} from '@app/dashboard/components/ui/common/select';
+import { Skeleton } from '@app/dashboard/components/ui/common/skeleton';
 import {
   Table,
   TableBody,
@@ -56,152 +56,152 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@app/dashboard/components/ui/common/table"
-import { generateThreeWordGuard } from "@app/dashboard/lib/ui/typed-guard"
-import type { Page } from "@feature/base/server"
+} from '@app/dashboard/components/ui/common/table';
+import { generateThreeWordGuard } from '@app/dashboard/lib/ui/typed-guard';
+import type { Page } from '@feature/base/server';
 
 export type DataTableColumn<TData> = {
-  id: string
-  header: ReactNode
-  cell: (row: TData) => ReactNode
-  sortValue?: (row: TData) => string | number | null | undefined
-  sortable?: boolean
-  className?: string
-  width?: string
-  exportHeader?: string
-  exportValue?: (row: TData) => string | number | null | undefined
-  exportable?: boolean
-}
+  id: string;
+  header: ReactNode;
+  cell: (row: TData) => ReactNode;
+  sortValue?: (row: TData) => string | number | null | undefined;
+  sortable?: boolean;
+  className?: string;
+  width?: string;
+  exportHeader?: string;
+  exportValue?: (row: TData) => string | number | null | undefined;
+  exportable?: boolean;
+};
 
 export type DataTableRowAction<TData> = {
-  label: string
-  onClick: (row: TData) => void | Promise<void>
-  icon?: ReactNode
-  tone?: "default" | "warning" | "destructive"
-  destructive?: boolean
-  disabled?: boolean
-  confirmTitle?: string
-  confirmDescription?: string
-  confirmKeyword?: string
-  confirmKeywordMode?: "fixed" | "random-3-words"
-}
+  label: string;
+  onClick: (row: TData) => void | Promise<void>;
+  icon?: ReactNode;
+  tone?: 'default' | 'warning' | 'destructive';
+  destructive?: boolean;
+  disabled?: boolean;
+  confirmTitle?: string;
+  confirmDescription?: string;
+  confirmKeyword?: string;
+  confirmKeywordMode?: 'fixed' | 'random-3-words';
+};
 
 export type DataTableRowActionGroup<TData> = {
-  label?: string
-  actions: DataTableRowAction<TData>[]
-}
+  label?: string;
+  actions: DataTableRowAction<TData>[];
+};
 
-type SortDirection = "asc" | "desc"
+type SortDirection = 'asc' | 'desc';
 export type DataTableSortState = {
-  columnId: string
-  direction: SortDirection
-} | null
+  columnId: string;
+  direction: SortDirection;
+} | null;
 
 export type DataTableToolbarContext<TData> = {
-  selectedRows: TData[]
-  filteredRows: TData[]
-  exportRows: TData[]
-  exportCsv: (fileName?: string) => void
-  clearSelection: () => void
-}
+  selectedRows: TData[];
+  filteredRows: TData[];
+  exportRows: TData[];
+  exportCsv: (fileName?: string) => void;
+  clearSelection: () => void;
+};
 
 export type DataTableServerPagination = {
-  page: number
-  pageSize: number
-  total: number
-  onPageChange: (page: number) => void
-  onPageSizeChange: (pageSize: number) => void
-}
+  page: number;
+  pageSize: number;
+  total: number;
+  onPageChange: (page: number) => void;
+  onPageSizeChange: (pageSize: number) => void;
+};
 
 type DataTableProps<TData> = {
-  columns: DataTableColumn<TData>[]
+  columns: DataTableColumn<TData>[];
   /** Ignored when `pageResponse` is provided. */
-  data?: TData[]
-  getRowId: (row: TData) => string
-  emptyMessage?: string
-  enableRowSelection?: boolean
-  enableSorting?: boolean
-  rowActions?: (row: TData) => DataTableRowAction<TData>[]
-  rowActionGroups?: (row: TData) => DataTableRowActionGroup<TData>[]
-  enableRowReordering?: boolean
-  onRowOrderChange?: (rows: TData[]) => void
-  toolbarActions?: (context: DataTableToolbarContext<TData>) => ReactNode
-  selectionActions?: (context: DataTableToolbarContext<TData>) => ReactNode
-  searchPlaceholder?: string
-  searchableText?: (row: TData) => string
-  exportFileName?: string
-  isLoading?: boolean
-  skeletonRows?: number
-  enablePagination?: boolean
-  pageSizeOptions?: number[]
-  defaultPageSize?: number
+  data?: TData[];
+  getRowId: (row: TData) => string;
+  emptyMessage?: string;
+  enableRowSelection?: boolean;
+  enableSorting?: boolean;
+  rowActions?: (row: TData) => DataTableRowAction<TData>[];
+  rowActionGroups?: (row: TData) => DataTableRowActionGroup<TData>[];
+  enableRowReordering?: boolean;
+  onRowOrderChange?: (rows: TData[]) => void;
+  toolbarActions?: (context: DataTableToolbarContext<TData>) => ReactNode;
+  selectionActions?: (context: DataTableToolbarContext<TData>) => ReactNode;
+  searchPlaceholder?: string;
+  searchableText?: (row: TData) => string;
+  exportFileName?: string;
+  isLoading?: boolean;
+  skeletonRows?: number;
+  enablePagination?: boolean;
+  pageSizeOptions?: number[];
+  defaultPageSize?: number;
   /**
    * Manually built server-pagination state. Prefer `pageResponse` when the
    * data source is a backend `Page<TData>` (`{ data, total, page, limit }`)
    * — it derives this automatically, including the 0-indexed → 1-indexed
    * page conversion.
    */
-  serverPagination?: DataTableServerPagination
+  serverPagination?: DataTableServerPagination;
   /**
    * A backend `Page<TData>` response. When set, this supplies both the row
    * data and the server-pagination state — `data`/`serverPagination` are
    * ignored. `page` is 0-indexed, matching `PageResponse`/Spring's `Page`.
    */
-  pageResponse?: Page<TData>
+  pageResponse?: Page<TData>;
   /** Called with the next 0-indexed page when `pageResponse` is used. */
-  onPageChange?: (page: number) => void
+  onPageChange?: (page: number) => void;
   /** Called with the next page size (`limit`) when `pageResponse` is used. */
-  onPageSizeChange?: (limit: number) => void
-  searchValue?: string
-  onSearchValueChange?: (value: string) => void
-  sortState?: DataTableSortState
-  onSortStateChange?: (state: DataTableSortState) => void
-}
+  onPageSizeChange?: (limit: number) => void;
+  searchValue?: string;
+  onSearchValueChange?: (value: string) => void;
+  sortState?: DataTableSortState;
+  onSortStateChange?: (state: DataTableSortState) => void;
+};
 
 function compareValues(
   left: string | number | null | undefined,
-  right: string | number | null | undefined
+  right: string | number | null | undefined,
 ) {
-  if (left == null && right == null) return 0
-  if (left == null) return -1
-  if (right == null) return 1
+  if (left == null && right == null) return 0;
+  if (left == null) return -1;
+  if (right == null) return 1;
 
-  if (typeof left === "number" && typeof right === "number") {
-    return left - right
+  if (typeof left === 'number' && typeof right === 'number') {
+    return left - right;
   }
 
   return String(left).localeCompare(String(right), undefined, {
     numeric: true,
-    sensitivity: "base",
-  })
+    sensitivity: 'base',
+  });
 }
 
 function csvEscape(value: string) {
-  if (value.includes(",") || value.includes("\n") || value.includes('"')) {
-    return `"${value.split('"').join('""')}"`
+  if (value.includes(',') || value.includes('\n') || value.includes('"')) {
+    return `"${value.split('"').join('""')}"`;
   }
-  return value
+  return value;
 }
 
 function formatTableNumber(value: number) {
-  return value.toLocaleString()
+  return value.toLocaleString();
 }
 
 function formatCellValue(value: ReactNode): ReactNode {
-  if (typeof value === "number" && Number.isFinite(value)) {
-    return formatTableNumber(value)
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return formatTableNumber(value);
   }
-  if (typeof value === "bigint") {
-    return value.toLocaleString()
+  if (typeof value === 'bigint') {
+    return value.toLocaleString();
   }
-  return value
+  return value;
 }
 
 export function DataTable<TData>({
   columns,
   data: dataProp,
   getRowId,
-  emptyMessage = "No results.",
+  emptyMessage = 'No results.',
   enableRowSelection = false,
   enableSorting = false,
   rowActions,
@@ -210,9 +210,9 @@ export function DataTable<TData>({
   onRowOrderChange,
   toolbarActions,
   selectionActions,
-  searchPlaceholder = "Search",
+  searchPlaceholder = 'Search',
   searchableText,
-  exportFileName = "export.csv",
+  exportFileName = 'export.csv',
   isLoading = false,
   skeletonRows = 6,
   enablePagination = true,
@@ -227,23 +227,23 @@ export function DataTable<TData>({
   sortState,
   onSortStateChange,
 }: DataTableProps<TData>) {
-  const data = pageResponse ? pageResponse.data : (dataProp ?? [])
-  const [search, setSearch] = useState(searchValue ?? "")
+  const data = pageResponse ? pageResponse.data : (dataProp ?? []);
+  const [search, setSearch] = useState(searchValue ?? '');
   const [internalSortState, setInternalSortState] =
-    useState<DataTableSortState>(null)
+    useState<DataTableSortState>(null);
   const [selectedRowIds, setSelectedRowIds] = useState<Record<string, boolean>>(
-    {}
-  )
+    {},
+  );
   const [pendingDestructiveAction, setPendingDestructiveAction] = useState<{
-    row: TData
-    action: DataTableRowAction<TData>
-  } | null>(null)
-  const [confirmKeywordInput, setConfirmKeywordInput] = useState("")
-  const [confirmKeywordValue, setConfirmKeywordValue] = useState("DELETE")
-  const [draggedRowId, setDraggedRowId] = useState<string | null>(null)
-  const [dragOverRowId, setDragOverRowId] = useState<string | null>(null)
-  const [pageIndex, setPageIndex] = useState(0)
-  const [pageSize, setPageSize] = useState(defaultPageSize)
+    row: TData;
+    action: DataTableRowAction<TData>;
+  } | null>(null);
+  const [confirmKeywordInput, setConfirmKeywordInput] = useState('');
+  const [confirmKeywordValue, setConfirmKeywordValue] = useState('DELETE');
+  const [draggedRowId, setDraggedRowId] = useState<string | null>(null);
+  const [dragOverRowId, setDragOverRowId] = useState<string | null>(null);
+  const [pageIndex, setPageIndex] = useState(0);
+  const [pageSize, setPageSize] = useState(defaultPageSize);
   const derivedServerPagination: DataTableServerPagination | null = pageResponse
     ? {
         page: pageResponse.page + 1,
@@ -252,140 +252,140 @@ export function DataTable<TData>({
         onPageChange: (page) => onPageChange?.(page - 1),
         onPageSizeChange: (limit) => onPageSizeChange?.(limit),
       }
-    : (serverPagination ?? null)
-  const serverPaginationState = derivedServerPagination
-  const isServerPagination = Boolean(serverPaginationState)
-  const effectiveSortState = sortState ?? internalSortState
+    : (serverPagination ?? null);
+  const serverPaginationState = derivedServerPagination;
+  const isServerPagination = Boolean(serverPaginationState);
+  const effectiveSortState = sortState ?? internalSortState;
 
   useEffect(() => {
-    if (searchValue === undefined) return
-    setSearch(searchValue)
-  }, [searchValue])
+    if (searchValue === undefined) return;
+    setSearch(searchValue);
+  }, [searchValue]);
 
-  const activeSearch = searchValue ?? search
+  const activeSearch = searchValue ?? search;
 
   const filteredData = useMemo(() => {
     // Filters whatever page of data is currently loaded — with server
     // pagination this is the current page only, not the full result set,
     // since the backend has no search endpoint to delegate to.
-    const query = activeSearch.trim().toLowerCase()
+    const query = activeSearch.trim().toLowerCase();
     if (!query || !searchableText) {
-      return data
+      return data;
     }
 
     return data.filter((row) =>
-      searchableText(row).toLowerCase().includes(query)
-    )
-  }, [activeSearch, data, searchableText])
+      searchableText(row).toLowerCase().includes(query),
+    );
+  }, [activeSearch, data, searchableText]);
 
   const sortedData = useMemo(() => {
     if (!effectiveSortState) {
-      return filteredData
+      return filteredData;
     }
 
     const column = columns.find(
-      (item) => item.id === effectiveSortState.columnId
-    )
+      (item) => item.id === effectiveSortState.columnId,
+    );
     if (!column?.sortValue) {
-      return filteredData
+      return filteredData;
     }
 
-    const direction = effectiveSortState.direction === "asc" ? 1 : -1
+    const direction = effectiveSortState.direction === 'asc' ? 1 : -1;
     return [...filteredData].sort(
       (left, right) =>
         direction *
-        compareValues(column.sortValue?.(left), column.sortValue?.(right))
-    )
-  }, [columns, effectiveSortState, filteredData])
+        compareValues(column.sortValue?.(left), column.sortValue?.(right)),
+    );
+  }, [columns, effectiveSortState, filteredData]);
 
   const totalRows = serverPaginationState
     ? serverPaginationState.total
-    : sortedData.length
+    : sortedData.length;
   const currentPageSize = serverPaginationState
     ? serverPaginationState.pageSize
-    : pageSize
+    : pageSize;
   const effectiveSkeletonRows = isServerPagination
     ? currentPageSize
-    : skeletonRows
-  const pageCount = Math.max(1, Math.ceil(totalRows / currentPageSize))
+    : skeletonRows;
+  const pageCount = Math.max(1, Math.ceil(totalRows / currentPageSize));
   const effectivePageIndex = serverPaginationState
     ? Math.min(Math.max(serverPaginationState.page - 1, 0), pageCount - 1)
-    : Math.min(pageIndex, pageCount - 1)
+    : Math.min(pageIndex, pageCount - 1);
   const pagedData = useMemo(() => {
     if (isServerPagination) {
-      return sortedData
+      return sortedData;
     }
     if (!enablePagination) {
-      return sortedData
+      return sortedData;
     }
-    const start = effectivePageIndex * currentPageSize
-    const end = start + currentPageSize
-    return sortedData.slice(start, end)
+    const start = effectivePageIndex * currentPageSize;
+    const end = start + currentPageSize;
+    return sortedData.slice(start, end);
   }, [
     currentPageSize,
     effectivePageIndex,
     enablePagination,
     isServerPagination,
     sortedData,
-  ])
+  ]);
 
   useEffect(() => {
     if (isServerPagination) {
-      return
+      return;
     }
     if (!enablePagination) {
-      setPageIndex(0)
-      return
+      setPageIndex(0);
+      return;
     }
     if (pageIndex > pageCount - 1) {
-      setPageIndex(Math.max(pageCount - 1, 0))
+      setPageIndex(Math.max(pageCount - 1, 0));
     }
-  }, [enablePagination, isServerPagination, pageCount, pageIndex])
+  }, [enablePagination, isServerPagination, pageCount, pageIndex]);
 
   useEffect(() => {
     if (isServerPagination) {
-      return
+      return;
     }
-    setPageIndex(0)
-  }, [isServerPagination, activeSearch, effectiveSortState, pageSize])
+    setPageIndex(0);
+  }, [isServerPagination, activeSearch, effectiveSortState, pageSize]);
 
   const selectedRows = useMemo(
     () => data.filter((row) => selectedRowIds[getRowId(row)]),
-    [data, getRowId, selectedRowIds]
-  )
+    [data, getRowId, selectedRowIds],
+  );
 
   const exportRows = useMemo(() => {
     if (selectedRows.length > 0) {
-      return selectedRows
+      return selectedRows;
     }
     if (activeSearch.trim().length > 0) {
-      return filteredData
+      return filteredData;
     }
-    return data
-  }, [activeSearch, data, filteredData, selectedRows])
+    return data;
+  }, [activeSearch, data, filteredData, selectedRows]);
 
   const allVisibleRowsSelected =
     pagedData.length > 0 &&
-    pagedData.every((row) => selectedRowIds[getRowId(row)])
+    pagedData.every((row) => selectedRowIds[getRowId(row)]);
   const someVisibleRowsSelected =
     !allVisibleRowsSelected &&
-    pagedData.some((row) => selectedRowIds[getRowId(row)])
+    pagedData.some((row) => selectedRowIds[getRowId(row)]);
 
   const exportableColumns = useMemo(
     () => columns.filter((column) => column.exportable !== false),
-    [columns]
-  )
+    [columns],
+  );
 
   function clearSelection() {
-    setSelectedRowIds({})
+    setSelectedRowIds({});
   }
 
   function downloadCsv(fileName: string, rows: TData[]) {
     const header = exportableColumns
       .map((column) =>
-        csvEscape(String(column.exportHeader ?? column.header ?? column.id))
+        csvEscape(String(column.exportHeader ?? column.header ?? column.id)),
       )
-      .join(",")
+      .join(',');
 
     const lines = rows.map((row) => {
       return exportableColumns
@@ -394,24 +394,24 @@ export function DataTable<TData>({
             ? column.exportValue(row)
             : column.sortValue
               ? column.sortValue(row)
-              : ""
-          return csvEscape(raw == null ? "" : String(raw))
+              : '';
+          return csvEscape(raw == null ? '' : String(raw));
         })
-        .join(",")
-    })
+        .join(',');
+    });
 
-    const csv = [header, ...lines].join("\n")
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" })
-    const url = URL.createObjectURL(blob)
-    const anchor = document.createElement("a")
-    anchor.href = url
-    anchor.download = fileName
-    anchor.click()
-    URL.revokeObjectURL(url)
+    const csv = [header, ...lines].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = fileName;
+    anchor.click();
+    URL.revokeObjectURL(url);
   }
 
   function exportCsv(fileName = exportFileName) {
-    downloadCsv(fileName, exportRows)
+    downloadCsv(fileName, exportRows);
   }
 
   const context: DataTableToolbarContext<TData> = {
@@ -420,65 +420,66 @@ export function DataTable<TData>({
     exportRows,
     exportCsv,
     clearSelection,
-  }
+  };
 
   function toggleSort(column: DataTableColumn<TData>) {
-    const canSortColumn = Boolean(column.sortable && column.sortValue)
+    const canSortColumn = Boolean(column.sortable && column.sortValue);
     if (!enableSorting || !canSortColumn) {
-      return
+      return;
     }
 
     const nextSortState: DataTableSortState =
       !effectiveSortState || effectiveSortState.columnId !== column.id
-        ? { columnId: column.id, direction: "asc" }
-        : effectiveSortState.direction === "asc"
-          ? { columnId: column.id, direction: "desc" }
-          : null
+        ? { columnId: column.id, direction: 'asc' }
+        : effectiveSortState.direction === 'asc'
+          ? { columnId: column.id, direction: 'desc' }
+          : null;
 
     if (sortState === undefined) {
-      setInternalSortState(nextSortState)
+      setInternalSortState(nextSortState);
     }
-    onSortStateChange?.(nextSortState)
+    onSortStateChange?.(nextSortState);
   }
 
   function reorderRows(activeRowId: string, overRowId: string) {
     if (activeRowId === overRowId) {
-      return
+      return;
     }
 
-    const activeIndex = data.findIndex((row) => getRowId(row) === activeRowId)
-    const overIndex = data.findIndex((row) => getRowId(row) === overRowId)
+    const activeIndex = data.findIndex((row) => getRowId(row) === activeRowId);
+    const overIndex = data.findIndex((row) => getRowId(row) === overRowId);
 
     if (activeIndex === -1 || overIndex === -1) {
-      return
+      return;
     }
 
-    const nextRows = [...data]
-    const [activeRow] = nextRows.splice(activeIndex, 1)
-    nextRows.splice(overIndex, 0, activeRow)
-    onRowOrderChange?.(nextRows)
+    const nextRows = [...data];
+    const [activeRow] = nextRows.splice(activeIndex, 1);
+    nextRows.splice(overIndex, 0, activeRow);
+    onRowOrderChange?.(nextRows);
   }
 
   function handleRowDragStart(event: DragEvent<HTMLButtonElement>, row: TData) {
-    const rowId = getRowId(row)
-    setDraggedRowId(rowId)
-    event.dataTransfer.effectAllowed = "move"
-    event.dataTransfer.setData("text/plain", rowId)
+    const rowId = getRowId(row);
+    setDraggedRowId(rowId);
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', rowId);
   }
 
   function handleRowDrop(event: DragEvent<HTMLTableRowElement>, row: TData) {
-    event.preventDefault()
-    const activeRowId = event.dataTransfer.getData("text/plain") || draggedRowId
+    event.preventDefault();
+    const activeRowId =
+      event.dataTransfer.getData('text/plain') || draggedRowId;
 
     if (activeRowId) {
-      reorderRows(activeRowId, getRowId(row))
+      reorderRows(activeRowId, getRowId(row));
     }
 
-    setDraggedRowId(null)
-    setDragOverRowId(null)
+    setDraggedRowId(null);
+    setDragOverRowId(null);
   }
 
-  const destructiveKeyword = confirmKeywordValue
+  const destructiveKeyword = confirmKeywordValue;
 
   if (isLoading) {
     return (
@@ -497,8 +498,8 @@ export function DataTable<TData>({
         <div className="overflow-x-auto rounded-lg border bg-card">
           <Table className="table-fixed">
             <colgroup>
-              {enableRowSelection ? <col style={{ width: "2.5rem" }} /> : null}
-              {enableRowReordering ? <col style={{ width: "2.5rem" }} /> : null}
+              {enableRowSelection ? <col style={{ width: '2.5rem' }} /> : null}
+              {enableRowReordering ? <col style={{ width: '2.5rem' }} /> : null}
               {columns.map((column) => (
                 <col
                   key={`skeleton-col-${column.id}`}
@@ -509,7 +510,7 @@ export function DataTable<TData>({
                   }
                 />
               ))}
-              <col style={{ width: "5rem", minWidth: "5rem" }} />
+              <col style={{ width: '5rem', minWidth: '5rem' }} />
             </colgroup>
             <TableHeader>
               <TableRow>
@@ -555,13 +556,13 @@ export function DataTable<TData>({
                       <Skeleton className="ml-auto h-8 w-8" />
                     </TableCell>
                   </TableRow>
-                )
+                ),
               )}
             </TableBody>
           </Table>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -571,12 +572,12 @@ export function DataTable<TData>({
           <Input
             value={activeSearch}
             onChange={(event) => {
-              const value = event.target.value
+              const value = event.target.value;
               if (onSearchValueChange) {
-                onSearchValueChange(value)
-                return
+                onSearchValueChange(value);
+                return;
               }
-              setSearch(value)
+              setSearch(value);
             }}
             placeholder={searchPlaceholder}
             className="w-full sm:max-w-sm"
@@ -607,8 +608,8 @@ export function DataTable<TData>({
         <div className="overflow-x-auto rounded-lg border bg-card">
           <Table className="table-fixed">
             <colgroup>
-              {enableRowSelection ? <col style={{ width: "2.5rem" }} /> : null}
-              {enableRowReordering ? <col style={{ width: "2.5rem" }} /> : null}
+              {enableRowSelection ? <col style={{ width: '2.5rem' }} /> : null}
+              {enableRowReordering ? <col style={{ width: '2.5rem' }} /> : null}
               {columns.map((column) => (
                 <col
                   key={`col-${column.id}`}
@@ -619,7 +620,7 @@ export function DataTable<TData>({
                   }
                 />
               ))}
-              <col style={{ width: "5rem", minWidth: "5rem" }} />
+              <col style={{ width: '5rem', minWidth: '5rem' }} />
             </colgroup>
             <TableHeader>
               <TableRow>
@@ -628,17 +629,17 @@ export function DataTable<TData>({
                     <Checkbox
                       checked={
                         allVisibleRowsSelected ||
-                        (someVisibleRowsSelected ? "indeterminate" : false)
+                        (someVisibleRowsSelected ? 'indeterminate' : false)
                       }
                       onCheckedChange={(checked) => {
-                        const value = Boolean(checked)
+                        const value = Boolean(checked);
                         setSelectedRowIds((prev) => {
-                          const next = { ...prev }
+                          const next = { ...prev };
                           for (const row of pagedData) {
-                            next[getRowId(row)] = value
+                            next[getRowId(row)] = value;
                           }
-                          return next
-                        })
+                          return next;
+                        });
                       }}
                       aria-label="Select all rows"
                     />
@@ -647,8 +648,10 @@ export function DataTable<TData>({
                 {enableRowReordering ? <TableHead className="w-10" /> : null}
 
                 {columns.map((column) => {
-                  const isSorted = effectiveSortState?.columnId === column.id
-                  const canSortColumn = Boolean(column.sortable && column.sortValue)
+                  const isSorted = effectiveSortState?.columnId === column.id;
+                  const canSortColumn = Boolean(
+                    column.sortable && column.sortValue,
+                  );
 
                   return (
                     <TableHead key={column.id} className={column.className}>
@@ -660,7 +663,7 @@ export function DataTable<TData>({
                         >
                           {column.header}
                           {isSorted ? (
-                            effectiveSortState?.direction === "asc" ? (
+                            effectiveSortState?.direction === 'asc' ? (
                               <ArrowUp className="ml-1 size-3.5" />
                             ) : (
                               <ArrowDown className="ml-1 size-3.5" />
@@ -673,7 +676,7 @@ export function DataTable<TData>({
                         column.header
                       )}
                     </TableHead>
-                  )
+                  );
                 })}
 
                 <TableHead className="sticky right-0 w-20 bg-card pr-2 text-right">
@@ -685,37 +688,37 @@ export function DataTable<TData>({
             <TableBody>
               {pagedData.length > 0 ? (
                 pagedData.map((row) => {
-                  const rowId = getRowId(row)
+                  const rowId = getRowId(row);
                   const groups = rowActionGroups
                     ? rowActionGroups(row)
                     : rowActions
                       ? [{ actions: rowActions(row) }]
-                      : []
+                      : [];
 
                   return (
                     <TableRow
                       key={rowId}
                       data-state={
-                        selectedRowIds[rowId] ? "selected" : undefined
+                        selectedRowIds[rowId] ? 'selected' : undefined
                       }
                       data-dragging={
-                        draggedRowId === rowId ? "true" : undefined
+                        draggedRowId === rowId ? 'true' : undefined
                       }
                       data-drag-over={
-                        dragOverRowId === rowId ? "true" : undefined
+                        dragOverRowId === rowId ? 'true' : undefined
                       }
                       className="group data-[drag-over=true]:bg-muted/60 data-[dragging=true]:opacity-50"
                       onDragOver={(event) => {
                         if (!enableRowReordering || !draggedRowId) {
-                          return
+                          return;
                         }
-                        event.preventDefault()
-                        event.dataTransfer.dropEffect = "move"
-                        setDragOverRowId(rowId)
+                        event.preventDefault();
+                        event.dataTransfer.dropEffect = 'move';
+                        setDragOverRowId(rowId);
                       }}
                       onDragLeave={() => {
                         if (dragOverRowId === rowId) {
-                          setDragOverRowId(null)
+                          setDragOverRowId(null);
                         }
                       }}
                       onDrop={(event) => handleRowDrop(event, row)}
@@ -725,11 +728,11 @@ export function DataTable<TData>({
                           <Checkbox
                             checked={Boolean(selectedRowIds[rowId])}
                             onCheckedChange={(checked) => {
-                              const value = Boolean(checked)
+                              const value = Boolean(checked);
                               setSelectedRowIds((prev) => ({
                                 ...prev,
                                 [rowId]: value,
-                              }))
+                              }));
                             }}
                             aria-label={`Select row ${rowId}`}
                           />
@@ -746,8 +749,8 @@ export function DataTable<TData>({
                               handleRowDragStart(event, row)
                             }
                             onDragEnd={() => {
-                              setDraggedRowId(null)
-                              setDragOverRowId(null)
+                              setDraggedRowId(null);
+                              setDragOverRowId(null);
                             }}
                             className="h-7 w-7 cursor-grab text-muted-foreground active:cursor-grabbing"
                             aria-label={`Reorder row ${rowId}`}
@@ -794,38 +797,38 @@ export function DataTable<TData>({
                                       key={`${rowId}:${action.label}`}
                                       disabled={action.disabled}
                                       variant={
-                                        action.tone === "destructive" ||
+                                        action.tone === 'destructive' ||
                                         action.destructive
-                                          ? "destructive"
-                                          : "default"
+                                          ? 'destructive'
+                                          : 'default'
                                       }
                                       className={
-                                        action.tone === "destructive" ||
+                                        action.tone === 'destructive' ||
                                         action.destructive
-                                          ? "my-0.5 bg-destructive/10 font-medium text-destructive! focus:bg-destructive/15 focus:text-destructive! dark:bg-destructive/20 dark:focus:bg-destructive/30 [&_svg]:text-destructive!"
-                                          : "my-0.5"
+                                          ? 'my-0.5 bg-destructive/10 font-medium text-destructive! focus:bg-destructive/15 focus:text-destructive! dark:bg-destructive/20 dark:focus:bg-destructive/30 [&_svg]:text-destructive!'
+                                          : 'my-0.5'
                                       }
                                       onSelect={(event) => {
-                                        event.preventDefault()
+                                        event.preventDefault();
                                         if (
                                           action.destructive ||
-                                          action.tone === "destructive"
+                                          action.tone === 'destructive'
                                         ) {
                                           setPendingDestructiveAction({
                                             row,
                                             action,
-                                          })
-                                          setConfirmKeywordInput("")
+                                          });
+                                          setConfirmKeywordInput('');
                                           setConfirmKeywordValue(
                                             action.confirmKeywordMode ===
-                                              "random-3-words"
+                                              'random-3-words'
                                               ? generateThreeWordGuard()
                                               : (action.confirmKeyword ??
-                                                  "DELETE")
-                                          )
-                                          return
+                                                  'DELETE'),
+                                          );
+                                          return;
                                         }
-                                        void action.onClick(row)
+                                        void action.onClick(row);
                                       }}
                                     >
                                       {action.icon ? (
@@ -850,7 +853,7 @@ export function DataTable<TData>({
                         </DropdownMenu>
                       </TableCell>
                     </TableRow>
-                  )
+                  );
                 })
               ) : (
                 <TableRow>
@@ -875,14 +878,14 @@ export function DataTable<TData>({
           <div className="flex flex-col gap-2 px-2 sm:flex-row sm:items-center sm:justify-between">
             <div className="text-sm text-muted-foreground">
               {totalRows === 0
-                ? "No rows"
+                ? 'No rows'
                 : `Showing ${formatTableNumber(
-                    effectivePageIndex * currentPageSize + 1
+                    effectivePageIndex * currentPageSize + 1,
                   )}-${formatTableNumber(
                     Math.min(
                       (effectivePageIndex + 1) * currentPageSize,
-                      totalRows
-                    )
+                      totalRows,
+                    ),
                   )} of ${formatTableNumber(totalRows)}`}
             </div>
             <div className="flex items-center gap-3">
@@ -896,13 +899,13 @@ export function DataTable<TData>({
                 <Select
                   value={String(currentPageSize)}
                   onValueChange={(value) => {
-                    const nextSize = Number(value)
+                    const nextSize = Number(value);
                     if (serverPaginationState) {
-                      serverPaginationState.onPageSizeChange(nextSize)
-                      return
+                      serverPaginationState.onPageSizeChange(nextSize);
+                      return;
                     }
-                    setPageSize(nextSize)
-                    setPageIndex(0)
+                    setPageSize(nextSize);
+                    setPageIndex(0);
                   }}
                 >
                   <SelectTrigger id="rows-per-page" className="h-8 w-20">
@@ -918,7 +921,7 @@ export function DataTable<TData>({
                 </Select>
               </div>
               <div className="text-sm text-muted-foreground">
-                Page {formatTableNumber(effectivePageIndex + 1)} of{" "}
+                Page {formatTableNumber(effectivePageIndex + 1)} of{' '}
                 {formatTableNumber(pageCount)}
               </div>
               <div className="flex items-center gap-1">
@@ -928,10 +931,10 @@ export function DataTable<TData>({
                   className="h-8 w-8"
                   onClick={() => {
                     if (serverPaginationState) {
-                      serverPaginationState.onPageChange(1)
-                      return
+                      serverPaginationState.onPageChange(1);
+                      return;
                     }
-                    setPageIndex(0)
+                    setPageIndex(0);
                   }}
                   disabled={effectivePageIndex === 0}
                 >
@@ -945,11 +948,11 @@ export function DataTable<TData>({
                   onClick={() => {
                     if (serverPaginationState) {
                       serverPaginationState.onPageChange(
-                        Math.max(serverPaginationState.page - 1, 1)
-                      )
-                      return
+                        Math.max(serverPaginationState.page - 1, 1),
+                      );
+                      return;
                     }
-                    setPageIndex((prev) => Math.max(prev - 1, 0))
+                    setPageIndex((prev) => Math.max(prev - 1, 0));
                   }}
                   disabled={effectivePageIndex === 0}
                 >
@@ -963,11 +966,11 @@ export function DataTable<TData>({
                   onClick={() => {
                     if (serverPaginationState) {
                       serverPaginationState.onPageChange(
-                        Math.min(serverPaginationState.page + 1, pageCount)
-                      )
-                      return
+                        Math.min(serverPaginationState.page + 1, pageCount),
+                      );
+                      return;
                     }
-                    setPageIndex((prev) => Math.min(prev + 1, pageCount - 1))
+                    setPageIndex((prev) => Math.min(prev + 1, pageCount - 1));
                   }}
                   disabled={effectivePageIndex >= pageCount - 1}
                 >
@@ -980,10 +983,10 @@ export function DataTable<TData>({
                   className="h-8 w-8"
                   onClick={() => {
                     if (serverPaginationState) {
-                      serverPaginationState.onPageChange(pageCount)
-                      return
+                      serverPaginationState.onPageChange(pageCount);
+                      return;
                     }
-                    setPageIndex(pageCount - 1)
+                    setPageIndex(pageCount - 1);
                   }}
                   disabled={effectivePageIndex >= pageCount - 1}
                 >
@@ -1000,9 +1003,9 @@ export function DataTable<TData>({
         open={Boolean(pendingDestructiveAction)}
         onOpenChange={(open) => {
           if (!open) {
-            setPendingDestructiveAction(null)
-            setConfirmKeywordInput("")
-            setConfirmKeywordValue("DELETE")
+            setPendingDestructiveAction(null);
+            setConfirmKeywordInput('');
+            setConfirmKeywordValue('DELETE');
           }
         }}
       >
@@ -1010,12 +1013,12 @@ export function DataTable<TData>({
           <AlertDialogHeader className="place-items-stretch text-left">
             <AlertDialogTitle>
               {pendingDestructiveAction?.action.confirmTitle ??
-                "Confirm destructive action"}
+                'Confirm destructive action'}
             </AlertDialogTitle>
             <AlertDialogDescription className="w-full space-y-3">
               <p>
                 {pendingDestructiveAction?.action.confirmDescription ??
-                  "Type the verification phrase below to confirm this action."}
+                  'Type the verification phrase below to confirm this action.'}
               </p>
               <div className="w-full rounded-md bg-muted px-3 py-3 text-center font-mono text-sm text-foreground">
                 {destructiveKeyword}
@@ -1038,14 +1041,14 @@ export function DataTable<TData>({
                   !pendingDestructiveAction ||
                   confirmKeywordInput !== destructiveKeyword
                 ) {
-                  return
+                  return;
                 }
                 void pendingDestructiveAction.action.onClick(
-                  pendingDestructiveAction.row
-                )
-                setPendingDestructiveAction(null)
-                setConfirmKeywordInput("")
-                setConfirmKeywordValue("DELETE")
+                  pendingDestructiveAction.row,
+                );
+                setPendingDestructiveAction(null);
+                setConfirmKeywordInput('');
+                setConfirmKeywordValue('DELETE');
               }}
             >
               Confirm
@@ -1054,5 +1057,5 @@ export function DataTable<TData>({
         </AlertDialogContent>
       </AlertDialog>
     </>
-  )
+  );
 }

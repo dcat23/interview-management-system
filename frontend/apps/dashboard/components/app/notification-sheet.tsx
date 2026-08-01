@@ -4,7 +4,14 @@ import { RiNotification3Line } from '@remixicon/react';
 import { ReactNode } from 'react';
 import { toast } from 'sonner';
 import { Button } from '../ui/common/button';
-import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '../ui/common/sheet';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '../ui/common/sheet';
 
 interface Props {
   data?: unknown;
@@ -12,9 +19,9 @@ interface Props {
 }
 
 export function NotificationSheet(props: Props) {
-  const unreadCount = notes.filter((n) => n.unread).length
+  const unreadCount = notes.filter((n) => n.unread).length;
   const markAllRead = () =>
-    setNotes((prev) => prev.map((n) => ({ ...n, unread: false })))
+    setNotes((prev) => prev.map((n) => ({ ...n, unread: false })));
 
   return (
     <Sheet>
@@ -52,24 +59,24 @@ export function NotificationSheet(props: Props) {
               onClick={() =>
                 setNotes((prev) =>
                   prev.map((n) =>
-                    n.id === note.id ? { ...n, unread: false } : n
-                  )
+                    n.id === note.id ? { ...n, unread: false } : n,
+                  ),
                 )
               }
               className={[
-                "flex items-start gap-3 border-b border-border px-4 py-3 text-left transition-colors hover:bg-muted/50 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring",
-                note.unread ? "bg-muted/30" : "",
+                'flex items-start gap-3 border-b border-border px-4 py-3 text-left transition-colors hover:bg-muted/50 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring',
+                note.unread ? 'bg-muted/30' : '',
               ]
                 .filter(Boolean)
-                .join(" ")}
+                .join(' ')}
             >
               <span
                 className={[
-                  "mt-0.5 flex size-8 shrink-0 items-center justify-center",
-                  note.tone === "destructive"
-                    ? "bg-destructive/10 text-destructive"
-                    : "bg-primary/10 text-primary",
-                ].join(" ")}
+                  'mt-0.5 flex size-8 shrink-0 items-center justify-center',
+                  note.tone === 'destructive'
+                    ? 'bg-destructive/10 text-destructive'
+                    : 'bg-primary/10 text-primary',
+                ].join(' ')}
               >
                 <note.icon className="size-4" aria-hidden="true" />
               </span>
@@ -82,9 +89,7 @@ export function NotificationSheet(props: Props) {
                     {note.time}
                   </span>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  {note.detail}
-                </p>
+                <p className="text-xs text-muted-foreground">{note.detail}</p>
               </div>
               {note.unread && (
                 <span
@@ -110,8 +115,8 @@ export function NotificationSheet(props: Props) {
             size="sm"
             className="text-xs text-muted-foreground hover:text-foreground"
             onClick={() =>
-              toast("Notifications", {
-                description: "Opening all notifications.",
+              toast('Notifications', {
+                description: 'Opening all notifications.',
               })
             }
           >

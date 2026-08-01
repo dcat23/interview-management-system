@@ -1,18 +1,24 @@
-import { NEXT_PUBLIC_ROOT_DOMAIN } from "@app/dashboard/lib/config/env";
-import { PROJECT_DESCRIPTION, PROJECT_NAME } from '@app/dashboard/lib/constants/metadata';
+import { NEXT_PUBLIC_ROOT_DOMAIN } from '@app/dashboard/lib/config/env';
+import {
+  PROJECT_DESCRIPTION,
+  PROJECT_NAME,
+} from '@app/dashboard/lib/constants/metadata';
 import type { Metadata } from 'next';
 import { ReactNode } from 'react';
 import './global.css';
 import Providers from './providers';
 import { Layout } from '../components/layout';
-import { JetBrains_Mono, Oxanium, Geist } from "next/font/google";
-import { cn } from "@app/dashboard/lib/ui/utils";
+import { Geist, JetBrains_Mono, Oxanium } from 'next/font/google';
+import { cn } from '@app/dashboard/lib/ui/utils';
 
-const geistHeading = Geist({subsets:['latin'],variable:'--font-heading'});
+const geistHeading = Geist({ subsets: ['latin'], variable: '--font-heading' });
 
-const oxanium = Oxanium({subsets:['latin'],variable:'--font-sans'});
+const oxanium = Oxanium({ subsets: ['latin'], variable: '--font-sans' });
 
-const jetbrainsMono = JetBrains_Mono({subsets:['latin'],variable:'--font-mono'});
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ['latin'],
+  variable: '--font-mono',
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL(NEXT_PUBLIC_ROOT_DOMAIN),
@@ -22,14 +28,14 @@ export const metadata: Metadata = {
   },
   description: PROJECT_DESCRIPTION,
   keywords: [],
-  authors: [{ name: "" }],
-  creator: "",
-  publisher: "",
-  generator: "next-feature",
+  authors: [{ name: '' }],
+  creator: '',
+  publisher: '',
+  generator: 'next-feature',
   openGraph: {
-    type: "website",
-    locale: "en_US",
-    url: "/",
+    type: 'website',
+    locale: 'en_US',
+    url: '/',
     title: PROJECT_NAME,
     description: PROJECT_DESCRIPTION,
     siteName: PROJECT_NAME,
@@ -50,23 +56,26 @@ export const metadata: Metadata = {
   icons: {
     icon: [],
   },
-  manifest: "/site.webmanifest",
-}
+  manifest: '/site.webmanifest',
+};
 
-export default function RootLayout({
-  children,
-}: {
-  children: ReactNode
-}) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning className={cn( jetbrainsMono.variable, "font-sans", oxanium.variable, geistHeading.variable)}>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={cn(
+        jetbrainsMono.variable,
+        'font-sans',
+        oxanium.variable,
+        geistHeading.variable,
+      )}
+    >
       <body>
         <Providers>
-          <Layout>
-            {children}
-          </Layout>
+          <Layout>{children}</Layout>
         </Providers>
       </body>
     </html>
-  )
+  );
 }

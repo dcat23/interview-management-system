@@ -1,6 +1,11 @@
 'use client';
 
-import { CalendarClock, ExternalLink, FileSearch, MoreHorizontal } from 'lucide-react';
+import {
+  CalendarClock,
+  ExternalLink,
+  FileSearch,
+  MoreHorizontal,
+} from 'lucide-react';
 import moment from 'moment';
 import { redirect } from 'next/navigation';
 
@@ -20,36 +25,43 @@ interface Props {
   className?: string;
 }
 
-const statusConfig: Record<SessionStatus, { label: string; className: string }> = {
+const statusConfig: Record<
+  SessionStatus,
+  { label: string; className: string }
+> = {
   SCHEDULED: {
-    label: "Scheduled",
-    className: "bg-blue-500/15 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400",
+    label: 'Scheduled',
+    className:
+      'bg-blue-500/15 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400',
   },
   IN_REVIEW: {
-    label: "In review",
-    className: "bg-amber-500/15 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400",
+    label: 'In review',
+    className:
+      'bg-amber-500/15 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400',
   },
   PASSED: {
-    label: "Passed",
-    className: "bg-emerald-500/15 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400",
+    label: 'Passed',
+    className:
+      'bg-emerald-500/15 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400',
   },
   REJECTED: {
-    label: "Rejected",
-    className: "bg-rose-500/15 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400",
+    label: 'Rejected',
+    className:
+      'bg-rose-500/15 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400',
   },
   NO_SHOW: {
-    label: "No show",
-    className: "bg-muted text-muted-foreground",
+    label: 'No show',
+    className: 'bg-muted text-muted-foreground',
   },
   CANCELLED: {
-    label: "Cancelled",
-    className: "bg-muted text-muted-foreground",
+    label: 'Cancelled',
+    className: 'bg-muted text-muted-foreground',
   },
 };
 
 export function ProcessSessionsLog({ sessions, className }: Props) {
   const orderedSessions = [...sessions].sort(
-    (a, b) => moment(b.scheduledAt).valueOf() - moment(a.scheduledAt).valueOf()
+    (a, b) => moment(b.scheduledAt).valueOf() - moment(a.scheduledAt).valueOf(),
   );
 
   return (
@@ -97,7 +109,9 @@ export function ProcessSessionsLog({ sessions, className }: Props) {
                   </div>
                 </ContextMenuTrigger>
                 <ContextMenuContent className="w-44">
-                  <ContextMenuItem onSelect={() => redirect(`/sessions/${session.id}`)}>
+                  <ContextMenuItem
+                    onSelect={() => redirect(`/sessions/${session.id}`)}
+                  >
                     <ExternalLink />
                     Open record
                   </ContextMenuItem>

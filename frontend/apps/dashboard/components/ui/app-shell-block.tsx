@@ -1,6 +1,6 @@
-"use client"
+'use client';
 
-import * as React from "react"
+import * as React from 'react';
 import {
   RiBarChartBoxLine,
   RiCheckboxCircleLine,
@@ -16,26 +16,30 @@ import {
   RiTeamLine,
   RiUser3Line,
   RiUserAddLine,
-} from "@remixicon/react"
-import { toast } from "sonner"
-import { Area, AreaChart, CartesianGrid, XAxis } from "recharts"
+} from '@remixicon/react';
+import { toast } from 'sonner';
+import { Area, AreaChart, CartesianGrid, XAxis } from 'recharts';
 
-import { Avatar, AvatarFallback, AvatarImage } from "@app/dashboard/components/ui/common/avatar"
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from '@app/dashboard/components/ui/common/avatar';
 import {
   type ChartConfig,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-} from "@app/dashboard/components/ui/common/chart"
-import { Badge } from "@app/dashboard/components/ui/common/badge"
-import { Button } from "@app/dashboard/components/ui/common/button"
+} from '@app/dashboard/components/ui/common/chart';
+import { Badge } from '@app/dashboard/components/ui/common/badge';
+import { Button } from '@app/dashboard/components/ui/common/button';
 import {
   Card,
   CardAction,
   CardContent,
   CardHeader,
   CardTitle,
-} from "@app/dashboard/components/ui/common/card"
+} from '@app/dashboard/components/ui/common/card';
 import {
   Command,
   CommandDialog,
@@ -46,15 +50,15 @@ import {
   CommandList,
   CommandSeparator,
   CommandShortcut,
-} from "@app/dashboard/components/ui/common/command"
-import { Kbd, KbdGroup } from "@app/dashboard/components/ui/common/kbd"
+} from '@app/dashboard/components/ui/common/command';
+import { Kbd, KbdGroup } from '@app/dashboard/components/ui/common/kbd';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@app/dashboard/components/ui/common/dropdown-menu"
+} from '@app/dashboard/components/ui/common/dropdown-menu';
 import {
   Sheet,
   SheetContent,
@@ -62,7 +66,7 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from "@app/dashboard/components/ui/common/sheet"
+} from '@app/dashboard/components/ui/common/sheet';
 import {
   Sidebar,
   SidebarContent,
@@ -75,137 +79,137 @@ import {
   SidebarMenuItem,
   SidebarProvider,
   SidebarTrigger,
-} from "@app/dashboard/components/ui/common/sidebar"
-import { Toaster } from "@app/dashboard/components/ui/common/sonner"
-import { PROJECT_NAME } from "@app/dashboard/lib/constants/metadata"
-import { Separator } from "./common/separator"
+} from '@app/dashboard/components/ui/common/sidebar';
+import { Toaster } from '@app/dashboard/components/ui/common/sonner';
+import { PROJECT_NAME } from '@app/dashboard/lib/constants/metadata';
+import { Separator } from './common/separator';
 
 const navItems = [
-  { label: "Overview", icon: RiLayoutGridLine },
-  { label: "Analytics", icon: RiBarChartBoxLine },
-  { label: "Projects", icon: RiFolder3Line },
-  { label: "Team", icon: RiTeamLine },
-  { label: "Settings", icon: RiSettings3Line },
-]
+  { label: 'Overview', icon: RiLayoutGridLine },
+  { label: 'Analytics', icon: RiBarChartBoxLine },
+  { label: 'Projects', icon: RiFolder3Line },
+  { label: 'Team', icon: RiTeamLine },
+  { label: 'Settings', icon: RiSettings3Line },
+];
 
 const stats = [
-  { label: "Total revenue", value: "$48.2k", delta: "+12.4%" },
-  { label: "Active users", value: "2,840", delta: "+5.1%" },
-  { label: "Conversion", value: "3.6%", delta: "-0.8%" },
-]
+  { label: 'Total revenue', value: '$48.2k', delta: '+12.4%' },
+  { label: 'Active users', value: '2,840', delta: '+5.1%' },
+  { label: 'Conversion', value: '3.6%', delta: '-0.8%' },
+];
 
 const performanceData = [
-  { month: "Jan", revenue: 31_200 },
-  { month: "Feb", revenue: 34_800 },
-  { month: "Mar", revenue: 33_100 },
-  { month: "Apr", revenue: 38_600 },
-  { month: "May", revenue: 42_900 },
-  { month: "Jun", revenue: 41_300 },
-  { month: "Jul", revenue: 45_700 },
-  { month: "Aug", revenue: 48_200 },
-]
+  { month: 'Jan', revenue: 31_200 },
+  { month: 'Feb', revenue: 34_800 },
+  { month: 'Mar', revenue: 33_100 },
+  { month: 'Apr', revenue: 38_600 },
+  { month: 'May', revenue: 42_900 },
+  { month: 'Jun', revenue: 41_300 },
+  { month: 'Jul', revenue: 45_700 },
+  { month: 'Aug', revenue: 48_200 },
+];
 
 const chartConfig = {
   revenue: {
-    label: "Revenue",
-    color: "var(--primary)",
+    label: 'Revenue',
+    color: 'var(--primary)',
   },
-} satisfies ChartConfig
+} satisfies ChartConfig;
 
 const activity = [
   {
-    name: "Priya Nair",
-    avatar: "https://i.pravatar.cc/150?img=45",
+    name: 'Priya Nair',
+    avatar: 'https://i.pravatar.cc/150?img=45',
     icon: RiRocketLine,
-    action: "deployed",
-    target: "acme-web v2.4",
-    time: "2 Min Ago",
+    action: 'deployed',
+    target: 'acme-web v2.4',
+    time: '2 Min Ago',
   },
   {
-    name: "Marco Diaz",
-    avatar: "https://i.pravatar.cc/150?img=33",
+    name: 'Marco Diaz',
+    avatar: 'https://i.pravatar.cc/150?img=33',
     icon: RiGitMergeLine,
-    action: "merged",
-    target: "PR #482: checkout refactor",
-    time: "1 Hour Ago",
+    action: 'merged',
+    target: 'PR #482: checkout refactor',
+    time: '1 Hour Ago',
   },
   {
-    name: "Lena Fischer",
-    avatar: "https://i.pravatar.cc/150?img=47",
+    name: 'Lena Fischer',
+    avatar: 'https://i.pravatar.cc/150?img=47',
     icon: RiCheckboxCircleLine,
-    action: "closed",
-    target: "8 tasks in Sprint 7",
-    time: "3 Hours Ago",
+    action: 'closed',
+    target: '8 tasks in Sprint 7',
+    time: '3 Hours Ago',
   },
-]
+];
 
 const notifications = [
   {
     id: 1,
     icon: RiRocketLine,
-    title: "Deployment succeeded",
-    detail: "acme-web v2.4 is live in production.",
-    time: "2 Min Ago",
+    title: 'Deployment succeeded',
+    detail: 'acme-web v2.4 is live in production.',
+    time: '2 Min Ago',
     unread: true,
-    tone: "primary" as const,
+    tone: 'primary' as const,
   },
   {
     id: 2,
     icon: RiUserAddLine,
-    title: "New team member",
-    detail: "Priya Nair accepted your invite.",
-    time: "1 Hour Ago",
+    title: 'New team member',
+    detail: 'Priya Nair accepted your invite.',
+    time: '1 Hour Ago',
     unread: true,
-    tone: "primary" as const,
+    tone: 'primary' as const,
   },
   {
     id: 3,
     icon: RiErrorWarningLine,
-    title: "Usage at 80%",
+    title: 'Usage at 80%',
     detail: "You're approaching your monthly request limit.",
-    time: "3 Hours Ago",
+    time: '3 Hours Ago',
     unread: false,
-    tone: "destructive" as const,
+    tone: 'destructive' as const,
   },
-]
+];
 
 const recentItems = [
-  { label: "Acme Web Redesign", icon: RiFolder3Line },
-  { label: "Q3 Analytics report", icon: RiBarChartBoxLine },
-  { label: "Priya Nair", icon: RiUser3Line },
-]
+  { label: 'Acme Web Redesign', icon: RiFolder3Line },
+  { label: 'Q3 Analytics report', icon: RiBarChartBoxLine },
+  { label: 'Priya Nair', icon: RiUser3Line },
+];
 
 const commands = [
-  { label: "Go to Overview", icon: RiLayoutGridLine, shortcut: ["G", "O"] },
-  { label: "Go to Analytics", icon: RiBarChartBoxLine, shortcut: ["G", "A"] },
-  { label: "Go to Projects", icon: RiFolder3Line, shortcut: ["G", "P"] },
-  { label: "Go to Team", icon: RiTeamLine, shortcut: ["G", "T"] },
-  { label: "Invite a teammate", icon: RiUserAddLine, shortcut: ["I"] },
-  { label: "Open settings", icon: RiSettings3Line, shortcut: ["⌘", ","] },
-]
+  { label: 'Go to Overview', icon: RiLayoutGridLine, shortcut: ['G', 'O'] },
+  { label: 'Go to Analytics', icon: RiBarChartBoxLine, shortcut: ['G', 'A'] },
+  { label: 'Go to Projects', icon: RiFolder3Line, shortcut: ['G', 'P'] },
+  { label: 'Go to Team', icon: RiTeamLine, shortcut: ['G', 'T'] },
+  { label: 'Invite a teammate', icon: RiUserAddLine, shortcut: ['I'] },
+  { label: 'Open settings', icon: RiSettings3Line, shortcut: ['⌘', ','] },
+];
 
 export default function AppShellBlock({
   children,
 }: {
-  children?: React.ReactNode
+  children?: React.ReactNode;
 }) {
-  const [activeNav, setActiveNav] = React.useState("Overview")
-  const [commandOpen, setCommandOpen] = React.useState(false)
-  const [notes, setNotes] = React.useState(notifications)
-  const unreadCount = notes.filter((n) => n.unread).length
+  const [activeNav, setActiveNav] = React.useState('Overview');
+  const [commandOpen, setCommandOpen] = React.useState(false);
+  const [notes, setNotes] = React.useState(notifications);
+  const unreadCount = notes.filter((n) => n.unread).length;
   const markAllRead = () =>
-    setNotes((prev) => prev.map((n) => ({ ...n, unread: false })))
+    setNotes((prev) => prev.map((n) => ({ ...n, unread: false })));
 
   React.useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "k" && (event.metaKey || event.ctrlKey)) {
-        event.preventDefault()
-        setCommandOpen((open) => !open)
+      if (event.key === 'k' && (event.metaKey || event.ctrlKey)) {
+        event.preventDefault();
+        setCommandOpen((open) => !open);
       }
     }
-    document.addEventListener("keydown", onKeyDown)
-    return () => document.removeEventListener("keydown", onKeyDown)
-  }, [])
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, []);
 
   return (
     <SidebarProvider className="min-h-svh bg-muted/30 text-foreground">
@@ -361,24 +365,24 @@ export default function AppShellBlock({
                       onClick={() =>
                         setNotes((prev) =>
                           prev.map((n) =>
-                            n.id === note.id ? { ...n, unread: false } : n
-                          )
+                            n.id === note.id ? { ...n, unread: false } : n,
+                          ),
                         )
                       }
                       className={[
-                        "flex items-start gap-3 border-b border-border px-4 py-3 text-left transition-colors hover:bg-muted/50 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring",
-                        note.unread ? "bg-muted/30" : "",
+                        'flex items-start gap-3 border-b border-border px-4 py-3 text-left transition-colors hover:bg-muted/50 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring',
+                        note.unread ? 'bg-muted/30' : '',
                       ]
                         .filter(Boolean)
-                        .join(" ")}
+                        .join(' ')}
                     >
                       <span
                         className={[
-                          "mt-0.5 flex size-8 shrink-0 items-center justify-center",
-                          note.tone === "destructive"
-                            ? "bg-destructive/10 text-destructive"
-                            : "bg-primary/10 text-primary",
-                        ].join(" ")}
+                          'mt-0.5 flex size-8 shrink-0 items-center justify-center',
+                          note.tone === 'destructive'
+                            ? 'bg-destructive/10 text-destructive'
+                            : 'bg-primary/10 text-primary',
+                        ].join(' ')}
                       >
                         <note.icon className="size-4" aria-hidden="true" />
                       </span>
@@ -419,8 +423,8 @@ export default function AppShellBlock({
                     size="sm"
                     className="text-xs text-muted-foreground hover:text-foreground"
                     onClick={() =>
-                      toast("Notifications", {
-                        description: "Opening all notifications.",
+                      toast('Notifications', {
+                        description: 'Opening all notifications.',
                       })
                     }
                   >
@@ -476,9 +480,9 @@ export default function AppShellBlock({
                       <CardAction>
                         <Badge
                           variant={
-                            stat.delta.startsWith("-")
-                              ? "destructive"
-                              : "secondary"
+                            stat.delta.startsWith('-')
+                              ? 'destructive'
+                              : 'secondary'
                           }
                         >
                           {stat.delta}
@@ -545,7 +549,7 @@ export default function AppShellBlock({
                           content={
                             <ChartTooltipContent
                               formatter={(value) =>
-                                "$" + Number(value).toLocaleString()
+                                '$' + Number(value).toLocaleString()
                               }
                             />
                           }
@@ -579,9 +583,9 @@ export default function AppShellBlock({
                             />
                             <AvatarFallback className="text-[10px]">
                               {item.name
-                                .split(" ")
+                                .split(' ')
                                 .map((n) => n[0])
-                                .join("")}
+                                .join('')}
                             </AvatarFallback>
                           </Avatar>
                           <span className="absolute -right-1 -bottom-1 flex size-4 items-center justify-center border border-border bg-card">
@@ -592,10 +596,10 @@ export default function AppShellBlock({
                           <p className="text-sm leading-snug">
                             <span className="font-medium text-foreground">
                               {item.name}
-                            </span>{" "}
+                            </span>{' '}
                             <span className="text-muted-foreground">
                               {item.action}
-                            </span>{" "}
+                            </span>{' '}
                             <span className="font-medium text-foreground">
                               {item.target}
                             </span>
@@ -625,8 +629,8 @@ export default function AppShellBlock({
                   key={item.label}
                   value={item.label}
                   onSelect={() => {
-                    setCommandOpen(false)
-                    toast(item.label, { description: "Opening recent item." })
+                    setCommandOpen(false);
+                    toast(item.label, { description: 'Opening recent item.' });
                   }}
                 >
                   <item.icon />
@@ -641,8 +645,8 @@ export default function AppShellBlock({
                   key={command.label}
                   value={command.label}
                   onSelect={() => {
-                    setCommandOpen(false)
-                    toast(command.label, { description: "Command executed." })
+                    setCommandOpen(false);
+                    toast(command.label, { description: 'Command executed.' });
                   }}
                 >
                   <command.icon />
@@ -661,7 +665,7 @@ export default function AppShellBlock({
         </Command>
       </CommandDialog>
     </SidebarProvider>
-  )
+  );
 }
 
 function AccountMenu({ trigger }: { trigger: React.ReactElement }) {
@@ -678,7 +682,7 @@ function AccountMenu({ trigger }: { trigger: React.ReactElement }) {
         <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={() =>
-            toast("Account", { description: "Opening your account." })
+            toast('Account', { description: 'Opening your account.' })
           }
         >
           <RiUser3Line />
@@ -686,7 +690,7 @@ function AccountMenu({ trigger }: { trigger: React.ReactElement }) {
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={() =>
-            toast("Settings", { description: "Opening your settings." })
+            toast('Settings', { description: 'Opening your settings.' })
           }
         >
           <RiSettings3Line />
@@ -696,7 +700,7 @@ function AccountMenu({ trigger }: { trigger: React.ReactElement }) {
         <DropdownMenuItem
           variant="destructive"
           onClick={() =>
-            toast.success("Logged out", { description: "See you soon." })
+            toast.success('Logged out', { description: 'See you soon.' })
           }
         >
           <RiLogoutBoxRLine />
@@ -704,5 +708,5 @@ function AccountMenu({ trigger }: { trigger: React.ReactElement }) {
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
-  )
+  );
 }

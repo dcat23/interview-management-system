@@ -1,7 +1,7 @@
 'use client';
 
 import { DASHBOARD, NavItem } from '@feature/base/server';
-import { useEffect, useState, createContext, useContext } from 'react';
+import { createContext, useContext, useState } from 'react';
 
 type Nav = NavItem;
 

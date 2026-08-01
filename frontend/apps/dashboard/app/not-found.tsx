@@ -1,8 +1,8 @@
-import { RiCompass3Line } from "@remixicon/react"
+import { RiCompass3Line } from '@remixicon/react';
 
-import { Button } from "@app/dashboard/components/ui/common/button"
-import Link from "next/link"
-import BackButton from "../components/back-button"
+import { Button } from '@app/dashboard/components/ui/common/button';
+import Link from 'next/link';
+import BackButton from '../components/back-button';
 
 export default function ErrorBlock() {
   return (
@@ -22,10 +22,8 @@ export default function ErrorBlock() {
       </div>
 
       <div className="flex flex-col items-center gap-2 sm:flex-row">
-        <Link href={"/"}>
-          <Button
-            className="w-full sm:w-auto"
-            >
+        <Link href={'/'}>
+          <Button className="w-full sm:w-auto">
             <RiCompass3Line data-icon="inline-start" aria-hidden="true" />
             Go Home
           </Button>
@@ -33,5 +31,5 @@ export default function ErrorBlock() {
         <BackButton />
       </div>
     </section>
-  )
+  );
 }

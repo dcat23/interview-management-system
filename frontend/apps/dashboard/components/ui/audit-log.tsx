@@ -1,7 +1,7 @@
-"use client"
+'use client';
 
-import * as React from "react"
-import { ExternalLink, FileSearch, MoreHorizontal } from "lucide-react"
+import * as React from 'react';
+import { ExternalLink, FileSearch, MoreHorizontal } from 'lucide-react';
 
 import {
   ContextMenu,
@@ -9,73 +9,73 @@ import {
   ContextMenuItem,
   ContextMenuSeparator,
   ContextMenuTrigger,
-} from "@app/dashboard/components/ui/common/context-menu"
-import { cn } from "@app/dashboard/lib/ui/utils"
+} from '@app/dashboard/components/ui/common/context-menu';
+import { cn } from '@app/dashboard/lib/ui/utils';
 import {
-  Filters,
   type Filter,
   type FilterFieldConfig,
   type FilterFieldsConfig,
-} from "./filters"
+  Filters,
+} from './filters';
 
 export type AuditLogItem = {
-  id: string
-  title: string
-  description?: string
-  timestamp: string
-  actor?: string
-  type?: string
-  status?: string
-  icon?: React.ReactNode
-}
+  id: string;
+  title: string;
+  description?: string;
+  timestamp: string;
+  actor?: string;
+  type?: string;
+  status?: string;
+  icon?: React.ReactNode;
+};
 
 const auditLogFilterFields: FilterFieldConfig<string>[] = [
   {
-    key: "actor",
-    label: "Actor",
-    type: "select",
+    key: 'actor',
+    label: 'Actor',
+    type: 'select',
     options: [],
   },
   {
-    key: "type",
-    label: "Type",
-    type: "select",
+    key: 'type',
+    label: 'Type',
+    type: 'select',
     options: [],
   },
   {
-    key: "status",
-    label: "Status",
-    type: "select",
+    key: 'status',
+    label: 'Status',
+    type: 'select',
     options: [],
   },
   {
-    key: "search",
-    label: "Search",
-    type: "text",
-    defaultOperator: "contains",
-    placeholder: "Search events",
+    key: 'search',
+    label: 'Search',
+    type: 'text',
+    defaultOperator: 'contains',
+    placeholder: 'Search events',
   },
-]
+];
 
 function uniqueOptions(
   items: AuditLogItem[],
-  key: "actor" | "type" | "status"
+  key: 'actor' | 'type' | 'status',
 ) {
   return Array.from(
-    new Set(items.map((item) => item[key]).filter(Boolean) as string[])
+    new Set(items.map((item) => item[key]).filter(Boolean) as string[]),
   )
     .sort()
-    .map((value) => ({ value, label: value }))
+    .map((value) => ({ value, label: value }));
 }
 
 function matchesFilter(item: AuditLogItem, filter: Filter<string>) {
-  if (filter.operator === "empty") return true
-  if (filter.operator === "not_empty") return true
+  if (filter.operator === 'empty') return true;
+  if (filter.operator === 'not_empty') return true;
 
-  const expected = filter.values.filter(Boolean)
-  if (expected.length === 0) return true
+  const expected = filter.values.filter(Boolean);
+  if (expected.length === 0) return true;
 
-  if (filter.field === "search") {
+  if (filter.field === 'search') {
     const haystack = [
       item.title,
       item.description,
@@ -84,22 +84,22 @@ function matchesFilter(item: AuditLogItem, filter: Filter<string>) {
       item.status,
     ]
       .filter(Boolean)
-      .join(" ")
-      .toLowerCase()
-    const needle = expected[0]?.toLowerCase() ?? ""
+      .join(' ')
+      .toLowerCase();
+    const needle = expected[0]?.toLowerCase() ?? '';
 
-    return filter.operator === "not_contains"
+    return filter.operator === 'not_contains'
       ? !haystack.includes(needle)
-      : haystack.includes(needle)
+      : haystack.includes(needle);
   }
 
-  const value = String(item[filter.field as "actor" | "type" | "status"] ?? "")
+  const value = String(item[filter.field as 'actor' | 'type' | 'status'] ?? '');
 
-  if (filter.operator === "is_not" || filter.operator === "is_not_any_of") {
-    return !expected.includes(value)
+  if (filter.operator === 'is_not' || filter.operator === 'is_not_any_of') {
+    return !expected.includes(value);
   }
 
-  return expected.includes(value)
+  return expected.includes(value);
 }
 
 export function AuditLog({
@@ -109,41 +109,41 @@ export function AuditLog({
   onReviewChange,
   className,
 }: {
-  items: AuditLogItem[]
-  enableFilters?: boolean
-  onOpenRecord?: (item: AuditLogItem) => void
-  onReviewChange?: (item: AuditLogItem) => void
-  className?: string
+  items: AuditLogItem[];
+  enableFilters?: boolean;
+  onOpenRecord?: (item: AuditLogItem) => void;
+  onReviewChange?: (item: AuditLogItem) => void;
+  className?: string;
 }) {
-  const [filters, setFilters] = React.useState<Filter<string>[]>([])
+  const [filters, setFilters] = React.useState<Filter<string>[]>([]);
 
   const fields = React.useMemo<FilterFieldsConfig<string>>(
     () =>
       auditLogFilterFields.map((field) => {
-        if (field.key === "actor") {
-          return { ...field, options: uniqueOptions(items, "actor") }
+        if (field.key === 'actor') {
+          return { ...field, options: uniqueOptions(items, 'actor') };
         }
-        if (field.key === "type") {
-          return { ...field, options: uniqueOptions(items, "type") }
+        if (field.key === 'type') {
+          return { ...field, options: uniqueOptions(items, 'type') };
         }
-        if (field.key === "status") {
-          return { ...field, options: uniqueOptions(items, "status") }
+        if (field.key === 'status') {
+          return { ...field, options: uniqueOptions(items, 'status') };
         }
-        return field
+        return field;
       }),
-    [items]
-  )
+    [items],
+  );
 
   const visibleItems = React.useMemo(
     () =>
       items.filter((item) =>
-        filters.every((filter) => matchesFilter(item, filter))
+        filters.every((filter) => matchesFilter(item, filter)),
       ),
-    [filters, items]
-  )
+    [filters, items],
+  );
 
   return (
-    <div className={cn("grid gap-3", className)}>
+    <div className={cn('grid gap-3', className)}>
       {enableFilters ? (
         <Filters
           filters={filters}
@@ -220,5 +220,5 @@ export function AuditLog({
         )}
       </div>
     </div>
-  )
+  );
 }

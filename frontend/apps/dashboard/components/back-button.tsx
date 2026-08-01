@@ -11,7 +11,7 @@ interface Props {
 }
 
 export function BackButton(props: Props) {
-  const router = useRouter()
+  const router = useRouter();
 
   return (
     <Button

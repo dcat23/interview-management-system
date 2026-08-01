@@ -1,28 +1,32 @@
-import * as React from "react"
+import * as React from 'react';
 import {
   closestCenter,
+  type CollisionDetection,
   DndContext,
+  type DragEndEvent,
+  type DragMoveEvent,
+  type DragOverEvent,
   DragOverlay,
+  type DragStartEvent,
   PointerSensor,
   pointerWithin,
   useDraggable,
   useDroppable,
   useSensor,
   useSensors,
-  type CollisionDetection,
-  type DragEndEvent,
-  type DragMoveEvent,
-  type DragOverEvent,
-  type DragStartEvent,
-} from "@dnd-kit/core"
-import { Slot } from "@radix-ui/react-slot"
-import { createPortal } from "react-dom"
-import tunnel from "tunnel-rat"
-import { motion, useReducedMotion } from "motion/react"
+} from '@dnd-kit/core';
+import { Slot } from '@radix-ui/react-slot';
+import { createPortal } from 'react-dom';
+import tunnel from 'tunnel-rat';
+import { motion, useReducedMotion } from 'motion/react';
 
-import { Button } from "@app/dashboard/components/ui/common/button"
-import { Field, FieldGroup, FieldLabel } from "@app/dashboard/components/ui/common/field"
-import { Input } from "@app/dashboard/components/ui/common/input"
+import { Button } from '@app/dashboard/components/ui/common/button';
+import {
+  Field,
+  FieldGroup,
+  FieldLabel,
+} from '@app/dashboard/components/ui/common/field';
+import { Input } from '@app/dashboard/components/ui/common/input';
 import {
   Popover,
   PopoverContent,
@@ -30,116 +34,116 @@ import {
   PopoverHeader,
   PopoverTitle,
   PopoverTrigger,
-} from "@app/dashboard/components/ui/common/popover"
+} from '@app/dashboard/components/ui/common/popover';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@app/dashboard/components/ui/common/select"
-import { cn } from "@app/dashboard/lib/ui/utils"
+} from '@app/dashboard/components/ui/common/select';
+import { cn } from '@app/dashboard/lib/ui/utils';
 
 export interface TimelineSlotData {
-  id: string
-  rowId: string
-  startTime: string
-  duration: number
-  [key: string]: unknown
+  id: string;
+  rowId: string;
+  startTime: string;
+  duration: number;
+  [key: string]: unknown;
 }
 
 export interface TimelineRowData {
-  id: string
-  label: string
-  [key: string]: unknown
+  id: string;
+  label: string;
+  [key: string]: unknown;
 }
 
 export interface TimelineConfig {
-  startHour: number
-  endHour: number
-  snapIntervalMinutes?: number
-  columnWidth?: number
+  startHour: number;
+  endHour: number;
+  snapIntervalMinutes?: number;
+  columnWidth?: number;
 }
 
-type DragPreviewTunnel = ReturnType<typeof tunnel>
+type DragPreviewTunnel = ReturnType<typeof tunnel>;
 
 type TimelineContextValue = {
-  config: TimelineConfig
-  pixelsPerMinute: number
-  timelineWidth: number
-  timelineRef: React.RefObject<HTMLDivElement | null>
-  columnRef: React.RefObject<HTMLDivElement | null>
-  dragPreviewTunnel: DragPreviewTunnel
+  config: TimelineConfig;
+  pixelsPerMinute: number;
+  timelineWidth: number;
+  timelineRef: React.RefObject<HTMLDivElement | null>;
+  columnRef: React.RefObject<HTMLDivElement | null>;
+  dragPreviewTunnel: DragPreviewTunnel;
   onSlotPositionChange?: (
     slotId: string,
     newTime: string,
-    newRowId: string
-  ) => Promise<boolean> | boolean
+    newRowId: string,
+  ) => Promise<boolean> | boolean;
   onSlotResize?: (
     slotId: string,
     newTime: string,
     newDuration: number,
-    isComplete?: boolean
-  ) => Promise<boolean> | boolean | void
+    isComplete?: boolean,
+  ) => Promise<boolean> | boolean | void;
   onValidateDrop?: (
     slotId: string,
     newTime: string,
-    newRowId: string
-  ) => boolean
-  onSlotClick?: (slotId: string) => void
-}
+    newRowId: string,
+  ) => boolean;
+  onSlotClick?: (slotId: string) => void;
+};
 
-const TimelineContext = React.createContext<TimelineContextValue | null>(null)
+const TimelineContext = React.createContext<TimelineContextValue | null>(null);
 
-const TIMELINE_AGENDA_BREAKPOINT = 700
+const TIMELINE_AGENDA_BREAKPOINT = 700;
 
 export function useTimeline() {
-  const context = React.useContext(TimelineContext)
+  const context = React.useContext(TimelineContext);
 
   if (!context) {
-    throw new Error("Timeline components must be used within TimelineProvider")
+    throw new Error('Timeline components must be used within TimelineProvider');
   }
 
-  return context
+  return context;
 }
 
 export function timeToMinutes(time: string): number {
-  const [hours, minutes] = time.split(":").map(Number)
-  return hours * 60 + minutes
+  const [hours, minutes] = time.split(':').map(Number);
+  return hours * 60 + minutes;
 }
 
 export function minutesToTime(minutes: number): string {
-  const hours = Math.floor(minutes / 60)
-  const remainingMinutes = minutes % 60
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
 
-  return `${hours.toString().padStart(2, "0")}:${remainingMinutes
+  return `${hours.toString().padStart(2, '0')}:${remainingMinutes
     .toString()
-    .padStart(2, "0")}`
+    .padStart(2, '0')}`;
 }
 
 export interface TimelineProviderProps {
-  children: React.ReactNode
-  config: TimelineConfig
-  percentageInView?: number
+  children: React.ReactNode;
+  config: TimelineConfig;
+  percentageInView?: number;
   onSlotPositionChange?: (
     slotId: string,
     newTime: string,
-    newRowId: string
-  ) => Promise<boolean> | boolean
+    newRowId: string,
+  ) => Promise<boolean> | boolean;
   onSlotResize?: (
     slotId: string,
     newTime: string,
     newDuration: number,
-    isComplete?: boolean
-  ) => Promise<boolean> | boolean | void
+    isComplete?: boolean,
+  ) => Promise<boolean> | boolean | void;
   onValidateDrop?: (
     slotId: string,
     newTime: string,
-    newRowId: string
-  ) => boolean
-  onSlotClick?: (slotId: string) => void
-  style?: React.CSSProperties
-  className?: string
+    newRowId: string,
+  ) => boolean;
+  onSlotClick?: (slotId: string) => void;
+  style?: React.CSSProperties;
+  className?: string;
 }
 
 export function TimelineProvider({
@@ -153,34 +157,34 @@ export function TimelineProvider({
   style,
   className,
 }: TimelineProviderProps) {
-  const [viewportWidth, setViewportWidth] = React.useState(0)
-  const timelineRef = React.useRef<HTMLDivElement>(null)
-  const columnRef = React.useRef<HTMLDivElement>(null)
-  const dragPreviewTunnel = React.useMemo(() => tunnel(), [])
-  const columnWidth = config.columnWidth ?? 112
+  const [viewportWidth, setViewportWidth] = React.useState(0);
+  const timelineRef = React.useRef<HTMLDivElement>(null);
+  const columnRef = React.useRef<HTMLDivElement>(null);
+  const dragPreviewTunnel = React.useMemo(() => tunnel(), []);
+  const columnWidth = config.columnWidth ?? 112;
 
   React.useEffect(() => {
     function measure() {
       if (timelineRef.current) {
-        setViewportWidth(timelineRef.current.clientWidth - columnWidth)
+        setViewportWidth(timelineRef.current.clientWidth - columnWidth);
       }
     }
 
-    measure()
-    window.addEventListener("resize", measure)
-    const timeout = window.setTimeout(measure, 100)
+    measure();
+    window.addEventListener('resize', measure);
+    const timeout = window.setTimeout(measure, 100);
 
     return () => {
-      window.removeEventListener("resize", measure)
-      window.clearTimeout(timeout)
-    }
-  }, [columnWidth])
+      window.removeEventListener('resize', measure);
+      window.clearTimeout(timeout);
+    };
+  }, [columnWidth]);
 
-  const totalMinutes = (config.endHour - config.startHour) * 60
+  const totalMinutes = (config.endHour - config.startHour) * 60;
   const basePixelsPerMinute =
-    viewportWidth > 0 ? viewportWidth / totalMinutes : 10
-  const pixelsPerMinute = basePixelsPerMinute * (100 / percentageInView)
-  const timelineWidth = totalMinutes * pixelsPerMinute
+    viewportWidth > 0 ? viewportWidth / totalMinutes : 10;
+  const pixelsPerMinute = basePixelsPerMinute * (100 / percentageInView);
+  const timelineWidth = totalMinutes * pixelsPerMinute;
   const contextValue = React.useMemo<TimelineContextValue>(
     () => ({
       config,
@@ -203,8 +207,8 @@ export function TimelineProvider({
       onValidateDrop,
       pixelsPerMinute,
       timelineWidth,
-    ]
-  )
+    ],
+  );
 
   return (
     <TimelineContext.Provider value={contextValue}>
@@ -212,51 +216,51 @@ export function TimelineProvider({
         data-slot="timeline-wrapper"
         style={
           {
-            "--timeline-column-width": `${columnWidth}px`,
-            "--timeline-width": `${timelineWidth}px`,
-            "--timeline-pixels-per-minute": pixelsPerMinute,
+            '--timeline-column-width': `${columnWidth}px`,
+            '--timeline-width': `${timelineWidth}px`,
+            '--timeline-pixels-per-minute': pixelsPerMinute,
             ...style,
           } as React.CSSProperties
         }
-        className={cn("relative w-full", className)}
+        className={cn('relative w-full', className)}
       >
         {children}
       </div>
     </TimelineContext.Provider>
-  )
+  );
 }
 
 type TimelineInjectedProps = {
-  slots?: TimelineSlotData[]
-  rows?: TimelineRowData[]
-  activeSlotId?: string | null
-  overRowId?: string | null
-  draggedNewTime?: string | null
-  isValidDrop?: boolean
-  getSnappedDelta?: (deltaX: number) => number
-  _showDropRegion?: boolean
-  _dropRegionTime?: string | null
-}
+  slots?: TimelineSlotData[];
+  rows?: TimelineRowData[];
+  activeSlotId?: string | null;
+  overRowId?: string | null;
+  draggedNewTime?: string | null;
+  isValidDrop?: boolean;
+  getSnappedDelta?: (deltaX: number) => number;
+  _showDropRegion?: boolean;
+  _dropRegionTime?: string | null;
+};
 
 export interface TimelineProps {
-  slots: TimelineSlotData[]
-  rows: TimelineRowData[]
-  children: React.ReactNode
-  mobileMode?: "auto" | "agenda" | "scroll"
-  afterGrid?: React.ReactNode
-  onSlotCreate?: (slot: TimelineSlotData) => void
+  slots: TimelineSlotData[];
+  rows: TimelineRowData[];
+  children: React.ReactNode;
+  mobileMode?: 'auto' | 'agenda' | 'scroll';
+  afterGrid?: React.ReactNode;
+  onSlotCreate?: (slot: TimelineSlotData) => void;
   onExternalDrop?: (
     activeId: string,
-    overId: string | null
-  ) => Promise<void> | void
-  className?: string
+    overId: string | null,
+  ) => Promise<void> | void;
+  className?: string;
 }
 
 export function Timeline({
   slots,
   rows,
   children,
-  mobileMode = "auto",
+  mobileMode = 'auto',
   afterGrid,
   onSlotCreate,
   onExternalDrop,
@@ -270,200 +274,200 @@ export function Timeline({
     onSlotClick,
     onSlotPositionChange,
     onValidateDrop,
-  } = useTimeline()
+  } = useTimeline();
   const [mousePosition, setMousePosition] = React.useState<{
-    x: number
-    y: number
-  } | null>(null)
+    x: number;
+    y: number;
+  } | null>(null);
   const [localActiveSlot, setLocalActiveSlot] = React.useState<string | null>(
-    null
-  )
-  const [localOverRow, setLocalOverRow] = React.useState<string | null>(null)
+    null,
+  );
+  const [localOverRow, setLocalOverRow] = React.useState<string | null>(null);
   const [localDraggedTime, setLocalDraggedTime] = React.useState<string | null>(
-    null
-  )
-  const [isValid, setIsValid] = React.useState(true)
-  const DragPreviewOut = dragPreviewTunnel.Out
+    null,
+  );
+  const [isValid, setIsValid] = React.useState(true);
+  const DragPreviewOut = dragPreviewTunnel.Out;
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 8 },
-    })
-  )
-  const reduceMotion = useReducedMotion()
-  const snapInterval = config.snapIntervalMinutes ?? 15
-  const columnWidth = config.columnWidth ?? 112
+    }),
+  );
+  const reduceMotion = useReducedMotion();
+  const snapInterval = config.snapIntervalMinutes ?? 15;
+  const columnWidth = config.columnWidth ?? 112;
   const rowIds = React.useMemo(
     () => new Set(rows.map((row) => String(row.id))),
-    [rows]
-  )
-  const containerRef = React.useRef<HTMLDivElement>(null)
-  const [containerWidth, setContainerWidth] = React.useState(0)
+    [rows],
+  );
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = React.useState(0);
 
   React.useEffect(() => {
-    const element = containerRef.current
-    if (!element) return
+    const element = containerRef.current;
+    if (!element) return;
 
-    const measure = () => setContainerWidth(element.clientWidth)
-    const observer = new ResizeObserver(measure)
+    const measure = () => setContainerWidth(element.clientWidth);
+    const observer = new ResizeObserver(measure);
 
-    measure()
-    observer.observe(element)
+    measure();
+    observer.observe(element);
 
-    return () => observer.disconnect()
-  }, [])
+    return () => observer.disconnect();
+  }, []);
 
   function snapToInterval(minutes: number): number {
-    return Math.round(minutes / snapInterval) * snapInterval
+    return Math.round(minutes / snapInterval) * snapInterval;
   }
 
   function getSnappedDelta(deltaX: number): number {
-    const deltaMinutes = deltaX / pixelsPerMinute
+    const deltaMinutes = deltaX / pixelsPerMinute;
     const snappedDeltaMinutes =
-      Math.round(deltaMinutes / snapInterval) * snapInterval
+      Math.round(deltaMinutes / snapInterval) * snapInterval;
 
-    return snappedDeltaMinutes * pixelsPerMinute
+    return snappedDeltaMinutes * pixelsPerMinute;
   }
 
   function calculateNewTime(originalTime: string, deltaX: number): string {
-    const originalMinutes = timeToMinutes(originalTime)
-    const deltaMinutes = Math.round(deltaX / pixelsPerMinute)
-    const newMinutes = originalMinutes + deltaMinutes
-    const snappedMinutes = snapToInterval(newMinutes)
+    const originalMinutes = timeToMinutes(originalTime);
+    const deltaMinutes = Math.round(deltaX / pixelsPerMinute);
+    const newMinutes = originalMinutes + deltaMinutes;
+    const snappedMinutes = snapToInterval(newMinutes);
     const clampedMinutes = Math.max(
       config.startHour * 60,
-      Math.min((config.endHour - 1) * 60, snappedMinutes)
-    )
+      Math.min((config.endHour - 1) * 60, snappedMinutes),
+    );
 
-    return minutesToTime(clampedMinutes)
+    return minutesToTime(clampedMinutes);
   }
 
   function handleMouseMove(event: React.MouseEvent) {
-    if (!timelineRef.current) return
+    if (!timelineRef.current) return;
 
-    const rect = timelineRef.current.getBoundingClientRect()
+    const rect = timelineRef.current.getBoundingClientRect();
     setMousePosition({
       x: event.clientX - rect.left + timelineRef.current.scrollLeft,
       y: event.clientY - rect.top,
-    })
+    });
   }
 
   function handleMouseLeave() {
-    setMousePosition(null)
+    setMousePosition(null);
   }
 
   const mouseTime = mousePosition
     ? minutesToTime(
         Math.floor((mousePosition.x - columnWidth) / pixelsPerMinute) +
-          config.startHour * 60
+          config.startHour * 60,
       )
-    : null
+    : null;
 
   function handleDragStart(event: DragStartEvent) {
-    const activeId = String(event.active.id)
-    const isSlotDrag = slots.some((slot) => slot.id === activeId)
-    setLocalActiveSlot(isSlotDrag ? activeId : null)
+    const activeId = String(event.active.id);
+    const isSlotDrag = slots.some((slot) => slot.id === activeId);
+    setLocalActiveSlot(isSlotDrag ? activeId : null);
   }
 
   function handleDragOver(event: DragOverEvent) {
     if (localActiveSlot && event.over && rowIds.has(String(event.over.id))) {
-      setLocalOverRow(String(event.over.id))
+      setLocalOverRow(String(event.over.id));
     } else {
-      setLocalOverRow(null)
-      setLocalDraggedTime(null)
+      setLocalOverRow(null);
+      setLocalDraggedTime(null);
     }
   }
 
   function handleDragMove(event: DragMoveEvent) {
-    const { over, active, delta } = event
+    const { over, active, delta } = event;
 
     if (localActiveSlot && over && rowIds.has(String(over.id))) {
-      const slot = slots.find((item) => item.id === active.id)
+      const slot = slots.find((item) => item.id === active.id);
 
       if (slot) {
-        const newTime = calculateNewTime(slot.startTime, delta.x)
-        const overId = String(over.id)
-        setLocalDraggedTime(newTime)
+        const newTime = calculateNewTime(slot.startTime, delta.x);
+        const overId = String(over.id);
+        setLocalDraggedTime(newTime);
         setIsValid(
-          onValidateDrop ? onValidateDrop(slot.id, newTime, overId) : true
-        )
+          onValidateDrop ? onValidateDrop(slot.id, newTime, overId) : true,
+        );
       }
     } else if (localActiveSlot) {
-      setLocalDraggedTime(null)
-      setIsValid(true)
+      setLocalDraggedTime(null);
+      setIsValid(true);
     }
   }
 
   const collisionDetection: CollisionDetection = (args) => {
-    const pointerCollisions = pointerWithin(args)
+    const pointerCollisions = pointerWithin(args);
 
     if (pointerCollisions.length > 0) {
       const externalCollision = pointerCollisions.find(
-        (collision) => !rowIds.has(String(collision.id))
-      )
+        (collision) => !rowIds.has(String(collision.id)),
+      );
 
       if (externalCollision) {
-        return [externalCollision]
+        return [externalCollision];
       }
 
-      return pointerCollisions
+      return pointerCollisions;
     }
 
-    return closestCenter(args)
-  }
+    return closestCenter(args);
+  };
 
   function handleDragCancel() {
-    setLocalActiveSlot(null)
-    setLocalOverRow(null)
-    setLocalDraggedTime(null)
-    setIsValid(true)
+    setLocalActiveSlot(null);
+    setLocalOverRow(null);
+    setLocalDraggedTime(null);
+    setIsValid(true);
   }
 
   async function handleDragEnd(event: DragEndEvent) {
-    const { active, over, delta } = event
+    const { active, over, delta } = event;
 
-    setLocalActiveSlot(null)
-    setLocalOverRow(null)
-    setLocalDraggedTime(null)
-    setIsValid(true)
+    setLocalActiveSlot(null);
+    setLocalOverRow(null);
+    setLocalDraggedTime(null);
+    setIsValid(true);
 
-    const activeId = String(active.id)
+    const activeId = String(active.id);
 
     if (over) {
-      const overId = String(over.id)
-      const isRowTarget = rows.some((row) => row.id === overId)
-      const slot = slots.find((item) => item.id === active.id)
+      const overId = String(over.id);
+      const isRowTarget = rows.some((row) => row.id === overId);
+      const slot = slots.find((item) => item.id === active.id);
 
       if (!slot || !isRowTarget) {
-        await onExternalDrop?.(activeId, overId)
-        return
+        await onExternalDrop?.(activeId, overId);
+        return;
       }
 
-      const newTime = calculateNewTime(slot.startTime, delta.x)
-      const newRowId = overId
+      const newTime = calculateNewTime(slot.startTime, delta.x);
+      const newRowId = overId;
 
       if (onValidateDrop && !onValidateDrop(slot.id, newTime, newRowId)) {
-        return
+        return;
       }
 
       if (slot.rowId === newRowId && slot.startTime === newTime) {
-        return
+        return;
       }
 
-      await onSlotPositionChange?.(activeId, newTime, newRowId)
+      await onSlotPositionChange?.(activeId, newTime, newRowId);
     } else if (onExternalDrop && !slots.some((slot) => slot.id === activeId)) {
-      await onExternalDrop(activeId, null)
+      await onExternalDrop(activeId, null);
     }
   }
 
   const activeSlot = localActiveSlot
     ? slots.find((slot) => slot.id === localActiveSlot)
-    : null
+    : null;
   const showAgenda =
-    mobileMode === "agenda" ||
-    (mobileMode === "auto" &&
+    mobileMode === 'agenda' ||
+    (mobileMode === 'auto' &&
       containerWidth > 0 &&
-      containerWidth < TIMELINE_AGENDA_BREAKPOINT)
-  const showGrid = mobileMode === "scroll" || !showAgenda
+      containerWidth < TIMELINE_AGENDA_BREAKPOINT);
+  const showGrid = mobileMode === 'scroll' || !showAgenda;
 
   return (
     <DndContext
@@ -493,13 +497,16 @@ export function Timeline({
           <div
             ref={timelineRef}
             data-slot="timeline-grid"
-            className={cn("relative overflow-auto border bg-background", className)}
+            className={cn(
+              'relative overflow-auto border bg-background',
+              className,
+            )}
             onMouseMove={handleMouseMove}
             onMouseLeave={handleMouseLeave}
           >
             {React.Children.map(children, (child) => {
               if (!React.isValidElement<TimelineInjectedProps>(child))
-                return child
+                return child;
 
               return React.cloneElement(child, {
                 slots,
@@ -511,14 +518,14 @@ export function Timeline({
                 getSnappedDelta,
                 _showDropRegion: Boolean(localActiveSlot && localDraggedTime),
                 _dropRegionTime: localDraggedTime,
-              })
+              });
             })}
           </div>
         ) : null}
 
         {afterGrid}
 
-        {typeof document !== "undefined"
+        {typeof document !== 'undefined'
           ? createPortal(
               <DragOverlay dropAnimation={null}>
                 {localActiveSlot && activeSlot ? (
@@ -526,20 +533,20 @@ export function Timeline({
                     data-slot="timeline-drag-overlay"
                     style={{
                       width: `${Math.max(activeSlot.duration * pixelsPerMinute, 60)}px`,
-                      height: "54px",
-                      position: "relative",
+                      height: '54px',
+                      position: 'relative',
                     }}
                   >
                     <DragPreviewOut />
                   </div>
                 ) : null}
               </DragOverlay>,
-              document.body
+              document.body,
             )
           : null}
       </div>
     </DndContext>
-  )
+  );
 }
 
 function TimelineAgenda({
@@ -549,26 +556,26 @@ function TimelineAgenda({
   onSlotCreate,
   reduceMotion,
 }: {
-  slots: TimelineSlotData[]
-  rows: TimelineRowData[]
-  onSlotClick?: (slotId: string) => void
-  onSlotCreate?: (slot: TimelineSlotData) => void
-  reduceMotion: boolean | null
+  slots: TimelineSlotData[];
+  rows: TimelineRowData[];
+  onSlotClick?: (slotId: string) => void;
+  onSlotCreate?: (slot: TimelineSlotData) => void;
+  reduceMotion: boolean | null;
 }) {
   const rowMap = React.useMemo(
     () => new Map(rows.map((row) => [row.id, row])),
-    [rows]
-  )
+    [rows],
+  );
   const sortedSlots = React.useMemo(
     () =>
       slots
         .slice()
         .sort(
           (left, right) =>
-            timeToMinutes(left.startTime) - timeToMinutes(right.startTime)
+            timeToMinutes(left.startTime) - timeToMinutes(right.startTime),
         ),
-    [slots]
-  )
+    [slots],
+  );
 
   return (
     <div
@@ -588,8 +595,8 @@ function TimelineAgenda({
       </div>
       <div className="grid gap-2">
         {sortedSlots.map((slot, index) => {
-          const row = rowMap.get(slot.rowId)
-          const nextSlot = sortedSlots[index + 1]
+          const row = rowMap.get(slot.rowId);
+          const nextSlot = sortedSlots[index + 1];
 
           return (
             <React.Fragment key={slot.id}>
@@ -614,7 +621,7 @@ function TimelineAgenda({
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <div className="truncate text-sm font-medium">
-                        {String(slot.title ?? slot.label ?? "Timeline item")}
+                        {String(slot.title ?? slot.label ?? 'Timeline item')}
                       </div>
                       <div className="mt-1 truncate text-xs text-muted-foreground">
                         {row?.label ?? slot.rowId}
@@ -637,17 +644,14 @@ function TimelineAgenda({
                 />
               ) : null}
             </React.Fragment>
-          )
+          );
         })}
         {sortedSlots.length === 0 && onSlotCreate ? (
-          <TimelineAgendaCreateSlot
-            rows={rows}
-            onSlotCreate={onSlotCreate}
-          />
+          <TimelineAgendaCreateSlot rows={rows} onSlotCreate={onSlotCreate} />
         ) : null}
       </div>
     </div>
-  )
+  );
 }
 
 function TimelineAgendaCreateSlot({
@@ -656,53 +660,55 @@ function TimelineAgendaCreateSlot({
   beforeSlot,
   onSlotCreate,
 }: {
-  rows: TimelineRowData[]
-  afterSlot?: TimelineSlotData
-  beforeSlot?: TimelineSlotData
-  onSlotCreate: (slot: TimelineSlotData) => void
+  rows: TimelineRowData[];
+  afterSlot?: TimelineSlotData;
+  beforeSlot?: TimelineSlotData;
+  onSlotCreate: (slot: TimelineSlotData) => void;
 }) {
   const startMinutes = afterSlot
     ? timeToMinutes(afterSlot.startTime) + afterSlot.duration
-    : 9 * 60
-  const nextStartMinutes = beforeSlot ? timeToMinutes(beforeSlot.startTime) : null
-  const defaultStart = minutesToTime(startMinutes)
+    : 9 * 60;
+  const nextStartMinutes = beforeSlot
+    ? timeToMinutes(beforeSlot.startTime)
+    : null;
+  const defaultStart = minutesToTime(startMinutes);
   const defaultEnd = minutesToTime(
     nextStartMinutes && nextStartMinutes > startMinutes
       ? Math.min(nextStartMinutes, startMinutes + 60)
-      : startMinutes + 60
-  )
-  const [open, setOpen] = React.useState(false)
-  const [title, setTitle] = React.useState("New slot")
-  const [startTime, setStartTime] = React.useState(defaultStart)
-  const [endTime, setEndTime] = React.useState(defaultEnd)
+      : startMinutes + 60,
+  );
+  const [open, setOpen] = React.useState(false);
+  const [title, setTitle] = React.useState('New slot');
+  const [startTime, setStartTime] = React.useState(defaultStart);
+  const [endTime, setEndTime] = React.useState(defaultEnd);
   const [rowId, setRowId] = React.useState(
-    afterSlot?.rowId ?? rows[0]?.id ?? "default"
-  )
+    afterSlot?.rowId ?? rows[0]?.id ?? 'default',
+  );
 
   React.useEffect(() => {
-    if (!open) return
+    if (!open) return;
 
-    setStartTime(defaultStart)
-    setEndTime(defaultEnd)
-    setRowId(afterSlot?.rowId ?? rows[0]?.id ?? "default")
-  }, [afterSlot?.rowId, defaultEnd, defaultStart, open, rows])
+    setStartTime(defaultStart);
+    setEndTime(defaultEnd);
+    setRowId(afterSlot?.rowId ?? rows[0]?.id ?? 'default');
+  }, [afterSlot?.rowId, defaultEnd, defaultStart, open, rows]);
 
   function createSlot(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
+    event.preventDefault();
 
-    const start = timeToMinutes(startTime)
-    const end = timeToMinutes(endTime)
-    const duration = Math.max(15, end > start ? end - start : 60)
+    const start = timeToMinutes(startTime);
+    const end = timeToMinutes(endTime);
+    const duration = Math.max(15, end > start ? end - start : 60);
 
     onSlotCreate({
       id: `slot-${Date.now()}`,
       rowId,
       startTime,
       duration,
-      title: title.trim() || "New slot",
-    })
-    setTitle("New slot")
-    setOpen(false)
+      title: title.trim() || 'New slot',
+    });
+    setTitle('New slot');
+    setOpen(false);
   }
 
   return (
@@ -779,40 +785,40 @@ function TimelineAgendaCreateSlot({
         </PopoverContent>
       </Popover>
     </div>
-  )
+  );
 }
 
 function formatTimelineDuration(duration: number) {
-  if (duration < 60) return `${duration}m`
-  const hours = Math.floor(duration / 60)
-  const minutes = duration % 60
-  return minutes === 0 ? `${hours}h` : `${hours}h ${minutes}m`
+  if (duration < 60) return `${duration}m`;
+  const hours = Math.floor(duration / 60);
+  const minutes = duration % 60;
+  return minutes === 0 ? `${hours}h` : `${hours}h ${minutes}m`;
 }
 
 export interface TimelineHeaderProps {
-  className?: string
-  columnLabel?: React.ReactNode
+  className?: string;
+  columnLabel?: React.ReactNode;
 }
 
 export function TimelineHeader({
   className,
-  columnLabel = "Row",
+  columnLabel = 'Row',
 }: TimelineHeaderProps) {
-  const { config, pixelsPerMinute, columnRef } = useTimeline()
-  const hourMarkers = []
+  const { config, pixelsPerMinute, columnRef } = useTimeline();
+  const hourMarkers = [];
 
   for (let hour = config.startHour; hour < config.endHour; hour += 1) {
     hourMarkers.push({
       hour,
       label: `${hour}:00`,
       position: (hour - config.startHour) * 60 * pixelsPerMinute,
-    })
+    });
   }
 
   return (
     <div
       data-slot="timeline-header"
-      className={cn("sticky top-0 z-10 border-b bg-background", className)}
+      className={cn('sticky top-0 z-10 border-b bg-background', className)}
     >
       <div className="flex h-12">
         <div
@@ -836,17 +842,17 @@ export function TimelineHeader({
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 export interface TimelineRowProps extends TimelineInjectedProps {
-  row: TimelineRowData
-  slots: TimelineSlotData[]
-  children: (slot: TimelineSlotData) => React.ReactNode
-  renderRowHeader?: (row: TimelineRowData) => React.ReactNode
-  renderRowExtras?: (row: TimelineRowData) => React.ReactNode
-  className?: string
-  asChild?: boolean
+  row: TimelineRowData;
+  slots: TimelineSlotData[];
+  children: (slot: TimelineSlotData) => React.ReactNode;
+  renderRowHeader?: (row: TimelineRowData) => React.ReactNode;
+  renderRowExtras?: (row: TimelineRowData) => React.ReactNode;
+  className?: string;
+  asChild?: boolean;
 }
 
 export function TimelineRow({
@@ -859,31 +865,31 @@ export function TimelineRow({
   asChild,
   ...props
 }: TimelineRowProps) {
-  const { config, pixelsPerMinute, timelineWidth } = useTimeline()
-  const Comp = asChild ? Slot : "div"
+  const { config, pixelsPerMinute, timelineWidth } = useTimeline();
+  const Comp = asChild ? Slot : 'div';
   const { setNodeRef, isOver } = useDroppable({
     id: row.id,
-  })
-  const rowSlots = slots.filter((slot) => slot.rowId === row.id)
-  const isValidDrop = props.isValidDrop !== false
-  const isHovered = isOver || props.overRowId === row.id
-  const hourMarkers = []
+  });
+  const rowSlots = slots.filter((slot) => slot.rowId === row.id);
+  const isValidDrop = props.isValidDrop !== false;
+  const isHovered = isOver || props.overRowId === row.id;
+  const hourMarkers = [];
 
   for (let hour = config.startHour; hour <= config.endHour; hour += 1) {
     hourMarkers.push({
       hour,
       position: (hour - config.startHour) * 60 * pixelsPerMinute,
-    })
+    });
   }
 
-  const quarterHourMarkers = []
-  const totalMinutes = (config.endHour - config.startHour) * 60
+  const quarterHourMarkers = [];
+  const totalMinutes = (config.endHour - config.startHour) * 60;
 
   for (let minutes = 15; minutes < totalMinutes; minutes += 15) {
     if (minutes % 60 !== 0) {
       quarterHourMarkers.push({
         position: minutes * pixelsPerMinute,
-      })
+      });
     }
   }
 
@@ -892,13 +898,13 @@ export function TimelineRow({
       ref={setNodeRef}
       data-slot="timeline-row"
       data-state={
-        isHovered ? (isValidDrop ? "hover-valid" : "hover-invalid") : "idle"
+        isHovered ? (isValidDrop ? 'hover-valid' : 'hover-invalid') : 'idle'
       }
       className={cn(
-        "flex h-12 border-b",
-        isHovered && isValidDrop && "ring-2 ring-blue-500 ring-inset",
-        isHovered && !isValidDrop && "ring-2 ring-red-500 ring-inset",
-        className
+        'flex h-12 border-b',
+        isHovered && isValidDrop && 'ring-2 ring-blue-500 ring-inset',
+        isHovered && !isValidDrop && 'ring-2 ring-red-500 ring-inset',
+        className,
       )}
     >
       <div
@@ -937,7 +943,7 @@ export function TimelineRow({
         {renderRowExtras ? renderRowExtras(row) : null}
 
         {rowSlots.map((slot) => {
-          const slotElement = children(slot)
+          const slotElement = children(slot);
 
           return (
             <React.Fragment key={slot.id}>
@@ -948,7 +954,7 @@ export function TimelineRow({
                   })
                 : slotElement}
             </React.Fragment>
-          )
+          );
         })}
 
         {isHovered && props.draggedNewTime && props.activeSlotId ? (
@@ -963,19 +969,19 @@ export function TimelineRow({
         ) : null}
       </div>
     </Comp>
-  )
+  );
 }
 
 type TimelineSlotInjectedProps = {
-  activeSlotId?: string | null
-  getSnappedDelta?: (deltaX: number) => number
-}
+  activeSlotId?: string | null;
+  getSnappedDelta?: (deltaX: number) => number;
+};
 
 export interface TimelineSlotProps extends TimelineSlotInjectedProps {
-  slot: TimelineSlotData
-  children: React.ReactNode
-  className?: string
-  asChild?: boolean
+  slot: TimelineSlotData;
+  children: React.ReactNode;
+  className?: string;
+  asChild?: boolean;
 }
 
 export function TimelineSlot({
@@ -991,95 +997,95 @@ export function TimelineSlot({
     onSlotClick,
     onSlotResize,
     dragPreviewTunnel,
-  } = useTimeline()
-  const Comp = asChild ? Slot : "div"
-  const DragPreviewIn = dragPreviewTunnel.In
+  } = useTimeline();
+  const Comp = asChild ? Slot : 'div';
+  const DragPreviewIn = dragPreviewTunnel.In;
   const { attributes, listeners, setNodeRef, isDragging, transform } =
     useDraggable({
       id: slot.id,
-    })
-  const startMinutes = timeToMinutes(slot.startTime)
-  const endMinutes = startMinutes + slot.duration
-  const left = (startMinutes - config.startHour * 60) * pixelsPerMinute
-  const width = slot.duration * pixelsPerMinute
-  const isActiveSlot = props.activeSlotId === slot.id
-  const snapInterval = config.snapIntervalMinutes ?? 15
+    });
+  const startMinutes = timeToMinutes(slot.startTime);
+  const endMinutes = startMinutes + slot.duration;
+  const left = (startMinutes - config.startHour * 60) * pixelsPerMinute;
+  const width = slot.duration * pixelsPerMinute;
+  const isActiveSlot = props.activeSlotId === slot.id;
+  const snapInterval = config.snapIntervalMinutes ?? 15;
 
   function handleResizeStart(
     event: React.PointerEvent,
-    edge: "left" | "right"
+    edge: 'left' | 'right',
   ) {
-    if (!onSlotResize) return
+    if (!onSlotResize) return;
 
-    event.stopPropagation()
-    event.preventDefault()
+    event.stopPropagation();
+    event.preventDefault();
 
-    const target = event.currentTarget as HTMLElement
-    target.setPointerCapture(event.pointerId)
+    const target = event.currentTarget as HTMLElement;
+    target.setPointerCapture(event.pointerId);
 
-    const initialX = event.clientX
-    const initialStart = startMinutes
-    const initialEnd = endMinutes
-    const timelineStart = config.startHour * 60
-    const timelineEnd = config.endHour * 60
-    const minDuration = snapInterval
+    const initialX = event.clientX;
+    const initialStart = startMinutes;
+    const initialEnd = endMinutes;
+    const timelineStart = config.startHour * 60;
+    const timelineEnd = config.endHour * 60;
+    const minDuration = snapInterval;
 
     function getDeltaMinutes(clientX: number) {
-      const rawDeltaMinutes = (clientX - initialX) / pixelsPerMinute
-      return Math.round(rawDeltaMinutes / snapInterval) * snapInterval
+      const rawDeltaMinutes = (clientX - initialX) / pixelsPerMinute;
+      return Math.round(rawDeltaMinutes / snapInterval) * snapInterval;
     }
 
     function getNextSize(clientX: number) {
-      const deltaMinutes = getDeltaMinutes(clientX)
+      const deltaMinutes = getDeltaMinutes(clientX);
 
-      if (edge === "left") {
+      if (edge === 'left') {
         const newStart = Math.max(
           timelineStart,
-          Math.min(initialStart + deltaMinutes, initialEnd - minDuration)
-        )
+          Math.min(initialStart + deltaMinutes, initialEnd - minDuration),
+        );
 
         return {
           start: newStart,
           duration: initialEnd - newStart,
-        }
+        };
       }
 
       const newEnd = Math.max(
         initialStart + minDuration,
-        Math.min(initialEnd + deltaMinutes, timelineEnd)
-      )
+        Math.min(initialEnd + deltaMinutes, timelineEnd),
+      );
 
       return {
         start: initialStart,
         duration: newEnd - initialStart,
-      }
+      };
     }
 
     function handlePointerMove(moveEvent: PointerEvent) {
-      const next = getNextSize(moveEvent.clientX)
+      const next = getNextSize(moveEvent.clientX);
       void onSlotResize?.(
         slot.id,
         minutesToTime(next.start),
         next.duration,
-        false
-      )
+        false,
+      );
     }
 
     function handlePointerUp(upEvent: PointerEvent) {
-      const next = getNextSize(upEvent.clientX)
+      const next = getNextSize(upEvent.clientX);
       void onSlotResize?.(
         slot.id,
         minutesToTime(next.start),
         next.duration,
-        true
-      )
-      target.releasePointerCapture(upEvent.pointerId)
-      window.removeEventListener("pointermove", handlePointerMove)
-      window.removeEventListener("pointerup", handlePointerUp)
+        true,
+      );
+      target.releasePointerCapture(upEvent.pointerId);
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
     }
 
-    window.addEventListener("pointermove", handlePointerMove)
-    window.addEventListener("pointerup", handlePointerUp)
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', handlePointerUp);
   }
 
   const style =
@@ -1096,30 +1102,30 @@ export function TimelineSlot({
           width: `${Math.max(width, 60)}px`,
           top: 0,
           bottom: 0,
-        }
+        };
   const slotContent = (
     <Comp
       data-slot="timeline-slot"
-      data-state={isDragging ? "dragging" : "idle"}
+      data-state={isDragging ? 'dragging' : 'idle'}
       data-active={isActiveSlot}
       className={cn(
-        "group/timeline-slot absolute inset-1 cursor-move overflow-hidden rounded transition-all",
+        'group/timeline-slot absolute inset-1 cursor-move overflow-hidden rounded transition-all',
         isDragging
-          ? "opacity-40 shadow-sm ring-2 ring-foreground/50"
-          : "shadow-md",
-        onSlotClick && "cursor-pointer hover:ring-2 hover:ring-foreground/30",
-        className
+          ? 'opacity-40 shadow-sm ring-2 ring-foreground/50'
+          : 'shadow-md',
+        onSlotClick && 'cursor-pointer hover:ring-2 hover:ring-foreground/30',
+        className,
       )}
       onClick={(event: React.MouseEvent) => {
         if (onSlotClick && !isDragging) {
-          event.stopPropagation()
-          onSlotClick(slot.id)
+          event.stopPropagation();
+          onSlotClick(slot.id);
         }
       }}
       style={
         {
-          "--slot-start-time": slot.startTime,
-          "--slot-duration": `${slot.duration}min`,
+          '--slot-start-time': slot.startTime,
+          '--slot-duration': `${slot.duration}min`,
         } as React.CSSProperties
       }
     >
@@ -1129,19 +1135,19 @@ export function TimelineSlot({
           <div
             aria-hidden="true"
             className="absolute top-0 bottom-0 left-0 z-20 w-4 -translate-x-1/2 cursor-col-resize"
-            onPointerDown={(event) => handleResizeStart(event, "left")}
+            onPointerDown={(event) => handleResizeStart(event, 'left')}
           />
           <div
             aria-hidden="true"
             className="absolute top-0 right-0 bottom-0 z-20 w-4 translate-x-1/2 cursor-col-resize"
-            onPointerDown={(event) => handleResizeStart(event, "right")}
+            onPointerDown={(event) => handleResizeStart(event, 'right')}
           />
           <div className="pointer-events-none absolute top-1 bottom-1 left-0 w-1 rounded-r-sm bg-transparent group-hover/timeline-slot:bg-foreground/20" />
           <div className="pointer-events-none absolute top-1 right-0 bottom-1 w-1 rounded-l-sm bg-transparent group-hover/timeline-slot:bg-foreground/20" />
         </>
       ) : null}
     </Comp>
-  )
+  );
 
   return (
     <div
@@ -1158,13 +1164,13 @@ export function TimelineSlot({
           <Comp
             data-slot="timeline-slot-preview"
             className={cn(
-              "h-full w-full cursor-move overflow-hidden rounded shadow-lg",
-              className
+              'h-full w-full cursor-move overflow-hidden rounded shadow-lg',
+              className,
             )}
             style={
               {
-                "--slot-start-time": slot.startTime,
-                "--slot-duration": `${slot.duration}min`,
+                '--slot-start-time': slot.startTime,
+                '--slot-duration': `${slot.duration}min`,
               } as React.CSSProperties
             }
           >
@@ -1173,11 +1179,11 @@ export function TimelineSlot({
         </DragPreviewIn>
       ) : null}
     </div>
-  )
+  );
 }
 
-export interface TimelineSlotLabelProps extends React.ComponentProps<"div"> {
-  asChild?: boolean
+export interface TimelineSlotLabelProps extends React.ComponentProps<'div'> {
+  asChild?: boolean;
 }
 
 export function TimelineSlotLabel({
@@ -1185,19 +1191,19 @@ export function TimelineSlotLabel({
   className,
   ...props
 }: TimelineSlotLabelProps) {
-  const Comp = asChild ? Slot : "div"
+  const Comp = asChild ? Slot : 'div';
 
   return (
     <Comp
       data-slot="timeline-slot-label"
-      className={cn("truncate text-xs font-medium", className)}
+      className={cn('truncate text-xs font-medium', className)}
       {...props}
     />
-  )
+  );
 }
 
-export interface TimelineSlotContentProps extends React.ComponentProps<"div"> {
-  asChild?: boolean
+export interface TimelineSlotContentProps extends React.ComponentProps<'div'> {
+  asChild?: boolean;
 }
 
 export function TimelineSlotContent({
@@ -1205,23 +1211,23 @@ export function TimelineSlotContent({
   className,
   ...props
 }: TimelineSlotContentProps) {
-  const Comp = asChild ? Slot : "div"
+  const Comp = asChild ? Slot : 'div';
 
   return (
     <Comp
       data-slot="timeline-slot-content"
-      className={cn("text-xs", className)}
+      className={cn('text-xs', className)}
       {...props}
     />
-  )
+  );
 }
 
 export function TimelineMouseIndicator({
   mouseX,
   time,
 }: {
-  mouseX: number
-  time: string
+  mouseX: number;
+  time: string;
 }) {
   return (
     <div
@@ -1234,28 +1240,28 @@ export function TimelineMouseIndicator({
         {time}
       </div>
     </div>
-  )
+  );
 }
 
 export interface TimelineDropRegionProps {
-  startTime: string
-  duration: number
+  startTime: string;
+  duration: number;
 }
 
 export function TimelineDropRegion({
   startTime,
   duration,
 }: TimelineDropRegionProps) {
-  const { config, pixelsPerMinute } = useTimeline()
-  const columnWidth = config.columnWidth ?? 112
-  const startMinutes = timeToMinutes(startTime)
-  const endMinutes = startMinutes + duration
-  const endTime = minutesToTime(endMinutes)
+  const { config, pixelsPerMinute } = useTimeline();
+  const columnWidth = config.columnWidth ?? 112;
+  const startMinutes = timeToMinutes(startTime);
+  const endMinutes = startMinutes + duration;
+  const endTime = minutesToTime(endMinutes);
   const startPosition =
-    (startMinutes - config.startHour * 60) * pixelsPerMinute + columnWidth
+    (startMinutes - config.startHour * 60) * pixelsPerMinute + columnWidth;
   const endPosition =
-    (endMinutes - config.startHour * 60) * pixelsPerMinute + columnWidth
-  const width = endPosition - startPosition
+    (endMinutes - config.startHour * 60) * pixelsPerMinute + columnWidth;
+  const width = endPosition - startPosition;
 
   return (
     <div
@@ -1270,44 +1276,44 @@ export function TimelineDropRegion({
       <div className="absolute top-0 right-0 bottom-0 w-0.5 bg-accent" />
       <div className="absolute inset-0 bg-accent/[0.07]" />
     </div>
-  )
+  );
 }
 
 export interface TimelineCurrentTimeProps {
-  className?: string
-  nowLabel?: string
+  className?: string;
+  nowLabel?: string;
 }
 
 export function TimelineCurrentTime({
   className,
-  nowLabel = "Now",
+  nowLabel = 'Now',
 }: TimelineCurrentTimeProps) {
-  const { config, pixelsPerMinute } = useTimeline()
-  const columnWidth = config.columnWidth ?? 112
-  const [now, setNow] = React.useState(new Date())
+  const { config, pixelsPerMinute } = useTimeline();
+  const columnWidth = config.columnWidth ?? 112;
+  const [now, setNow] = React.useState(new Date());
 
   React.useEffect(() => {
-    const interval = window.setInterval(() => setNow(new Date()), 60000)
-    return () => window.clearInterval(interval)
-  }, [])
+    const interval = window.setInterval(() => setNow(new Date()), 60000);
+    return () => window.clearInterval(interval);
+  }, []);
 
-  const currentMinutes = now.getHours() * 60 + now.getMinutes()
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
   const position =
-    (currentMinutes - config.startHour * 60) * pixelsPerMinute + columnWidth
+    (currentMinutes - config.startHour * 60) * pixelsPerMinute + columnWidth;
 
   if (
     currentMinutes < config.startHour * 60 ||
     currentMinutes > config.endHour * 60
   ) {
-    return null
+    return null;
   }
 
   return (
     <div
       data-slot="timeline-current-time"
       className={cn(
-        "pointer-events-none absolute top-0 bottom-0 z-[15] w-0.5 bg-secondary",
-        className
+        'pointer-events-none absolute top-0 bottom-0 z-[15] w-0.5 bg-secondary',
+        className,
       )}
       style={{ left: `${position}px` }}
     >
@@ -1315,12 +1321,12 @@ export function TimelineCurrentTime({
         {nowLabel}: {minutesToTime(currentMinutes)}
       </div>
     </div>
-  )
+  );
 }
 
 export interface TimelineGridProps extends TimelineInjectedProps {
-  children: React.ReactNode
-  className?: string
+  children: React.ReactNode;
+  className?: string;
 }
 
 export function TimelineGrid({
@@ -1328,21 +1334,21 @@ export function TimelineGrid({
   className,
   ...props
 }: TimelineGridProps) {
-  const { timelineWidth } = useTimeline()
+  const { timelineWidth } = useTimeline();
   const activeSlot =
     props._showDropRegion && props.slots
       ? props.slots.find((slot) => slot.id === props.activeSlotId)
-      : null
+      : null;
 
   return (
     <div
       data-slot="timeline-grid-container"
-      className={cn("relative", className)}
+      className={cn('relative', className)}
       style={{ minWidth: `${timelineWidth + 200}px` }}
     >
       {React.Children.map(children, (child) => {
-        if (!React.isValidElement<TimelineInjectedProps>(child)) return child
-        return React.cloneElement(child, props)
+        if (!React.isValidElement<TimelineInjectedProps>(child)) return child;
+        return React.cloneElement(child, props);
       })}
 
       {props._showDropRegion && props._dropRegionTime && activeSlot ? (
@@ -1352,7 +1358,7 @@ export function TimelineGrid({
         />
       ) : null}
     </div>
-  )
+  );
 }
 
 function TimelineDropGhost({
@@ -1363,19 +1369,19 @@ function TimelineDropGhost({
   config,
   pixelsPerMinute,
 }: {
-  activeSlotId: string
-  allSlots: TimelineSlotData[]
-  newTime: string
-  isValid: boolean
-  config: TimelineConfig
-  pixelsPerMinute: number
+  activeSlotId: string;
+  allSlots: TimelineSlotData[];
+  newTime: string;
+  isValid: boolean;
+  config: TimelineConfig;
+  pixelsPerMinute: number;
 }) {
-  const slot = allSlots.find((item) => item.id === activeSlotId)
-  if (!slot || !isValid) return null
+  const slot = allSlots.find((item) => item.id === activeSlotId);
+  if (!slot || !isValid) return null;
 
-  const startMinutes = timeToMinutes(newTime)
-  const left = (startMinutes - config.startHour * 60) * pixelsPerMinute
-  const width = slot.duration * pixelsPerMinute
+  const startMinutes = timeToMinutes(newTime);
+  const left = (startMinutes - config.startHour * 60) * pixelsPerMinute;
+  const width = slot.duration * pixelsPerMinute;
 
   return (
     <div
@@ -1384,10 +1390,10 @@ function TimelineDropGhost({
       style={{
         left: `${left}px`,
         width: `${Math.max(width, 60)}px`,
-        top: "2px",
-        bottom: "2px",
+        top: '2px',
+        bottom: '2px',
         zIndex: 100,
       }}
     />
-  )
+  );
 }

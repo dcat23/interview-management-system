@@ -1,5 +1,12 @@
-import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@app/dashboard/components/ui/common/sidebar';
-import { PROJECT_NAME } from '@app/dashboard/lib/constants/metadata';
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+} from '@app/dashboard/components/ui/common/sidebar';
 import { DASHBOARD_NAV } from '@app/dashboard/lib/constants/navigation';
 import { auth, User } from '@feature/auth/server';
 import { capitalize, Role, SECONDARY_NAV } from '@feature/base/server';
@@ -17,10 +24,10 @@ interface Props extends React.ComponentProps<typeof Sidebar> {
 
 export async function AppSidebar({ role, ...props }: Props) {
   const session = await auth();
-  const user = session?.user ?? {} as User;
+  const user = session?.user ?? ({} as User);
 
   const navMain = DASHBOARD_NAV[user.role] || [];
-  
+
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
@@ -32,7 +39,9 @@ export async function AppSidebar({ role, ...props }: Props) {
             >
               <Link href="/">
                 <CommandIcon className="size-5!" />
-                <span className="text-base font-semibold">{capitalize(user.role)} Portal</span>
+                <span className="text-base font-semibold">
+                  {capitalize(user.role)} Portal
+                </span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -45,12 +54,12 @@ export async function AppSidebar({ role, ...props }: Props) {
         <AppSidebarNavSecondary items={SECONDARY_NAV} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
-        <AppSidebarNavUser 
+        <AppSidebarNavUser
           user={{
             name: user.name as string,
             email: user.email as string,
             image: user.image as string,
-          }} 
+          }}
         />
       </SidebarFooter>
     </Sidebar>

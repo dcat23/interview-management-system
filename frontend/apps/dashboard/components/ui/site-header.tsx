@@ -1,6 +1,5 @@
-import { Button } from "@app/dashboard/components/ui/common/button"
-import { Separator } from "@app/dashboard/components/ui/common/separator"
-import { SidebarTrigger } from "@app/dashboard/components/ui/common/sidebar"
+import { Separator } from '@app/dashboard/components/ui/common/separator';
+import { SidebarTrigger } from '@app/dashboard/components/ui/common/sidebar';
 
 export function SiteHeader() {
   return (
@@ -14,5 +13,5 @@ export function SiteHeader() {
         <h1 className="text-base font-medium">Documents</h1>
       </div>
     </header>
-  )
+  );
 }

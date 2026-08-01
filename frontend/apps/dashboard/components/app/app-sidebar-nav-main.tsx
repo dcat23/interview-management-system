@@ -1,21 +1,17 @@
-
 import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@app/dashboard/components/ui/common/sidebar"
-import { NavItem } from "@feature/base/server"
-import { PlusCircleIcon, Search } from "lucide-react"
-import { Button } from "../ui/common/button"
-import AppSidebarNavMenu from "./app-sidebar-nav-menu"
+} from '@app/dashboard/components/ui/common/sidebar';
+import { NavItem } from '@feature/base/server';
+import { PlusCircleIcon, Upload } from 'lucide-react';
+import { Button } from '../ui/common/button';
+import AppSidebarNavMenu from './app-sidebar-nav-menu';
+import { Tooltip } from '@app/dashboard/components/ui/common/tooltip';
 
-export function AppSidebarNavMain({
-  items,
-}: {
-  items: NavItem[]
-}) {
+export function AppSidebarNavMain({ items }: { items: NavItem[] }) {
   return (
     <SidebarGroup>
       <SidebarGroupContent className="flex flex-col gap-2">
@@ -28,13 +24,15 @@ export function AppSidebarNavMain({
               <PlusCircleIcon />
               <span>Quick Create</span>
             </SidebarMenuButton>
-            <Button
-              size="icon"
-              className="size-8 group-data-[collapsible=icon]:opacity-0"
-              variant="outline"
-            >
-              <Search />
-            </Button>
+            <Tooltip>
+              <Button
+                size="icon"
+                className="size-8 group-data-[collapsible=icon]:opacity-0"
+                variant="outline"
+              >
+                <Upload />
+              </Button>
+            </Tooltip>
           </SidebarMenuItem>
         </SidebarMenu>
         <SidebarMenu>
@@ -42,5 +40,5 @@ export function AppSidebarNavMain({
         </SidebarMenu>
       </SidebarGroupContent>
     </SidebarGroup>
-  )
+  );
 }

@@ -1,9 +1,6 @@
-import AppPageBreadcrumbs from "@app/dashboard/components/app/app-page-breadcrumbs";
-import AppPageHeader from "@app/dashboard/components/app/app-page-header";
-import ProcessesData from "@app/dashboard/components/process/processes-data";
-import { DataTable } from "@app/dashboard/components/ui/data-table";
-import { DASHBOARD, PROCESSES } from "@feature/base/lib/types/nav";
-
+import AppPageHeader from '@app/dashboard/components/app/app-page-header';
+import ProcessesData from '@app/dashboard/components/process/processes-data';
+import { DASHBOARD, PROCESSES } from '@feature/base/lib/types/nav';
 
 interface Props {
   params: Promise<{}>;
@@ -17,11 +14,11 @@ async function AppProcessesPage(props: Props) {
       <AppPageHeader
         title="Interview Processes"
         breadcrumbs={[
-          { label: "Home", href: DASHBOARD.href },
+          { label: 'Home', href: DASHBOARD.href },
           { label: PROCESSES.name, href: PROCESSES.href },
         ]}
-      />
-      
+      ></AppPageHeader>
+
       <ProcessesData />
     </div>
   );

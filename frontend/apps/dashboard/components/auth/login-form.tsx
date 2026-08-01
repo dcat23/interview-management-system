@@ -1,14 +1,14 @@
-"use client"
+'use client';
 
-import { cn } from "@app/dashboard/lib/ui/utils"
-import { Button } from "@app/dashboard/components/ui/common/button"
+import { cn } from '@app/dashboard/lib/ui/utils';
+import { Button } from '@app/dashboard/components/ui/common/button';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@app/dashboard/components/ui/common/card"
+} from '@app/dashboard/components/ui/common/card';
 import {
   Field,
   FieldDescription,
@@ -16,16 +16,16 @@ import {
   FieldGroup,
   FieldLabel,
   FieldSeparator,
-} from "@app/dashboard/components/ui/common/field"
-import { Input } from "@app/dashboard/components/ui/common/input"
-import { ApiResponse } from "@next-feature/client"
-import { loginFormAction, LoginRequest } from "@feature/auth/server"
-import { useRouter } from "next/navigation"
-import { useActionState, useEffect } from "react"
-import { toast } from "sonner"
-import { LoginButton } from "./login-button"
+} from '@app/dashboard/components/ui/common/field';
+import { Input } from '@app/dashboard/components/ui/common/input';
+import { ApiResponse } from '@next-feature/client';
+import { loginFormAction, LoginRequest } from '@feature/auth/server';
+import { useRouter } from 'next/navigation';
+import { useActionState, useEffect } from 'react';
+import { toast } from 'sonner';
+import { FormButton } from '@app/dashboard/components/form-button';
 
-interface Props<T> extends React.ComponentProps<"div"> {
+interface Props<T> extends React.ComponentProps<'div'> {
   action?: (
     prevState: ApiResponse<T>,
     formData: FormData,
@@ -58,11 +58,11 @@ export function LoginForm({
 
     if (formState.success) {
       toast.success(formState.message, {
-        description: "Redirecting..."
+        description: 'Redirecting...',
       });
     } else if (formState.error) {
       toast.error(formState.message);
-    } 
+    }
   }, [formState.message, formState.success, formState.error]);
 
   const displayError = (key: string) => {
@@ -75,13 +75,11 @@ export function LoginForm({
   };
 
   return (
-    <div className={cn("flex flex-col gap-6", className)} {...props}>
+    <div className={cn('flex flex-col gap-6', className)} {...props}>
       <Card>
         <CardHeader className="text-center">
           <CardTitle className="text-xl">Welcome back</CardTitle>
-          <CardDescription>
-            Sign in to your account
-          </CardDescription>
+          <CardDescription>Sign in to your account</CardDescription>
         </CardHeader>
         <CardContent>
           <form action={formAction}>
@@ -122,7 +120,9 @@ export function LoginForm({
                 />
                 {displayError('email')}
               </Field>
-              <Field data-invalid={!!formState.error?.body?.errors?.['password']}>
+              <Field
+                data-invalid={!!formState.error?.body?.errors?.['password']}
+              >
                 <div className="flex items-center">
                   <FieldLabel htmlFor="password">Password</FieldLabel>
                   <a
@@ -145,7 +145,12 @@ export function LoginForm({
                 {displayError('password')}
               </Field>
               <Field>
-                <LoginButton success={formState.success} />
+                <FormButton
+                  label="Login"
+                  loadingLabel="Signing in.."
+                  successLabel="Authenticated"
+                  success={formState.success}
+                />
                 <FieldDescription className="text-center">
                   Don&apos;t have an account? <a href="#">Sign up</a>
                 </FieldDescription>
@@ -155,9 +160,9 @@ export function LoginForm({
         </CardContent>
       </Card>
       <FieldDescription className="px-6 text-center">
-        By clicking continue, you agree to our <a href="#">Terms of Service</a>{" "}
+        By clicking continue, you agree to our <a href="#">Terms of Service</a>{' '}
         and <a href="#">Privacy Policy</a>.
       </FieldDescription>
     </div>
-  )
+  );
 }

@@ -1,4 +1,4 @@
-import { COMMON_NAV, DASHBOARD, type NavItem, type Role } from "@feature/base/server";
+import { COMMON_NAV, DASHBOARD, type NavItem, type Role } from '@feature/base/server';
 
 /**
  * [dashboard-nav]

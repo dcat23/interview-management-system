@@ -1,10 +1,10 @@
-"use client"
+'use client';
 
 import {
   Avatar,
   AvatarFallback,
   AvatarImage,
-} from "@app/dashboard/components/ui/common/avatar"
+} from '@app/dashboard/components/ui/common/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,25 +13,31 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@app/dashboard/components/ui/common/dropdown-menu"
+} from '@app/dashboard/components/ui/common/dropdown-menu';
 import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
-} from "@app/dashboard/components/ui/common/sidebar"
-import { DotsThreeVerticalIcon, UserCircleIcon, CreditCardIcon, BellIcon, SignOutIcon } from "@phosphor-icons/react"
+} from '@app/dashboard/components/ui/common/sidebar';
+import {
+  BellIcon,
+  CreditCardIcon,
+  DotsThreeVerticalIcon,
+  SignOutIcon,
+  UserCircleIcon,
+} from '@phosphor-icons/react';
 
 export function AppSidebarNavUser({
   user,
 }: {
   user: {
-    name: string
-    email: string
-    image: string
-  }
+    name: string;
+    email: string;
+    image: string;
+  };
 }) {
-  const { isMobile } = useSidebar()
+  const { isMobile } = useSidebar();
 
   return (
     <SidebarMenu>
@@ -57,7 +63,7 @@ export function AppSidebarNavUser({
           </DropdownMenuTrigger>
           <DropdownMenuContent
             className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
-            side={isMobile ? "bottom" : "right"}
+            side={isMobile ? 'bottom' : 'right'}
             align="end"
             sideOffset={4}
           >
@@ -78,30 +84,26 @@ export function AppSidebarNavUser({
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem>
-                <UserCircleIcon
-                />
+                <UserCircleIcon />
                 Account
               </DropdownMenuItem>
               <DropdownMenuItem>
-                <CreditCardIcon
-                />
+                <CreditCardIcon />
                 Billing
               </DropdownMenuItem>
               <DropdownMenuItem>
-                <BellIcon
-                />
+                <BellIcon />
                 Notifications
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem>
-              <SignOutIcon
-              />
+              <SignOutIcon />
               Log out
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>
     </SidebarMenu>
-  )
+  );
 }

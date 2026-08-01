@@ -31,8 +31,8 @@ import {
   subDays,
   subMonths,
   subYears,
-} from "date-fns";
-import { enUS } from "date-fns/locale";
+} from 'date-fns';
+import { enUS } from 'date-fns/locale';
 import {
   AlertCircle,
   Calendar as CalendarIcon,
@@ -43,9 +43,9 @@ import {
   ChevronsRight,
   Clock,
   X,
-} from "lucide-react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import * as React from "react";
+} from 'lucide-react';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
+import * as React from 'react';
 import {
   useCallback,
   useEffect,
@@ -53,22 +53,22 @@ import {
   useMemo,
   useRef,
   useState,
-} from "react";
-import { Button } from "@app/dashboard/components/ui/common/button";
+} from 'react';
+import { Button } from '@app/dashboard/components/ui/common/button';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@app/dashboard/components/ui/common/popover";
-import { cn } from "@app/dashboard/lib/ui/utils";
+} from '@app/dashboard/components/ui/common/popover';
+import { cn } from '@app/dashboard/lib/ui/utils';
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
-export type CalendarMode = "single" | "range" | "multiple";
-export type CalendarView = "days" | "months" | "years" | "time";
-export type CalendarSize = "sm" | "md" | "lg";
+export type CalendarMode = 'single' | 'range' | 'multiple';
+export type CalendarView = 'days' | 'months' | 'years' | 'time';
+export type CalendarSize = 'sm' | 'md' | 'lg';
 
 export interface DateRange {
   from: Date | undefined;
@@ -150,8 +150,8 @@ interface BaseCalendarProps {
   // Accessibility
   id?: string;
   name?: string;
-  "aria-label"?: string;
-  "aria-describedby"?: string;
+  'aria-label'?: string;
+  'aria-describedby'?: string;
 
   // Custom renderers
   renderDay?: (date: Date, defaultRender: React.ReactNode) => React.ReactNode;
@@ -167,7 +167,7 @@ interface BaseCalendarProps {
 
 // Single date selection mode
 interface SingleModeProps extends BaseCalendarProps {
-  mode?: "single";
+  mode?: 'single';
   value?: Date;
   defaultValue?: Date;
   onChange?: (value: Date | undefined) => void;
@@ -175,7 +175,7 @@ interface SingleModeProps extends BaseCalendarProps {
 
 // Range selection mode
 interface RangeModeProps extends BaseCalendarProps {
-  mode: "range";
+  mode: 'range';
   value?: DateRange;
   defaultValue?: DateRange;
   onChange?: (value: DateRange | undefined) => void;
@@ -183,7 +183,7 @@ interface RangeModeProps extends BaseCalendarProps {
 
 // Multiple dates selection mode
 interface MultipleModeProps extends BaseCalendarProps {
-  mode: "multiple";
+  mode: 'multiple';
   value?: Date[];
   defaultValue?: Date[];
   onChange?: (value: Date[]) => void;
@@ -209,97 +209,97 @@ interface InternalCalendarProps extends BaseCalendarProps {
 
 const defaultLocaleStrings: CalendarLocale = {
   weekdays: [
-    "Sunday",
-    "Monday",
-    "Tuesday",
-    "Wednesday",
-    "Thursday",
-    "Friday",
-    "Saturday",
+    'Sunday',
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
   ],
-  weekdaysShort: ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"],
+  weekdaysShort: ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'],
   months: [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
   ],
   monthsShort: [
-    "Jan",
-    "Feb",
-    "Mar",
-    "Apr",
-    "May",
-    "Jun",
-    "Jul",
-    "Aug",
-    "Sep",
-    "Oct",
-    "Nov",
-    "Dec",
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
   ],
-  today: "Today",
-  clear: "Clear",
-  close: "Close",
-  selectTime: "Select time",
-  backToCalendar: "Back to calendar",
-  selected: "selected",
-  weekNumber: "Week",
+  today: 'Today',
+  clear: 'Clear',
+  close: 'Close',
+  selectTime: 'Select time',
+  backToCalendar: 'Back to calendar',
+  selected: 'selected',
+  weekNumber: 'Week',
 };
 
 const defaultPresets: PresetRange[] = [
   {
-    label: "Today",
+    label: 'Today',
     getValue: () => ({
       from: startOfDay(new Date()),
       to: startOfDay(new Date()),
     }),
   },
   {
-    label: "Yesterday",
+    label: 'Yesterday',
     getValue: () => ({
       from: startOfDay(subDays(new Date(), 1)),
       to: startOfDay(subDays(new Date(), 1)),
     }),
   },
   {
-    label: "Last 7 days",
+    label: 'Last 7 days',
     getValue: () => ({
       from: startOfDay(subDays(new Date(), 6)),
       to: startOfDay(new Date()),
     }),
   },
   {
-    label: "Last 30 days",
+    label: 'Last 30 days',
     getValue: () => ({
       from: startOfDay(subDays(new Date(), 29)),
       to: startOfDay(new Date()),
     }),
   },
   {
-    label: "This month",
+    label: 'This month',
     getValue: () => ({
       from: startOfMonth(new Date()),
       to: endOfMonth(new Date()),
     }),
   },
   {
-    label: "Last month",
+    label: 'Last month',
     getValue: () => ({
       from: startOfMonth(subMonths(new Date(), 1)),
       to: endOfMonth(subMonths(new Date(), 1)),
     }),
   },
   {
-    label: "This year",
+    label: 'This year',
     getValue: () => ({
       from: startOfYear(new Date()),
       to: endOfYear(new Date()),
@@ -308,9 +308,9 @@ const defaultPresets: PresetRange[] = [
 ];
 
 const sizeClasses = {
-  sm: { cell: "h-7 w-7 text-xs", header: "text-sm", container: "p-2" },
-  md: { cell: "h-9 w-9 text-sm", header: "text-base", container: "p-4" },
-  lg: { cell: "h-11 w-11 text-base", header: "text-lg", container: "p-5" },
+  sm: { cell: 'h-7 w-7 text-xs', header: 'text-sm', container: 'p-2' },
+  md: { cell: 'h-9 w-9 text-sm', header: 'text-base', container: 'p-4' },
+  lg: { cell: 'h-11 w-11 text-base', header: 'text-lg', container: 'p-5' },
 };
 
 // ============================================================================
@@ -366,7 +366,7 @@ const TimePicker = React.memo(
     onChange,
     use24Hour = true,
     minuteStep = 5,
-    size = "md",
+    size = 'md',
     localeStrings,
     disabled,
   }: {
@@ -427,7 +427,7 @@ const TimePicker = React.memo(
           <input
             type="text"
             inputMode="numeric"
-            value={displayHours.toString().padStart(2, "0")}
+            value={displayHours.toString().padStart(2, '0')}
             onClick={(e) => e.stopPropagation()}
             onChange={(e) => {
               const val = parseInt(e.target.value, 10) || 0;
@@ -449,7 +449,7 @@ const TimePicker = React.memo(
             }}
             disabled={disabled}
             className={cn(
-              "pointer-events-auto w-12 rounded border-none bg-transparent text-center font-bold font-mono focus:outline-none focus:ring-2 focus:ring-primary",
+              'pointer-events-auto w-12 rounded border-none bg-transparent text-center font-bold font-mono focus:outline-none focus:ring-2 focus:ring-primary',
               sizes.header,
             )}
             aria-label="Hours"
@@ -470,7 +470,7 @@ const TimePicker = React.memo(
           </button>
         </div>
 
-        <span className={cn("font-bold text-muted-foreground", sizes.header)}>
+        <span className={cn('font-bold text-muted-foreground', sizes.header)}>
           :
         </span>
 
@@ -492,7 +492,7 @@ const TimePicker = React.memo(
           <input
             type="text"
             inputMode="numeric"
-            value={minutes.toString().padStart(2, "0")}
+            value={minutes.toString().padStart(2, '0')}
             onClick={(e) => e.stopPropagation()}
             onChange={(e) => {
               const val = parseInt(e.target.value, 10) || 0;
@@ -500,7 +500,7 @@ const TimePicker = React.memo(
             }}
             disabled={disabled}
             className={cn(
-              "pointer-events-auto w-12 rounded border-none bg-transparent text-center font-bold font-mono focus:outline-none focus:ring-2 focus:ring-primary",
+              'pointer-events-auto w-12 rounded border-none bg-transparent text-center font-bold font-mono focus:outline-none focus:ring-2 focus:ring-primary',
               sizes.header,
             )}
             aria-label="Minutes"
@@ -532,16 +532,16 @@ const TimePicker = React.memo(
             }}
             disabled={disabled}
             className="pointer-events-auto ml-2 rounded-lg bg-accent px-3 py-2 font-semibold text-sm transition-colors hover:bg-accent/80 disabled:opacity-50"
-            aria-label={`Switch to ${isPM ? "AM" : "PM"}`}
+            aria-label={`Switch to ${isPM ? 'AM' : 'PM'}`}
           >
-            {isPM ? "PM" : "AM"}
+            {isPM ? 'PM' : 'AM'}
           </button>
         )}
       </div>
     );
   },
 );
-TimePicker.displayName = "TimePicker";
+TimePicker.displayName = 'TimePicker';
 
 // Month Picker
 const MonthPicker = React.memo(
@@ -550,7 +550,7 @@ const MonthPicker = React.memo(
     onSelect,
     minDate,
     maxDate,
-    size = "md",
+    size = 'md',
     localeStrings,
     disabled,
     prefersReducedMotion,
@@ -615,11 +615,11 @@ const MonthPicker = React.memo(
               onClick={() => !isDisabled && onSelect(index)}
               disabled={isDisabled}
               className={cn(
-                "rounded-lg px-2 py-3 font-medium text-sm transition-all focus:outline-none focus:ring-2 focus:ring-primary",
+                'rounded-lg px-2 py-3 font-medium text-sm transition-all focus:outline-none focus:ring-2 focus:ring-primary',
                 isSelected
-                  ? "bg-primary text-primary-foreground shadow-md"
-                  : "text-foreground hover:bg-accent",
-                isDisabled && "cursor-not-allowed opacity-30",
+                  ? 'bg-primary text-primary-foreground shadow-md'
+                  : 'text-foreground hover:bg-accent',
+                isDisabled && 'cursor-not-allowed opacity-30',
               )}
             >
               {month}
@@ -630,7 +630,7 @@ const MonthPicker = React.memo(
     );
   },
 );
-MonthPicker.displayName = "MonthPicker";
+MonthPicker.displayName = 'MonthPicker';
 
 // Year Picker
 const YearPicker = React.memo(
@@ -639,7 +639,7 @@ const YearPicker = React.memo(
     onSelect,
     minDate,
     maxDate,
-    size: _size = "md",
+    size: _size = 'md',
     disabled,
     prefersReducedMotion,
   }: {
@@ -719,11 +719,11 @@ const YearPicker = React.memo(
                 onClick={() => !isDisabled && onSelect(year)}
                 disabled={isDisabled}
                 className={cn(
-                  "rounded-lg px-2 py-3 font-medium text-sm transition-all focus:outline-none focus:ring-2 focus:ring-primary",
+                  'rounded-lg px-2 py-3 font-medium text-sm transition-all focus:outline-none focus:ring-2 focus:ring-primary',
                   isSelected
-                    ? "bg-primary text-primary-foreground shadow-md"
-                    : "text-foreground hover:bg-accent",
-                  isDisabled && "cursor-not-allowed opacity-30",
+                    ? 'bg-primary text-primary-foreground shadow-md'
+                    : 'text-foreground hover:bg-accent',
+                  isDisabled && 'cursor-not-allowed opacity-30',
                 )}
               >
                 {year}
@@ -735,7 +735,7 @@ const YearPicker = React.memo(
     );
   },
 );
-YearPicker.displayName = "YearPicker";
+YearPicker.displayName = 'YearPicker';
 
 // Presets Panel
 const PresetsPanel = React.memo(
@@ -774,7 +774,7 @@ const PresetsPanel = React.memo(
     </div>
   ),
 );
-PresetsPanel.displayName = "PresetsPanel";
+PresetsPanel.displayName = 'PresetsPanel';
 
 // ============================================================================
 // MAIN CALENDAR CONTENT
@@ -782,7 +782,7 @@ PresetsPanel.displayName = "PresetsPanel";
 
 const CalendarContent = React.memo(
   ({
-    mode = "single",
+    mode = 'single',
     value,
     onChange,
     minDate,
@@ -804,7 +804,7 @@ const CalendarContent = React.memo(
     presets = defaultPresets,
     highlightedDates = [],
     closeOnSelect = true,
-    size = "md",
+    size = 'md',
     disabled = false,
     readOnly = false,
     localeStrings = defaultLocaleStrings,
@@ -827,20 +827,20 @@ const CalendarContent = React.memo(
     // Get initial date from value
     const getInitialDate = useCallback(() => {
       if (!value) return new Date();
-      if (mode === "single" && value instanceof Date) return value;
-      if (mode === "range") return (value as DateRange).from || new Date();
-      if (mode === "multiple" && Array.isArray(value))
+      if (mode === 'single' && value instanceof Date) return value;
+      if (mode === 'range') return (value as DateRange).from || new Date();
+      if (mode === 'multiple' && Array.isArray(value))
         return value[0] || new Date();
       return new Date();
     }, [value, mode]);
 
     const [currentMonth, setCurrentMonth] = useState(getInitialDate);
     const [direction, setDirection] = useState(0);
-    const [view, setView] = useState<CalendarView>("days");
+    const [view, setView] = useState<CalendarView>('days');
     const [focusedDate, setFocusedDate] = useState<Date | null>(null);
     const [rangeHover, setRangeHover] = useState<Date | null>(null);
     const [rangeStart, setRangeStart] = useState<Date | undefined>(
-      mode === "range" ? (value as DateRange)?.from : undefined,
+      mode === 'range' ? (value as DateRange)?.from : undefined,
     );
 
     // Announce changes for screen readers
@@ -879,11 +879,11 @@ const CalendarContent = React.memo(
 
     // Navigation handlers
     const navigate = useCallback(
-      (delta: number, type: "month" | "year") => {
+      (delta: number, type: 'month' | 'year') => {
         setDirection(delta);
         setCurrentMonth((prev) => {
           const newDate =
-            type === "month"
+            type === 'month'
               ? delta > 0
                 ? addMonths(prev, 1)
                 : subMonths(prev, 1)
@@ -891,10 +891,10 @@ const CalendarContent = React.memo(
                 ? addYears(prev, 1)
                 : subYears(prev, 1);
 
-          if (type === "month") onMonthChange?.(newDate);
+          if (type === 'month') onMonthChange?.(newDate);
           else onYearChange?.(newDate);
 
-          announce(format(newDate, "MMMM yyyy", { locale }));
+          announce(format(newDate, 'MMMM yyyy', { locale }));
           return newDate;
         });
       },
@@ -936,19 +936,19 @@ const CalendarContent = React.memo(
       (day: Date) => {
         if (isDayDisabled(day)) return;
 
-        if (mode === "single") {
+        if (mode === 'single') {
           const dateToSet =
             showTime && value instanceof Date
               ? setMinutes(setHours(day, getHours(value)), getMinutes(value))
               : day;
           onChange?.(dateToSet);
-          announce(`Selected ${format(dateToSet, "PPPP", { locale })}`);
+          announce(`Selected ${format(dateToSet, 'PPPP', { locale })}`);
           if (closeOnSelect && !showTime) onClose?.();
-        } else if (mode === "range") {
+        } else if (mode === 'range') {
           if (!rangeStart) {
             setRangeStart(day);
             onChange?.({ from: day, to: undefined });
-            announce(`Range start: ${format(day, "PP", { locale })}`);
+            announce(`Range start: ${format(day, 'PP', { locale })}`);
           } else {
             const range = isBefore(day, rangeStart)
               ? { from: day, to: rangeStart }
@@ -956,11 +956,11 @@ const CalendarContent = React.memo(
             onChange?.(range);
             setRangeStart(undefined);
             announce(
-              `Range: ${format(range.from, "PP", { locale })} to ${format(range.to, "PP", { locale })}`,
+              `Range: ${format(range.from, 'PP', { locale })} to ${format(range.to, 'PP', { locale })}`,
             );
             if (closeOnSelect) onClose?.();
           }
-        } else if (mode === "multiple") {
+        } else if (mode === 'multiple') {
           const currentDates = (value as Date[]) || [];
           const exists = currentDates.some((d) => isSameDay(d, day));
           const newDates = exists
@@ -968,7 +968,7 @@ const CalendarContent = React.memo(
             : [...currentDates, day];
           onChange?.(newDates);
           announce(
-            `${exists ? "Deselected" : "Selected"} ${format(day, "PP", { locale })}. ${newDates.length} dates selected.`,
+            `${exists ? 'Deselected' : 'Selected'} ${format(day, 'PP', { locale })}. ${newDates.length} dates selected.`,
           );
         }
       },
@@ -989,16 +989,16 @@ const CalendarContent = React.memo(
     // Selection state checks
     const isDaySelected = useCallback(
       (day: Date) => {
-        if (mode === "single" && value instanceof Date)
+        if (mode === 'single' && value instanceof Date)
           return isSameDay(day, value);
-        if (mode === "range" && value) {
+        if (mode === 'range' && value) {
           const range = value as DateRange;
           return (
             (range.from && isSameDay(day, range.from)) ||
             (range.to && isSameDay(day, range.to))
           );
         }
-        if (mode === "multiple" && Array.isArray(value)) {
+        if (mode === 'multiple' && Array.isArray(value)) {
           return value.some((d) => isSameDay(d, day));
         }
         return false;
@@ -1008,7 +1008,7 @@ const CalendarContent = React.memo(
 
     const isDayInRange = useCallback(
       (day: Date) => {
-        if (mode !== "range") return false;
+        if (mode !== 'range') return false;
         const range = value as DateRange | undefined;
 
         // Completed range
@@ -1050,7 +1050,7 @@ const CalendarContent = React.memo(
     // Keyboard navigation
     useEffect(() => {
       const handleKeyDown = (e: KeyboardEvent) => {
-        if (view !== "days" || disabled || readOnly) return;
+        if (view !== 'days' || disabled || readOnly) return;
 
         const baseDate =
           focusedDate || (value instanceof Date ? value : new Date());
@@ -1058,42 +1058,42 @@ const CalendarContent = React.memo(
         let handled = true;
 
         switch (e.key) {
-          case "ArrowLeft":
+          case 'ArrowLeft':
             newDate = addDays(baseDate, -1);
             break;
-          case "ArrowRight":
+          case 'ArrowRight':
             newDate = addDays(baseDate, 1);
             break;
-          case "ArrowUp":
+          case 'ArrowUp':
             newDate = addDays(baseDate, -7);
             break;
-          case "ArrowDown":
+          case 'ArrowDown':
             newDate = addDays(baseDate, 7);
             break;
-          case "Home":
+          case 'Home':
             newDate = startOfMonth(baseDate);
             break;
-          case "End":
+          case 'End':
             newDate = endOfMonth(baseDate);
             break;
-          case "PageUp":
+          case 'PageUp':
             newDate = e.shiftKey
               ? subYears(baseDate, 1)
               : subMonths(baseDate, 1);
             break;
-          case "PageDown":
+          case 'PageDown':
             newDate = e.shiftKey
               ? addYears(baseDate, 1)
               : addMonths(baseDate, 1);
             break;
-          case "Enter":
-          case " ":
+          case 'Enter':
+          case ' ':
             if (focusedDate && !isDayDisabled(focusedDate)) {
               handleSelectDate(focusedDate);
             }
             e.preventDefault();
             return;
-          case "Escape":
+          case 'Escape':
             onClose?.();
             e.preventDefault();
             return;
@@ -1108,14 +1108,14 @@ const CalendarContent = React.memo(
             setDirection(isAfter(newDate, currentMonth) ? 1 : -1);
             setCurrentMonth(startOfMonth(newDate));
           }
-          announce(format(newDate, "EEEE, MMMM d, yyyy", { locale }));
+          announce(format(newDate, 'EEEE, MMMM d, yyyy', { locale }));
         }
       };
 
       const el = calendarRef.current;
       if (el) {
-        el.addEventListener("keydown", handleKeyDown);
-        return () => el.removeEventListener("keydown", handleKeyDown);
+        el.addEventListener('keydown', handleKeyDown);
+        return () => el.removeEventListener('keydown', handleKeyDown);
       }
     }, [
       focusedDate,
@@ -1135,7 +1135,7 @@ const CalendarContent = React.memo(
     const handleClear = useCallback(() => {
       onChange?.(undefined);
       setRangeStart(undefined);
-      announce("Selection cleared");
+      announce('Selection cleared');
     }, [onChange, announce]);
 
     const handlePresetSelect = useCallback(
@@ -1143,7 +1143,7 @@ const CalendarContent = React.memo(
         onChange?.(range);
         if (range.from) setCurrentMonth(range.from);
         announce(
-          `Selected: ${range.from && range.to ? `${format(range.from, "PP")} to ${format(range.to, "PP")}` : "preset"}`,
+          `Selected: ${range.from && range.to ? `${format(range.from, 'PP')} to ${format(range.to, 'PP')}` : 'preset'}`,
         );
         if (closeOnSelect) onClose?.();
       },
@@ -1154,7 +1154,7 @@ const CalendarContent = React.memo(
       (month: number) => {
         const newDate = setMonth(currentMonth, month);
         setCurrentMonth(newDate);
-        handleViewChange("days");
+        handleViewChange('days');
         onMonthChange?.(newDate);
       },
       [currentMonth, handleViewChange, onMonthChange],
@@ -1164,7 +1164,7 @@ const CalendarContent = React.memo(
       (year: number) => {
         const newDate = setYear(currentMonth, year);
         setCurrentMonth(newDate);
-        handleViewChange("months");
+        handleViewChange('months');
         onYearChange?.(newDate);
       },
       [currentMonth, handleViewChange, onYearChange],
@@ -1172,7 +1172,7 @@ const CalendarContent = React.memo(
 
     const handleTimeChange = useCallback(
       (newDate: Date) => {
-        if (mode === "single") {
+        if (mode === 'single') {
           // Ensure we have a valid date, use today if needed
           const baseDate =
             value instanceof Date ? value : startOfDay(new Date());
@@ -1182,7 +1182,7 @@ const CalendarContent = React.memo(
           );
           onChange?.(updatedDate);
           announce(
-            `Time set to ${format(updatedDate, use24Hour ? "HH:mm" : "hh:mm a")}`,
+            `Time set to ${format(updatedDate, use24Hour ? 'HH:mm' : 'hh:mm a')}`,
           );
         }
       },
@@ -1193,7 +1193,7 @@ const CalendarContent = React.memo(
       const today = new Date();
       setDirection(isAfter(today, currentMonth) ? 1 : -1);
       setCurrentMonth(today);
-      if (mode === "single" && !isDayDisabled(today)) {
+      if (mode === 'single' && !isDayDisabled(today)) {
         handleSelectDate(today);
       }
     }, [currentMonth, mode, isDayDisabled, handleSelectDate]);
@@ -1216,8 +1216,8 @@ const CalendarContent = React.memo(
             role="gridcell"
             aria-selected={isSelected}
             aria-disabled={isDisabled}
-            aria-current={isTodayDate ? "date" : undefined}
-            aria-label={`${format(day, "EEEE, MMMM d, yyyy", { locale })}${isSelected ? ", selected" : ""}${isTodayDate ? ", today" : ""}${highlight ? `, ${highlight.label}` : ""}`}
+            aria-current={isTodayDate ? 'date' : undefined}
+            aria-label={`${format(day, 'EEEE, MMMM d, yyyy', { locale })}${isSelected ? ', selected' : ''}${isTodayDate ? ', today' : ''}${highlight ? `, ${highlight.label}` : ''}`}
             tabIndex={isFocused ? 0 : -1}
             initial={prefersReducedMotion ? false : { opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -1233,7 +1233,7 @@ const CalendarContent = React.memo(
             }
             onClick={() => handleSelectDate(day)}
             onMouseEnter={() => {
-              if (mode === "range" && rangeStart && !isDisabled)
+              if (mode === 'range' && rangeStart && !isDisabled)
                 setRangeHover(day);
             }}
             onMouseLeave={() => setRangeHover(null)}
@@ -1241,22 +1241,22 @@ const CalendarContent = React.memo(
             disabled={isDisabled}
             className={cn(
               sizes.cell,
-              "relative flex items-center justify-center rounded-lg font-medium outline-none transition-all",
-              !isCurrentMonth && "text-muted-foreground/40",
-              isDisabled && "cursor-not-allowed opacity-25",
+              'relative flex items-center justify-center rounded-lg font-medium outline-none transition-all',
+              !isCurrentMonth && 'text-muted-foreground/40',
+              isDisabled && 'cursor-not-allowed opacity-25',
               !isSelected &&
                 isCurrentMonth &&
                 !inRange &&
-                "text-foreground hover:bg-accent",
-              isSelected && "bg-primary text-primary-foreground shadow-sm",
+                'text-foreground hover:bg-accent',
+              isSelected && 'bg-primary text-primary-foreground shadow-sm',
               isTodayDate &&
                 !isSelected &&
-                "ring-2 ring-primary ring-offset-2 ring-offset-background",
-              inRange && "rounded-none bg-primary/15",
-              isFocused && "ring-2 ring-ring ring-offset-1",
+                'ring-2 ring-primary ring-offset-2 ring-offset-background',
+              inRange && 'rounded-none bg-primary/15',
+              isFocused && 'ring-2 ring-ring ring-offset-1',
             )}
           >
-            <span className="relative z-10">{format(day, "d")}</span>
+            <span className="relative z-10">{format(day, 'd')}</span>
 
             {/* Today indicator */}
             {isTodayDate && !isSelected && (
@@ -1268,7 +1268,7 @@ const CalendarContent = React.memo(
               <span
                 className="absolute top-0.5 right-0.5 h-1.5 w-1.5 rounded-full"
                 style={{
-                  backgroundColor: highlight.color || "hsl(var(--primary))",
+                  backgroundColor: highlight.color || 'hsl(var(--primary))',
                 }}
                 title={highlight.label}
               />
@@ -1303,14 +1303,14 @@ const CalendarContent = React.memo(
           <div
             className="space-y-1"
             role="grid"
-            aria-label={format(monthDate, "MMMM yyyy", { locale })}
+            aria-label={format(monthDate, 'MMMM yyyy', { locale })}
           >
             {isSecondary && (
               <div className="mb-2 flex h-8 items-center justify-center">
                 <span
-                  className={cn("font-semibold text-foreground", sizes.header)}
+                  className={cn('font-semibold text-foreground', sizes.header)}
                 >
-                  {format(monthDate, "MMMM yyyy", { locale })}
+                  {format(monthDate, 'MMMM yyyy', { locale })}
                 </span>
               </div>
             )}
@@ -1318,8 +1318,8 @@ const CalendarContent = React.memo(
             {/* Week days header */}
             <div
               className={cn(
-                "grid gap-0.5",
-                showWeekNumbers ? "grid-cols-8" : "grid-cols-7",
+                'grid gap-0.5',
+                showWeekNumbers ? 'grid-cols-8' : 'grid-cols-7',
               )}
               role="row"
               tabIndex={-1}
@@ -1328,7 +1328,7 @@ const CalendarContent = React.memo(
                 <div
                   className={cn(
                     sizes.cell,
-                    "flex items-center justify-center font-medium text-muted-foreground text-xs",
+                    'flex items-center justify-center font-medium text-muted-foreground text-xs',
                   )}
                   role="columnheader"
                   tabIndex={-1}
@@ -1343,7 +1343,7 @@ const CalendarContent = React.memo(
                   aria-label={localeStrings.weekdays[(weekStartsOn + i) % 7]}
                   className={cn(
                     sizes.cell,
-                    "flex items-center justify-center font-semibold text-muted-foreground text-xs",
+                    'flex items-center justify-center font-semibold text-muted-foreground text-xs',
                   )}
                   tabIndex={-1}
                 >
@@ -1355,16 +1355,16 @@ const CalendarContent = React.memo(
             {/* Days grid */}
             <AnimatePresence mode="wait" custom={direction}>
               <motion.div
-                key={format(monthDate, "yyyy-MM")}
+                key={format(monthDate, 'yyyy-MM')}
                 custom={direction}
                 variants={prefersReducedMotion ? undefined : slideVariants}
-                initial={isSecondary || prefersReducedMotion ? false : "enter"}
+                initial={isSecondary || prefersReducedMotion ? false : 'enter'}
                 animate="center"
-                exit={isSecondary || prefersReducedMotion ? undefined : "exit"}
+                exit={isSecondary || prefersReducedMotion ? undefined : 'exit'}
                 transition={{ duration: prefersReducedMotion ? 0 : 0.2 }}
                 className={cn(
-                  "grid gap-0.5",
-                  showWeekNumbers ? "grid-cols-8" : "grid-cols-7",
+                  'grid gap-0.5',
+                  showWeekNumbers ? 'grid-cols-8' : 'grid-cols-7',
                 )}
                 role="rowgroup"
               >
@@ -1376,12 +1376,12 @@ const CalendarContent = React.memo(
                         <div
                           className={cn(
                             sizes.cell,
-                            "flex items-center justify-center text-muted-foreground text-xs",
+                            'flex items-center justify-center text-muted-foreground text-xs',
                           )}
                           role="rowheader"
                           tabIndex={-1}
                         >
-                          {format(day, "w")}
+                          {format(day, 'w')}
                         </div>
                       )}
                       {renderDayCell(day, monthDate, index)}
@@ -1409,10 +1409,10 @@ const CalendarContent = React.memo(
 
     const calendarWidth =
       monthsToShow === 1
-        ? "w-auto"
+        ? 'w-auto'
         : monthsToShow === 2
-          ? "min-w-[580px]"
-          : "min-w-[860px]";
+          ? 'min-w-[580px]'
+          : 'min-w-[860px]';
 
     return (
       <motion.div
@@ -1427,11 +1427,11 @@ const CalendarContent = React.memo(
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ duration: prefersReducedMotion ? 0 : 0.2 }}
         className={cn(
-          "pointer-events-auto overflow-hidden rounded-xl border bg-card shadow-black/10 shadow-xl focus:outline-none focus:ring-2 focus:ring-primary",
+          'pointer-events-auto overflow-hidden rounded-xl border bg-card shadow-black/10 shadow-xl focus:outline-none focus:ring-2 focus:ring-primary',
           sizes.container,
           calendarWidth,
-          showPresets && mode === "range" && "flex",
-          disabled && "pointer-events-none opacity-50",
+          showPresets && mode === 'range' && 'flex',
+          disabled && 'pointer-events-none opacity-50',
         )}
       >
         {/* Screen reader announcer */}
@@ -1444,7 +1444,7 @@ const CalendarContent = React.memo(
         />
 
         {/* Presets panel */}
-        {showPresets && mode === "range" && (
+        {showPresets && mode === 'range' && (
           <PresetsPanel
             presets={presets}
             onSelect={handlePresetSelect}
@@ -1458,7 +1458,7 @@ const CalendarContent = React.memo(
             <div className="flex items-center gap-0.5">
               <button
                 type="button"
-                onClick={() => navigate(-1, "year")}
+                onClick={() => navigate(-1, 'year')}
                 disabled={disabled}
                 className="rounded-lg p-1.5 transition-colors hover:bg-accent disabled:opacity-50"
                 aria-label="Previous year"
@@ -1467,7 +1467,7 @@ const CalendarContent = React.memo(
               </button>
               <button
                 type="button"
-                onClick={() => navigate(-1, "month")}
+                onClick={() => navigate(-1, 'month')}
                 disabled={disabled}
                 className="rounded-lg p-1.5 transition-colors hover:bg-accent disabled:opacity-50"
                 aria-label="Previous month"
@@ -1480,37 +1480,37 @@ const CalendarContent = React.memo(
               <button
                 type="button"
                 onClick={() =>
-                  handleViewChange(view === "months" ? "days" : "months")
+                  handleViewChange(view === 'months' ? 'days' : 'months')
                 }
                 disabled={disabled}
                 className={cn(
-                  "rounded-lg px-2 py-1 font-bold transition-colors hover:bg-accent",
+                  'rounded-lg px-2 py-1 font-bold transition-colors hover:bg-accent',
                   sizes.header,
                 )}
-                aria-label={`Select month, currently ${format(currentMonth, "MMMM", { locale })}`}
+                aria-label={`Select month, currently ${format(currentMonth, 'MMMM', { locale })}`}
               >
-                {format(currentMonth, "MMMM", { locale })}
+                {format(currentMonth, 'MMMM', { locale })}
               </button>
               <button
                 type="button"
                 onClick={() =>
-                  handleViewChange(view === "years" ? "days" : "years")
+                  handleViewChange(view === 'years' ? 'days' : 'years')
                 }
                 disabled={disabled}
                 className={cn(
-                  "rounded-lg px-2 py-1 font-bold transition-colors hover:bg-accent",
+                  'rounded-lg px-2 py-1 font-bold transition-colors hover:bg-accent',
                   sizes.header,
                 )}
-                aria-label={`Select year, currently ${format(currentMonth, "yyyy")}`}
+                aria-label={`Select year, currently ${format(currentMonth, 'yyyy')}`}
               >
-                {format(currentMonth, "yyyy")}
+                {format(currentMonth, 'yyyy')}
               </button>
             </div>
 
             <div className="flex items-center gap-0.5">
               <button
                 type="button"
-                onClick={() => navigate(1, "month")}
+                onClick={() => navigate(1, 'month')}
                 disabled={disabled}
                 className="rounded-lg p-1.5 transition-colors hover:bg-accent disabled:opacity-50"
                 aria-label="Next month"
@@ -1519,7 +1519,7 @@ const CalendarContent = React.memo(
               </button>
               <button
                 type="button"
-                onClick={() => navigate(1, "year")}
+                onClick={() => navigate(1, 'year')}
                 disabled={disabled}
                 className="rounded-lg p-1.5 transition-colors hover:bg-accent disabled:opacity-50"
                 aria-label="Next year"
@@ -1531,7 +1531,7 @@ const CalendarContent = React.memo(
 
           {/* View content */}
           <AnimatePresence mode="wait">
-            {view === "days" && (
+            {view === 'days' && (
               <motion.div
                 key="days"
                 {...(prefersReducedMotion ? {} : fadeScale)}
@@ -1552,7 +1552,7 @@ const CalendarContent = React.memo(
                 )}
               </motion.div>
             )}
-            {view === "months" && (
+            {view === 'months' && (
               <MonthPicker
                 key="months"
                 currentMonth={currentMonth}
@@ -1565,7 +1565,7 @@ const CalendarContent = React.memo(
                 prefersReducedMotion={prefersReducedMotion}
               />
             )}
-            {view === "years" && (
+            {view === 'years' && (
               <YearPicker
                 key="years"
                 currentYear={getYear(currentMonth)}
@@ -1577,7 +1577,7 @@ const CalendarContent = React.memo(
                 prefersReducedMotion={prefersReducedMotion}
               />
             )}
-            {view === "time" && mode === "single" && (
+            {view === 'time' && mode === 'single' && (
               <TimePicker
                 key="time"
                 value={value instanceof Date ? value : new Date()}
@@ -1592,7 +1592,7 @@ const CalendarContent = React.memo(
           </AnimatePresence>
 
           {/* Time toggle */}
-          {showTime && mode === "single" && view === "days" && (
+          {showTime && mode === 'single' && view === 'days' && (
             <button
               type="button"
               onClick={(e) => {
@@ -1603,25 +1603,25 @@ const CalendarContent = React.memo(
                   const today = new Date();
                   onChange?.(today);
                 }
-                handleViewChange("time");
+                handleViewChange('time');
               }}
               disabled={disabled}
               className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg bg-accent/50 py-2 font-medium text-sm transition-colors hover:bg-accent disabled:opacity-50"
             >
               <Clock className="h-4 w-4" />
               {value instanceof Date
-                ? format(value, use24Hour ? "HH:mm" : "hh:mm a")
+                ? format(value, use24Hour ? 'HH:mm' : 'hh:mm a')
                 : localeStrings.selectTime}
             </button>
           )}
 
-          {view === "time" && (
+          {view === 'time' && (
             <button
               type="button"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                handleViewChange("days");
+                handleViewChange('days');
               }}
               disabled={disabled}
               className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg bg-accent/50 py-2 font-medium text-sm transition-colors hover:bg-accent disabled:opacity-50"
@@ -1634,8 +1634,8 @@ const CalendarContent = React.memo(
           {/* Footer */}
           {(showTodayButton ||
             showClearButton ||
-            (mode === "multiple" && value)) &&
-            view === "days" && (
+            (mode === 'multiple' && value)) &&
+            view === 'days' && (
               <div className="mt-4 flex items-center justify-between border-border/50 border-t pt-3">
                 <div className="flex items-center gap-2">
                   {showTodayButton && (
@@ -1649,7 +1649,7 @@ const CalendarContent = React.memo(
                       {localeStrings.today}
                     </button>
                   )}
-                  {mode === "multiple" &&
+                  {mode === 'multiple' &&
                     Array.isArray(value) &&
                     value.length > 0 && (
                       <span className="text-muted-foreground text-xs">
@@ -1675,25 +1675,25 @@ const CalendarContent = React.memo(
     );
   },
 );
-CalendarContent.displayName = "CalendarContent";
+CalendarContent.displayName = 'CalendarContent';
 
 // ============================================================================
 // POPOVER CALENDAR
 // ============================================================================
 
 export function AnimatedCalendar({
-  mode = "single",
+  mode = 'single',
   value: controlledValue,
   defaultValue,
   onChange,
-  placeholder = "Pick a date",
+  placeholder = 'Pick a date',
   disabled = false,
   readOnly = false,
   required = false,
   error = false,
   errorMessage,
   className,
-  size = "md",
+  size = 'md',
   formatStr,
   showTime,
   use24Hour = true,
@@ -1705,8 +1705,8 @@ export function AnimatedCalendar({
   onFocus,
   id,
   name,
-  "aria-label": ariaLabel,
-  "aria-describedby": ariaDescribedBy,
+  'aria-label': ariaLabel,
+  'aria-describedby': ariaDescribedBy,
   ...props
 }: AnimatedCalendarProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -1726,7 +1726,7 @@ export function AnimatedCalendar({
   type InternalValue = Date | DateRange | Date[] | undefined;
   const [value, setValue] = useControllableState<InternalValue>(
     controlledValue as InternalValue,
-    (defaultValue ?? (mode === "multiple" ? [] : undefined)) as InternalValue,
+    (defaultValue ?? (mode === 'multiple' ? [] : undefined)) as InternalValue,
     onChange as ((value: InternalValue) => void) | undefined,
   );
 
@@ -1747,35 +1747,35 @@ export function AnimatedCalendar({
   const getDisplayValue = useMemo(() => {
     if (!value) return placeholder;
 
-    if (mode === "single" && value instanceof Date) {
+    if (mode === 'single' && value instanceof Date) {
       const fmt =
         formatStr ||
-        (showTime ? (use24Hour ? "PPP HH:mm" : "PPP hh:mm a") : "PPP");
+        (showTime ? (use24Hour ? 'PPP HH:mm' : 'PPP hh:mm a') : 'PPP');
       return format(value, fmt, { locale });
     }
-    if (mode === "range") {
+    if (mode === 'range') {
       const range = value as DateRange;
       if (range.from && range.to) {
-        return `${format(range.from, "MMM d", { locale })} – ${format(range.to, "MMM d, yyyy", { locale })}`;
+        return `${format(range.from, 'MMM d', { locale })} – ${format(range.to, 'MMM d, yyyy', { locale })}`;
       }
       if (range.from)
-        return `${format(range.from, "MMM d, yyyy", { locale })} – ...`;
+        return `${format(range.from, 'MMM d, yyyy', { locale })} – ...`;
       return placeholder;
     }
-    if (mode === "multiple" && Array.isArray(value)) {
+    if (mode === 'multiple' && Array.isArray(value)) {
       if (value.length === 0) return placeholder;
       const firstDate = value[0];
       if (value.length === 1 && firstDate)
-        return format(firstDate, "PPP", { locale });
+        return format(firstDate, 'PPP', { locale });
       return `${value.length} dates selected`;
     }
     return placeholder;
   }, [value, mode, placeholder, formatStr, showTime, use24Hour, locale]);
 
   const sizeClasses = {
-    sm: "w-[240px] h-8 text-xs",
-    md: "w-[280px] h-10 text-sm",
-    lg: "w-[320px] h-12 text-base",
+    sm: 'w-[240px] h-8 text-xs',
+    md: 'w-[280px] h-10 text-sm',
+    lg: 'w-[320px] h-12 text-base',
   };
 
   return (
@@ -1798,9 +1798,9 @@ export function AnimatedCalendar({
             aria-haspopup="dialog"
             className={cn(
               sizeClasses[size],
-              "justify-start text-left font-normal",
-              !value && "text-muted-foreground",
-              error && "border-destructive focus:ring-destructive",
+              'justify-start text-left font-normal',
+              !value && 'text-muted-foreground',
+              error && 'border-destructive focus:ring-destructive',
               className,
             )}
           >
@@ -1866,7 +1866,7 @@ export function AnimatedCalendarStandalone({
   ...props
 }: Omit<
   AnimatedCalendarProps,
-  "placeholder" | "onOpen" | "onClose" | "onBlur" | "onFocus"
+  'placeholder' | 'onOpen' | 'onClose' | 'onBlur' | 'onFocus'
 >) {
   const localeStrings = useMemo(
     () => ({

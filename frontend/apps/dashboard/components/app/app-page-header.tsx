@@ -1,4 +1,4 @@
-import { Fragment, ReactNode } from "react"
+import { Fragment, ReactNode } from 'react';
 
 import {
   Breadcrumb,
@@ -7,25 +7,34 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from "@app/dashboard/components/ui/common/breadcrumb"
-import { Badge, badgeVariants } from '@app/dashboard/components/ui/common/badge';
+} from '@app/dashboard/components/ui/common/breadcrumb';
+import {
+  Badge,
+  badgeVariants,
+} from '@app/dashboard/components/ui/common/badge';
 import type { VariantProps } from 'class-variance-authority';
 
 interface Crumb {
-  label: string
-  href: string
+  label: string;
+  href: string;
 }
 
 interface Props {
   title?: string;
   badge?: string;
-  badgeVariant?: VariantProps<typeof badgeVariants>;
+  badgeVariant?: VariantProps<typeof badgeVariants>['variant'];
   breadcrumbs: Crumb[];
   children?: ReactNode;
 }
 
-export default function AppPageHeader({ title, breadcrumbs, badge, badgeVariant = "secondary", children }: Props) {
-  const heading = title ?? breadcrumbs[breadcrumbs.length - 1]?.label
+export default function AppPageHeader({
+  title,
+  breadcrumbs,
+  badge,
+  badgeVariant = 'secondary',
+  children,
+}: Props) {
+  const heading = title ?? breadcrumbs[breadcrumbs.length - 1]?.label;
 
   return (
     <section className="w-full flex-col justify-start gap-6 bg-background text-foreground">

@@ -1,108 +1,108 @@
-"use client"
+'use client';
 
-import * as React from "react"
-import { AnimatePresence, motion, useReducedMotion } from "motion/react"
-import { Check, X } from "lucide-react"
+import * as React from 'react';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
+import { Check, X } from 'lucide-react';
 
-import { Button } from "@app/dashboard/components/ui/common/button"
-import { cn } from "@app/dashboard/lib/ui/utils"
+import { Button } from '@app/dashboard/components/ui/common/button';
+import { cn } from '@app/dashboard/lib/ui/utils';
 
-type AnimatedButtonStatus = "idle" | "loading" | "success"
+type AnimatedButtonStatus = 'idle' | 'loading' | 'success';
 
 type AnimatedButtonProps = {
-  label?: string
-  loadingLabel?: string
-  successLabel?: string
-  icon?: React.ReactNode
-  hoverIcon?: React.ReactNode
-  iconOnlyOnHover?: boolean
-  successIcon?: React.ReactNode
-  tone?: "default" | "destructive"
-  onAction?: () => void | Promise<void>
-  disabled?: boolean
-  resetDelay?: number
-  className?: string
-  variant?: "default" | "outline"
-  minWidth?: string
-}
+  label?: string;
+  loadingLabel?: string;
+  successLabel?: string;
+  icon?: React.ReactNode;
+  hoverIcon?: React.ReactNode;
+  iconOnlyOnHover?: boolean;
+  successIcon?: React.ReactNode;
+  tone?: 'default' | 'destructive';
+  onAction?: () => void | Promise<void>;
+  disabled?: boolean;
+  resetDelay?: number;
+  className?: string;
+  variant?: 'default' | 'outline';
+  minWidth?: string;
+};
 
 export function AnimatedButton({
-  label = "Confirm",
-  loadingLabel = "Working",
-  successLabel = "Done",
+  label = 'Confirm',
+  loadingLabel = 'Working',
+  successLabel = 'Done',
   icon,
   hoverIcon,
   iconOnlyOnHover = false,
   successIcon,
-  tone = "default",
+  tone = 'default',
   onAction,
   disabled = false,
   resetDelay = 1100,
   className,
   variant,
-  minWidth = "min-w-28",
+  minWidth = 'min-w-28',
 }: AnimatedButtonProps) {
-  const reduceMotion = useReducedMotion()
-  const resetTimerRef = React.useRef<number | null>(null)
-  const [status, setStatus] = React.useState<AnimatedButtonStatus>("idle")
+  const reduceMotion = useReducedMotion();
+  const resetTimerRef = React.useRef<number | null>(null);
+  const [status, setStatus] = React.useState<AnimatedButtonStatus>('idle');
 
   React.useEffect(() => {
     return () => {
       if (resetTimerRef.current) {
-        window.clearTimeout(resetTimerRef.current)
+        window.clearTimeout(resetTimerRef.current);
       }
-    }
-  }, [])
+    };
+  }, []);
 
   async function handleClick() {
-    if (disabled || status !== "idle") return
+    if (disabled || status !== 'idle') return;
 
-    setStatus("loading")
+    setStatus('loading');
 
     if (onAction) {
-      await onAction()
+      await onAction();
     } else {
-      await new Promise((resolve) => window.setTimeout(resolve, 850))
+      await new Promise((resolve) => window.setTimeout(resolve, 850));
     }
 
-    setStatus("success")
+    setStatus('success');
     resetTimerRef.current = window.setTimeout(
       () => {
-        setStatus("idle")
+        setStatus('idle');
       },
-      reduceMotion ? 0 : resetDelay
-    )
+      reduceMotion ? 0 : resetDelay,
+    );
   }
 
   const contentTransition = reduceMotion
     ? { duration: 0 }
-    : { duration: 0.16, ease: "easeOut" as const }
+    : { duration: 0.16, ease: 'easeOut' as const };
   const currentIcon =
-    status === "idle"
+    status === 'idle'
       ? icon
-      : status === "loading"
-        ? "loading"
-        : (successIcon ?? <Check className="size-3.5" />)
-  const showIconSlot = Boolean(currentIcon)
+      : status === 'loading'
+        ? 'loading'
+        : (successIcon ?? <Check className="size-3.5" />);
+  const showIconSlot = Boolean(currentIcon);
   const effectiveVariant =
-    variant ?? (tone === "destructive" ? "destructive" : "default")
+    variant ?? (tone === 'destructive' ? 'destructive' : 'default');
 
   return (
     <Button
       type="button"
       variant={effectiveVariant}
-      disabled={disabled || status !== "idle"}
+      disabled={disabled || status !== 'idle'}
       onClick={handleClick}
       className={cn(
-        "group/animated-button relative overflow-hidden transition-colors",
+        'group/animated-button relative overflow-hidden transition-colors',
         minWidth,
-        status === "success" &&
-          tone !== "destructive" &&
-          "bg-emerald-600 text-white hover:bg-emerald-600",
-        className
+        status === 'success' &&
+          tone !== 'destructive' &&
+          'bg-emerald-600 text-white hover:bg-emerald-600',
+        className,
       )}
     >
-      {status === "idle" && hoverIcon && !icon ? (
+      {status === 'idle' && hoverIcon && !icon ? (
         <>
           <span className="transition-all duration-150 group-hover/animated-button:translate-y-1 group-hover/animated-button:opacity-0 group-hover/animated-button:blur-xs">
             {label}
@@ -111,7 +111,7 @@ export function AnimatedButton({
             {hoverIcon}
           </span>
         </>
-      ) : status === "idle" && icon && iconOnlyOnHover ? (
+      ) : status === 'idle' && icon && iconOnlyOnHover ? (
         <>
           <span className="inline-flex items-center gap-1.5 transition-all duration-150 group-hover/animated-button:translate-y-1 group-hover/animated-button:opacity-0 group-hover/animated-button:blur-xs">
             <span className="inline-flex size-3.5 shrink-0 items-center justify-center">
@@ -132,17 +132,17 @@ export function AnimatedButton({
             exit={{ opacity: 0 }}
             transition={contentTransition}
             className={cn(
-              "inline-flex items-center",
-              showIconSlot && "gap-1.5"
+              'inline-flex items-center',
+              showIconSlot && 'gap-1.5',
             )}
           >
             {showIconSlot ? (
               <span className="inline-flex size-3.5 shrink-0 items-center justify-center">
-                {currentIcon === "loading" ? (
+                {currentIcon === 'loading' ? (
                   <span
                     className={cn(
-                      "inline-flex size-3.5 items-center justify-center rounded-full border-2 border-current border-r-transparent",
-                      !reduceMotion && "animate-spin"
+                      'inline-flex size-3.5 items-center justify-center rounded-full border-2 border-current border-r-transparent',
+                      !reduceMotion && 'animate-spin',
                     )}
                     aria-hidden="true"
                   />
@@ -151,50 +151,50 @@ export function AnimatedButton({
                 )}
               </span>
             ) : null}
-            {status === "idle"
+            {status === 'idle'
               ? label
-              : status === "loading"
+              : status === 'loading'
                 ? loadingLabel
                 : successLabel}
           </motion.span>
         </AnimatePresence>
       )}
     </Button>
-  )
+  );
 }
 
 export function AnimatedButtons({
-  confirmLabel = "Confirm",
-  cancelLabel = "Cancel",
-  loadingLabel = "Working",
-  successLabel = "Done",
+  confirmLabel = 'Confirm',
+  cancelLabel = 'Cancel',
+  loadingLabel = 'Working',
+  successLabel = 'Done',
   confirmIcon,
   successIcon,
-  tone = "default",
+  tone = 'default',
   onAction,
   onCancel,
   disabled = false,
   resetDelay = 1100,
   className,
 }: {
-  confirmLabel?: string
-  cancelLabel?: string
-  loadingLabel?: string
-  successLabel?: string
-  confirmIcon?: React.ReactNode
-  successIcon?: React.ReactNode
-  tone?: "default" | "destructive"
-  onAction?: () => void | Promise<void>
-  onCancel?: () => void
-  disabled?: boolean
-  resetDelay?: number
-  className?: string
+  confirmLabel?: string;
+  cancelLabel?: string;
+  loadingLabel?: string;
+  successLabel?: string;
+  confirmIcon?: React.ReactNode;
+  successIcon?: React.ReactNode;
+  tone?: 'default' | 'destructive';
+  onAction?: () => void | Promise<void>;
+  onCancel?: () => void;
+  disabled?: boolean;
+  resetDelay?: number;
+  className?: string;
 }) {
   return (
     <div
       className={cn(
-        "inline-flex items-center gap-2 rounded-md border bg-card p-1.5 shadow-sm",
-        className
+        'inline-flex items-center gap-2 rounded-md border bg-card p-1.5 shadow-sm',
+        className,
       )}
     >
       <Button
@@ -223,5 +223,5 @@ export function AnimatedButtons({
         resetDelay={resetDelay}
       />
     </div>
-  )
+  );
 }

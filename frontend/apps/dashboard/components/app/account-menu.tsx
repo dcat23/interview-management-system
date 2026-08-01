@@ -1,12 +1,22 @@
 'use client';
 
-import { RiLogoutBoxRLine, RiSettings3Line, RiUser3Line } from '@remixicon/react';
+import {
+  RiLogoutBoxRLine,
+  RiSettings3Line,
+  RiUser3Line,
+} from '@remixicon/react';
 import { toast } from 'sonner';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '../ui/common/dropdown-menu';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '../ui/common/dropdown-menu';
 import { ReactElement } from 'react';
 
 interface Props {
-  trigger: ReactElement
+  trigger: ReactElement;
 }
 
 export function AccountMenu({ trigger }: Props) {
@@ -23,7 +33,7 @@ export function AccountMenu({ trigger }: Props) {
         <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={() =>
-            toast("Account", { description: "Opening your account." })
+            toast('Account', { description: 'Opening your account.' })
           }
         >
           <RiUser3Line />
@@ -31,7 +41,7 @@ export function AccountMenu({ trigger }: Props) {
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={() =>
-            toast("Settings", { description: "Opening your settings." })
+            toast('Settings', { description: 'Opening your settings.' })
           }
         >
           <RiSettings3Line />
@@ -41,7 +51,7 @@ export function AccountMenu({ trigger }: Props) {
         <DropdownMenuItem
           variant="destructive"
           onClick={() =>
-            toast.success("Logged out", { description: "See you soon." })
+            toast.success('Logged out', { description: 'See you soon.' })
           }
         >
           <RiLogoutBoxRLine />

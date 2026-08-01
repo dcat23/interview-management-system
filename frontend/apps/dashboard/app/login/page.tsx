@@ -1,5 +1,5 @@
-import { LoginForm } from "@app/dashboard/components/auth/login-form";
-import { GalleryVerticalEndIcon } from "lucide-react";
+import { LoginForm } from '@app/dashboard/components/auth/login-form';
+import { GalleryVerticalEndIcon } from 'lucide-react';
 
 interface Props {
   params: Promise<{}>;

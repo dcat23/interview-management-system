@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@next-feature/logging/server';
-import { NEXT_PUBLIC_LOGGING_BEACON_PATH } from "@app/dashboard/lib/config/env";
 
 interface ClientLogPayload {
   level: string;
@@ -31,7 +30,10 @@ export async function POST(request: NextRequest) {
       logger.info(ctx, msg);
     }
   } catch {
-    logger.warn({ correlationId, source: 'browser' }, 'Failed to parse client log payload');
+    logger.warn(
+      { correlationId, source: 'browser' },
+      'Failed to parse client log payload',
+    );
   }
 
   // const responseTime = Math.round(performance.now() - start);

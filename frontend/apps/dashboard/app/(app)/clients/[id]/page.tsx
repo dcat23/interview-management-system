@@ -1,6 +1,5 @@
 import AppPageHeader from '@app/dashboard/components/app/app-page-header';
 import { DASHBOARD } from '@feature/base/server';
-import ProcessesData from '@app/dashboard/components/process/processes-data';
 import { getClientById } from '@feature/backend/server';
 
 interface Props {
@@ -31,7 +30,6 @@ async function AppClientsIdPage(props: Props) {
           { label: client.name, href: '#' },
         ]}
       />
-
     </div>
   );
 }

@@ -2,14 +2,12 @@
 
 import { useCommandStore } from '@app/dashboard/stores/command-store';
 import { RiSearchLine } from '@remixicon/react';
-import { ReactNode } from 'react';
-import { KbdGroup, Kbd } from '../ui/common/kbd';
+import { Kbd, KbdGroup } from '../ui/common/kbd';
 
-interface Props {
-}
+interface Props {}
 
 export function CommandButton(props: Props) {
-  const open = useCommandStore(state => state.open);
+  const open = useCommandStore((state) => state.open);
   return (
     <button
       type="button"

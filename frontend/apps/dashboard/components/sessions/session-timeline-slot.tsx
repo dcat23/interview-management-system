@@ -7,11 +7,7 @@ interface Props {
 }
 
 export function SessionTimelineSlot(props: Props) {
-  return (
-    <>
-      SessionTimelineSlot
-    </>
-  );
+  return <>SessionTimelineSlot</>;
 }
 
 export default SessionTimelineSlot;

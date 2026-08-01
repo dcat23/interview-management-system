@@ -5,9 +5,7 @@ interface Props {
 }
 
 export function Layout(props: Props): React.ReactElement {
-  return (
-    <>{props.children}</>
-  );
+  return <>{props.children}</>;
 }
 
 export default Layout;

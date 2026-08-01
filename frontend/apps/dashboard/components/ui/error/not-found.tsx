@@ -1,6 +1,6 @@
-import { RiArrowLeftLine, RiCompass3Line } from "@remixicon/react"
+import { RiArrowLeftLine, RiCompass3Line } from '@remixicon/react';
 
-import { Button } from "@app/dashboard/components/ui/common/button"
+import { Button } from '@app/dashboard/components/ui/common/button';
 
 export default function ErrorBlock() {
   return (
@@ -39,5 +39,5 @@ export default function ErrorBlock() {
         </Button>
       </div>
     </section>
-  )
+  );
 }

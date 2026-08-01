@@ -1,58 +1,58 @@
 import {
+  RiErrorWarningLine,
   RiGitMergeLine,
+  RiKey2Line,
   RiUploadCloud2Line,
   RiUserAddLine,
-  RiErrorWarningLine,
-  RiKey2Line,
-} from "@remixicon/react"
+} from '@remixicon/react';
 
-import { Badge } from "@app/dashboard/components/ui/common/badge"
+import { Badge } from '@app/dashboard/components/ui/common/badge';
 
 type Event = {
-  icon: typeof RiGitMergeLine
-  title: string
-  detail: string
-  tag: string
-  time: string
-}
+  icon: typeof RiGitMergeLine;
+  title: string;
+  detail: string;
+  tag: string;
+  time: string;
+};
 
 const events: Event[] = [
   {
     icon: RiGitMergeLine,
-    title: "feat/auth-refresh merged",
-    detail: "Mara Ellis merged 12 commits into main.",
-    tag: "Deploy",
-    time: "12 Min Ago",
+    title: 'feat/auth-refresh merged',
+    detail: 'Mara Ellis merged 12 commits into main.',
+    tag: 'Deploy',
+    time: '12 Min Ago',
   },
   {
     icon: RiUploadCloud2Line,
-    title: "Production deploy v2.4.1",
-    detail: "Build passed and shipped in 4m 12s.",
-    tag: "Deploy",
-    time: "1 Hour Ago",
+    title: 'Production deploy v2.4.1',
+    detail: 'Build passed and shipped in 4m 12s.',
+    tag: 'Deploy',
+    time: '1 Hour Ago',
   },
   {
     icon: RiKey2Line,
-    title: "API key rotated",
-    detail: "Leo Tanaka revoked and reissued the production key.",
-    tag: "Security",
-    time: "3 Hours Ago",
+    title: 'API key rotated',
+    detail: 'Leo Tanaka revoked and reissued the production key.',
+    tag: 'Security',
+    time: '3 Hours Ago',
   },
   {
     icon: RiUserAddLine,
-    title: "Two members invited",
-    detail: "Owen Brooks invited design@acme.com and one other.",
-    tag: "Team",
-    time: "5 Hours Ago",
+    title: 'Two members invited',
+    detail: 'Owen Brooks invited design@acme.com and one other.',
+    tag: 'Team',
+    time: '5 Hours Ago',
   },
   {
     icon: RiErrorWarningLine,
-    title: "Usage limit warning",
-    detail: "Workspace reached 85% of the monthly API quota.",
-    tag: "Alert",
-    time: "Yesterday",
+    title: 'Usage limit warning',
+    detail: 'Workspace reached 85% of the monthly API quota.',
+    tag: 'Alert',
+    time: 'Yesterday',
   },
-]
+];
 
 export default function ActivityBlock() {
   return (
@@ -90,5 +90,5 @@ export default function ActivityBlock() {
         </ul>
       </div>
     </section>
-  )
+  );
 }
