@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import xyz.catuns.imp.api.common.util.DateRangeUtil;
 import xyz.catuns.imp.api.config.CacheConfig;
 import xyz.catuns.imp.api.process.entity.InterviewProcess;
+import xyz.catuns.imp.api.process.entity.ProcessStatus;
 import xyz.catuns.imp.api.process.repository.InterviewProcessRepository;
 import xyz.catuns.imp.api.session.dto.CreateSessionRequest;
 import xyz.catuns.imp.api.session.dto.InterviewSessionResponse;
@@ -51,6 +52,7 @@ public class InterviewSessionService {
     private final InterviewSessionMapper sessionMapper;
     private final InterviewProcessRepository processRepository;
     private final UserRepository userRepository;
+    private final SessionStatusTransitionService transitionService;
 
     // Self-injection via @Lazy so @Cacheable proxy intercepts loadAllByProcess from within listByProcess
     @Autowired
@@ -66,11 +68,29 @@ public class InterviewSessionService {
         userRepository.findById(request.supporterId())
                 .orElseThrow(() -> new NotFoundException("Supporter not found"));
 
+        autoPassInReviewSessions(processId);
+
         InterviewSession session = sessionMapper.toEntity(request);
         session.setProcessId(processId);
         session = sessionRepository.save(session);
         syncProcessStartedAt(process);
+        reactivateProcess(processId);
         return sessionMapper.toResponse(session);
+    }
+
+    private void autoPassInReviewSessions(UUID processId) {
+        sessionRepository.findByProcessIdAndStatus(processId, SessionStatus.IN_REVIEW)
+                .forEach(inReview -> transitionService.transitionByJob(inReview.getId(), SessionStatus.PASSED, null));
+    }
+
+    private void reactivateProcess(UUID processId) {
+        InterviewProcess process = processRepository.findById(processId).orElseThrow();
+        if (process.getStatus() == ProcessStatus.CANCELLED) {
+            return;
+        }
+        process.setStatus(ProcessStatus.ACTIVE);
+        process.setClosedAt(null);
+        processRepository.save(process);
     }
 
     @PreAuthorize("isAuthenticated()")
