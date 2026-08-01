@@ -1,15 +1,24 @@
+import { Suspense } from 'react';
 import Link from 'next/link';
 import { Card, CardContent } from '@feature/ui/components/card';
 import { Briefcase, ArrowRight } from 'lucide-react';
-import type { ProcessCardData } from '@app/web/components/supporter/process-card';
+import { getInterviewProcesses } from '@feature/backend/server';
+import { ActiveProcessesSummarySkeleton } from './active-processes-summary-skeleton';
 
-interface Props {
-  processes: ProcessCardData[];
+const PREVIEW_LIMIT = 5;
+
+export function ActiveProcessesSummary() {
+  return (
+    <Suspense fallback={<ActiveProcessesSummarySkeleton />}>
+      <ActiveProcessesSummaryData />
+    </Suspense>
+  );
 }
 
-export function ActiveProcessesSummary(props: Props) {
-  const { processes } = props;
-  const preview = processes.slice(0, 4);
+async function ActiveProcessesSummaryData() {
+  const { data: processPage } = await getInterviewProcesses({ status: 'ACTIVE', limit: PREVIEW_LIMIT });
+  const preview = processPage.data.slice(0, 4);
+  const remaining = processPage.total - preview.length;
 
   return (
     <Link href="/supporter/processes" className="block">
@@ -20,7 +29,7 @@ export function ActiveProcessesSummary(props: Props) {
               <Briefcase className="h-6 w-6 text-primary" />
             </div>
             <div>
-              <p className="text-3xl font-light">{processes.length}</p>
+              <p className="text-3xl font-light">{processPage.total}</p>
               <p className="font-mono text-sm uppercase tracking-wide text-muted-foreground">Active Processes</p>
             </div>
           </div>
@@ -37,9 +46,9 @@ export function ActiveProcessesSummary(props: Props) {
                   {process.clientName}
                 </span>
               ))}
-              {processes.length > preview.length ? (
+              {remaining > 0 ? (
                 <span className="rounded-lg border border-border/50 bg-secondary/30 px-3 py-1.5 text-xs text-muted-foreground">
-                  +{processes.length - preview.length} more
+                  +{remaining} more
                 </span>
               ) : null}
             </div>

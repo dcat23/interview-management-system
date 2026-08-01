@@ -1,31 +1,38 @@
+import { Suspense } from 'react';
 import Link from 'next/link';
+import moment from 'moment';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@feature/ui/components/card';
 import { Briefcase, Calendar, Clock, ArrowRight, CalendarClock } from 'lucide-react';
-import type { SessionCardData } from '@app/web/components/supporter/session-card';
-import { ModeBadge } from './session-badges';
+import { getInterviewSessions } from '@feature/backend/server';
+import { ModeBadge } from '../session-badges';
+import { NextSessionCardSkeleton } from './next-session-card-skeleton';
 
 function formatDate(dateString: string) {
-  return new Date(dateString).toLocaleDateString('en-US', {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-  });
+  return moment(dateString).format('dddd, MMMM D, YYYY');
 }
 
 function formatTime(scheduledAt: string, durationMinutes: number) {
-  const start = new Date(scheduledAt);
-  const end = new Date(start.getTime() + durationMinutes * 60_000);
-  const timeFormat: Intl.DateTimeFormatOptions = { hour: 'numeric', minute: '2-digit' };
-  return `${start.toLocaleTimeString('en-US', timeFormat)} - ${end.toLocaleTimeString('en-US', timeFormat)}`;
+  const start = moment(scheduledAt);
+  const end = moment(scheduledAt).add(durationMinutes, 'minutes');
+  return `${start.format('h:mm A')} - ${end.format('h:mm A')}`;
 }
 
-interface Props {
-  session: SessionCardData | null;
+export function NextSessionCard() {
+  return (
+    <Suspense fallback={<NextSessionCardSkeleton />}>
+      <NextSessionCardData />
+    </Suspense>
+  );
 }
 
-export function DashboardNextSessionCard(props: Props) {
-  const { session } = props;
+async function NextSessionCardData() {
+  const today = new Date().toISOString().slice(0, 10);
+  const { data: sessionPage } = await getInterviewSessions({
+    scheduledFrom: today,
+    sort: 'scheduledAt,asc',
+    limit: 1,
+  });
+  const session = sessionPage.data[0] ?? null;
 
   return (
     <Card className="bg-card/50 backdrop-blur-sm border-border/50">
