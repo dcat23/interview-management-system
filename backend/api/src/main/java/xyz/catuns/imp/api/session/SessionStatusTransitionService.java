@@ -6,6 +6,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import xyz.catuns.imp.api.process.entity.InterviewProcess;
+import xyz.catuns.imp.api.process.entity.ProcessStatus;
+import xyz.catuns.imp.api.process.repository.InterviewProcessRepository;
 import xyz.catuns.imp.api.session.dto.InterviewSessionResponse;
 import xyz.catuns.imp.api.session.entity.*;
 import xyz.catuns.imp.api.session.event.SessionStatusChangedEvent;
@@ -50,6 +53,7 @@ public class SessionStatusTransitionService {
     private final InterviewSessionMapper sessionMapper;
     private final UserRepository userRepository;
     private final SessionStatusEventPublisher eventPublisher;
+    private final InterviewProcessRepository processRepository;
 
     @PreAuthorize("isAuthenticated()")
     @Transactional
@@ -107,6 +111,8 @@ public class SessionStatusTransitionService {
         history.setChangeSource(changeSource);
         statusHistoryRepository.save(history);
 
+        cascadeProcessStatus(session.getProcessId(), toStatus);
+
         eventPublisher.publish(new SessionStatusChangedEvent(
                 session.getId(),
                 session.getProcessId(),
@@ -117,6 +123,26 @@ public class SessionStatusTransitionService {
         ));
 
         return sessionMapper.toResponse(session);
+    }
+
+    private void cascadeProcessStatus(UUID processId, SessionStatus toStatus) {
+        ProcessStatus targetProcessStatus = switch (toStatus) {
+            case PASSED -> ProcessStatus.COMPLETED;
+            case REJECTED -> ProcessStatus.WITHDRAWN;
+            default -> null;
+        };
+        if (targetProcessStatus == null) {
+            return;
+        }
+
+        InterviewProcess process = processRepository.findById(processId).orElse(null);
+        if (process == null || process.getStatus() == ProcessStatus.CANCELLED) {
+            return;
+        }
+
+        process.setStatus(targetProcessStatus);
+        process.setClosedAt(Instant.now());
+        processRepository.save(process);
     }
 
     private UUID resolveUserId(String email) {
