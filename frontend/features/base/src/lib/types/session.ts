@@ -19,6 +19,9 @@ export interface InterviewSession {
   statusChangedBy: string | null;
   createdAt: string;
   updatedAt: string;
+  candidateName: string | null;
+  clientName: string | null;
+  technology: string | null;
 }
 
 /**

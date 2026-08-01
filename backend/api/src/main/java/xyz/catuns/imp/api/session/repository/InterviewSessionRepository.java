@@ -21,6 +21,8 @@ public interface InterviewSessionRepository extends JpaRepository<InterviewSessi
 
     List<InterviewSession> findByProcessIdOrderByScheduledAt(UUID processId);
 
+    List<InterviewSession> findByProcessIdIn(Collection<UUID> processIds);
+
     List<InterviewSession> findByStatusAndScheduledAtBefore(SessionStatus status, Instant before);
 
     List<InterviewSession> findByProcessIdAndStatus(UUID processId, SessionStatus status);

@@ -31,7 +31,7 @@ export function buildActivityFeed(
     .map((s) => ({
       id: `session-${s.id}`,
       processId: s.processId,
-      message: `${s.candidateName} — ${s.technology} Round ${s.round} marked ${STATUS_LABEL[s.status]}`,
+      message: `${s.candidateName} — ${s.technology} ${s.round} marked ${STATUS_LABEL[s.status]}`,
       timestamp: s.statusChangedAt as string,
     }));
 

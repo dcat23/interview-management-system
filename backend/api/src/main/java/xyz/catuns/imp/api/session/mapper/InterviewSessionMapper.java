@@ -15,7 +15,10 @@ import xyz.catuns.imp.api.session.entity.InterviewSession;
 )
 public interface InterviewSessionMapper {
 
-    InterviewSessionResponse toResponse(InterviewSession session);
+    @Mapping(target = "candidateName", source = "candidateName")
+    @Mapping(target = "clientName", source = "clientName")
+    @Mapping(target = "technology", source = "technology")
+    InterviewSessionResponse toResponse(InterviewSession session, String candidateName, String clientName, String technology);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "processId", ignore = true)

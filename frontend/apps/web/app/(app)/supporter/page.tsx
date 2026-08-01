@@ -1,7 +1,5 @@
 import { auth } from '@feature/auth/server';
 import { getInterviewProcesses, getInterviewSessions } from '@feature/backend/server';
-import { buildSessionCards } from '@app/web/lib/supporter/session-cards';
-import { buildProcessCards } from '@app/web/lib/supporter/process-cards';
 import { buildActivityFeed } from '@app/web/lib/supporter/activity-feed';
 import { DashboardNextSessionCard } from '@app/web/components/supporter/dashboard-next-session-card';
 import { AwaitingFeedbackList } from '@app/web/components/supporter/awaiting-feedback-list';
@@ -19,10 +17,8 @@ async function SupporterPage() {
     getInterviewProcesses({ limit: MAX }),
   ]);
 
-  const [sessionCards, processCards] = await Promise.all([
-    buildSessionCards(sessionPage.data),
-    buildProcessCards(processPage.data),
-  ]);
+  const sessionCards = sessionPage.data;
+  const processCards = processPage.data;
 
   const now = Date.now();
   const upcoming = sessionCards

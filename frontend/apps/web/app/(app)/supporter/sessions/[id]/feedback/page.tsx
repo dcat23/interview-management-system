@@ -3,7 +3,6 @@ import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { auth } from '@feature/auth/server';
 import { getFeedback, getSessionById } from '@feature/backend/server';
-import { buildSessionCards } from '@app/web/lib/supporter/session-cards';
 import { SessionSummaryHeader } from '@app/web/components/supporter/session-summary-header';
 import { StatusBadge } from '@app/web/components/supporter/session-badges';
 import { FeedbackEditor } from '@app/web/components/supporter/feedback-editor';
@@ -12,10 +11,7 @@ async function loadFeedbackPageData(sessionId: string) {
   const [authSession, sessionResult] = await Promise.all([auth(), getSessionById(sessionId)]);
   if (!sessionResult.data.id) return null;
 
-  const [sessionCards, feedbackResult] = await Promise.all([
-    buildSessionCards([sessionResult.data]),
-    getFeedback(sessionId),
-  ]);
+  const feedbackResult = await getFeedback(sessionId);
 
   // 404 just means no feedback has been written yet — not an error.
   const feedback = feedbackResult.success ? feedbackResult.data : null;
@@ -25,7 +21,7 @@ async function loadFeedbackPageData(sessionId: string) {
     : sessionResult.data.supporterId === currentUserId;
 
   return {
-    session: sessionCards[0],
+    session: sessionResult.data,
     feedback,
     isOwnFeedback,
   };

@@ -1,10 +1,7 @@
 import { QuestionLinker } from '@app/web/components/supporter/question-linker';
 import { ModeBadge, StatusBadge } from '@app/web/components/supporter/session-badges';
 import { SessionSummaryHeader } from '@app/web/components/supporter/session-summary-header';
-import type { SessionCardData } from '@app/web/components/supporter/session-card';
 import {
-  getCandidateById,
-  getClients,
   getProcessById,
   getQuestions,
   getSessionById,
@@ -19,28 +16,16 @@ async function loadSessionDetail(sessionId: string) {
   const { data: session } = await getSessionById(sessionId);
   if (!session.id) return null;
 
-  const [processResult, clientsResult, linkedQuestionsResult] = await Promise.all([
+  const [processResult, linkedQuestionsResult] = await Promise.all([
     getProcessById(session.processId),
-    getClients({ limit: 100 }),
     getSessionQuestions(sessionId),
   ]);
   const process = processResult.data;
-  const client = clientsResult.data.data.find((c) => c.id === process.clientId);
 
-  const [candidateResult, questionBankResult] = await Promise.all([
-    getCandidateById(process.candidateId),
-    getQuestions({ clientId: process.clientId, limit: 100 }),
-  ]);
-
-  const sessionCard: SessionCardData = {
-    ...session,
-    candidateName: candidateResult.data.name ?? 'Unknown candidate',
-    clientName: client?.name ?? 'Unknown client',
-    technology: process.technology,
-  };
+  const questionBankResult = await getQuestions({ clientId: process.clientId, limit: 100 });
 
   return {
-    session: sessionCard,
+    session,
     clientId: process.clientId,
     linkedQuestions: linkedQuestionsResult.data,
     questionBank: questionBankResult.data.data,

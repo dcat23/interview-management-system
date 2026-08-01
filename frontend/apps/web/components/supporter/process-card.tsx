@@ -9,12 +9,7 @@ function statusVariant(status: ProcessStatus): 'default' | 'secondary' | 'outlin
   return 'secondary';
 }
 
-export type ProcessCardData = InterviewProcess & {
-  candidateName: string;
-  clientName: string;
-  currentRound: string | null;
-  sessionCount: number;
-};
+export type ProcessCardData = InterviewProcess;
 
 interface Props {
   process: ProcessCardData;

@@ -23,6 +23,7 @@ import xyz.catuns.imp.api.process.entity.ProcessStatus;
 import xyz.catuns.imp.api.process.mapper.InterviewProcessMapper;
 import xyz.catuns.imp.api.process.repository.InterviewProcessRepository;
 import xyz.catuns.imp.api.session.dto.InterviewSessionResponse;
+import xyz.catuns.imp.api.session.entity.InterviewSession;
 import xyz.catuns.imp.api.session.mapper.InterviewSessionMapper;
 import xyz.catuns.imp.api.session.repository.InterviewSessionRepository;
 import xyz.catuns.imp.api.user.entity.User;
@@ -33,6 +34,7 @@ import xyz.catuns.spring.base.exception.controller.NotFoundException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -117,11 +119,25 @@ public class InterviewProcessService {
         Map<UUID, String> clientNamesById = clientRepository.findAllById(clientIds).stream()
                 .collect(Collectors.toMap(Client::getId, Client::getName));
 
-        return processes.map(process -> processMapper.toResponse(
-                process,
-                candidateNamesById.get(process.getCandidateId()),
-                clientNamesById.get(process.getClientId())
-        ));
+        List<UUID> processIds = processes.getContent().stream().map(InterviewProcess::getId).toList();
+        Map<UUID, List<InterviewSession>> sessionsByProcessId = sessionRepository.findByProcessIdIn(processIds).stream()
+                .collect(Collectors.groupingBy(InterviewSession::getProcessId));
+
+        return processes.map(process -> {
+            List<InterviewSession> sessions = sessionsByProcessId.getOrDefault(process.getId(), List.of());
+            String currentRound = sessions.stream()
+                    .max(Comparator.comparing(InterviewSession::getScheduledAt))
+                    .map(InterviewSession::getRound)
+                    .orElse(null);
+
+            return processMapper.toResponse(
+                    process,
+                    candidateNamesById.get(process.getCandidateId()),
+                    clientNamesById.get(process.getClientId()),
+                    currentRound,
+                    sessions.size()
+            );
+        });
     }
 
     @PreAuthorize("hasAnyRole('ADMIN','MARKETER','SUPPORTER') or @interviewProcessService.isCandidateOwner(#id, authentication.name)")
@@ -136,10 +152,15 @@ public class InterviewProcessService {
                 .map(Client::getName)
                 .orElse(null);
         List<InterviewSessionResponse> sessions = sessionRepository.findByProcessIdOrderByScheduledAt(id).stream()
-                .map(sessionMapper::toResponse)
+                .map(session -> sessionMapper.toResponse(session, candidateName, clientName, process.getTechnology()))
                 .toList();
 
-        return processMapper.toResponse(process, candidateName, clientName, sessions);
+        String currentRound = sessions.stream()
+                .max(Comparator.comparing(InterviewSessionResponse::scheduledAt))
+                .map(InterviewSessionResponse::round)
+                .orElse(null);
+
+        return processMapper.toResponse(process, candidateName, clientName, sessions, currentRound, sessions.size());
     }
 
     @PreAuthorize("hasAnyRole('ADMIN','MARKETER')")

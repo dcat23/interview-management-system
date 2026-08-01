@@ -4,11 +4,7 @@ import { Briefcase, Calendar, ChevronRight, Clock } from 'lucide-react';
 import { ModeBadge, StatusBadge } from './session-badges';
 import type { InterviewSession } from '@feature/base/server';
 
-export type SessionCardData = InterviewSession & {
-  candidateName: string;
-  clientName: string;
-  technology: string;
-};
+export type SessionCardData = InterviewSession;
 
 function formatDate(scheduledAt: string) {
   return new Date(scheduledAt).toLocaleDateString('en-US', {

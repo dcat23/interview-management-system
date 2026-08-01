@@ -21,18 +21,25 @@ public interface InterviewProcessMapper {
     @Mapping(target = "candidateName", ignore = true)
     @Mapping(target = "clientName", ignore = true)
     @Mapping(target = "sessions", ignore = true)
+    @Mapping(target = "currentRound", ignore = true)
+    @Mapping(target = "sessionCount", constant = "0")
     InterviewProcessResponse toResponse(InterviewProcess process);
 
     @Mapping(target = "candidateName", source = "candidateName")
     @Mapping(target = "clientName", source = "clientName")
     @Mapping(target = "sessions", ignore = true)
-    InterviewProcessResponse toResponse(InterviewProcess process, String candidateName, String clientName);
+    @Mapping(target = "currentRound", source = "currentRound")
+    @Mapping(target = "sessionCount", source = "sessionCount")
+    InterviewProcessResponse toResponse(InterviewProcess process, String candidateName, String clientName,
+                                         String currentRound, int sessionCount);
 
     @Mapping(target = "candidateName", source = "candidateName")
     @Mapping(target = "clientName", source = "clientName")
     @Mapping(target = "sessions", source = "sessions")
+    @Mapping(target = "currentRound", source = "currentRound")
+    @Mapping(target = "sessionCount", source = "sessionCount")
     InterviewProcessResponse toResponse(InterviewProcess process, String candidateName, String clientName,
-                                         List<InterviewSessionResponse> sessions);
+                                         List<InterviewSessionResponse> sessions, String currentRound, int sessionCount);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "status", ignore = true)

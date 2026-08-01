@@ -23,6 +23,8 @@ export interface InterviewProcess {
   updatedAt: string;
   /** Only populated by GET /processes/:id - null on list responses (GET /processes). */
   sessions: InterviewSession[] | null;
+  currentRound: string | null;
+  sessionCount: number;
 }
 
 /**

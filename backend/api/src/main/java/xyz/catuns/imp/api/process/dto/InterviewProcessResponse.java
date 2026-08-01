@@ -23,6 +23,8 @@ public record InterviewProcessResponse(
         Instant createdAt,
         Instant updatedAt,
         /** Only populated by GET /processes/:id - null on list responses to avoid an N+1 per row. */
-        List<InterviewSessionResponse> sessions
+        List<InterviewSessionResponse> sessions,
+        String currentRound,
+        int sessionCount
 ) {
 }

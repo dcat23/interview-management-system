@@ -6,6 +6,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import xyz.catuns.imp.api.client.entity.Client;
+import xyz.catuns.imp.api.client.repository.ClientRepository;
 import xyz.catuns.imp.api.process.entity.InterviewProcess;
 import xyz.catuns.imp.api.process.entity.ProcessStatus;
 import xyz.catuns.imp.api.process.repository.InterviewProcessRepository;
@@ -54,6 +56,7 @@ public class SessionStatusTransitionService {
     private final UserRepository userRepository;
     private final SessionStatusEventPublisher eventPublisher;
     private final InterviewProcessRepository processRepository;
+    private final ClientRepository clientRepository;
 
     @PreAuthorize("isAuthenticated()")
     @Transactional
@@ -122,7 +125,13 @@ public class SessionStatusTransitionService {
                 changeSource
         ));
 
-        return sessionMapper.toResponse(session);
+        InterviewProcess process = processRepository.findById(session.getProcessId()).orElse(null);
+        String candidateName = process != null
+                ? userRepository.findById(process.getCandidateId()).map(User::getName).orElse(null) : null;
+        String clientName = process != null
+                ? clientRepository.findById(process.getClientId()).map(Client::getName).orElse(null) : null;
+        String technology = process != null ? process.getTechnology() : null;
+        return sessionMapper.toResponse(session, candidateName, clientName, technology);
     }
 
     private void cascadeProcessStatus(UUID processId, SessionStatus toStatus) {
