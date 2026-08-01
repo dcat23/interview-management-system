@@ -806,12 +806,12 @@ Unlink a question from a session. The question remains in the bank.
 
 ## Feedback
 
-### `GET /sessions/:id/feedback` · `admin` `supporter`
+### `GET /sessions/:id/feedback` · `admin` `marketer` `supporter`
 
 Get feedback for a session.
 
-- Supporter: own feedback only (draft or submitted)
-- Admin: any submitted feedback
+- Any supporter, marketer, or admin may read the feedback for any session (view-all), regardless of who authored it.
+- Only writes (`POST`/`PATCH`) are scoped to the assigned supporter — see below.
 
 Returns `404` if no feedback record exists yet.
 
@@ -819,7 +819,7 @@ Returns `404` if no feedback record exists yet.
 
 ### `POST /sessions/:id/feedback` · `supporter`
 
-Create a feedback draft.
+Create a feedback draft. Only the session's assigned supporter may create it — returns `403` otherwise.
 
 **Request**
 ```json
@@ -836,7 +836,7 @@ Returns `409` if a feedback record already exists — use `PATCH` to update.
 
 ### `PATCH /sessions/:id/feedback` · `supporter`
 
-Update or submit feedback.
+Update or submit feedback. Only the authoring supporter may update it — returns `403` otherwise, including for admin and marketer.
 
 **Request** (all fields optional)
 ```json
@@ -846,7 +846,7 @@ Update or submit feedback.
 }
 ```
 
-Once `isSubmitted = true`, `body` becomes read-only. `submittedAt` set server-side on submission.
+Once `isSubmitted = true`, `body` becomes read-only and any further `PATCH` returns `409`. `submittedAt` set server-side on submission.
 
 **Response `200`** — returns updated feedback object.
 
