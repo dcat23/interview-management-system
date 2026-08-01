@@ -6,6 +6,8 @@ import { Button } from '@feature/ui/components/ui/common/button';
 import Link from 'next/link';
 import { logger } from '@next-feature/logging';
 
+const log = logger.child({ module: 'error' });
+
 const DEFAULT_ERROR_MESSAGE =
   'An unexpected error occurred while processing your request. Please try again, and contact support if the problem persists.';
 
@@ -17,7 +19,7 @@ export default function ErrorBlock({
   reset: () => void;
 }) {
   if (error) {
-    logger.error(error, error.message);
+    log.error(error, error.message);
   }
 
   return (

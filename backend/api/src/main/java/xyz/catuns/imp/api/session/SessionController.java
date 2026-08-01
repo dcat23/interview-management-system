@@ -68,7 +68,7 @@ public class SessionController {
     @Operation(
             summary = "List sessions",
             description = "Paginated, filterable session listing across all processes. Admin, marketer, and "
-                    + "supporter roles only. Supports free-text search (round, mode, description), a "
+                    + "supporter roles only. Supports free-text search (candidate name, round, mode, description), a "
                     + "scheduledAt date-range filter (scheduledFrom/scheduledTo as yyyy-MM-dd, inclusive), "
                     + "and sorting (?sort=field,asc|desc - round, mode, durationMinutes, status, scheduledAt, "
                     + "statusChangedAt, createdAt, updatedAt)."

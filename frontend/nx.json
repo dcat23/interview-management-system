@@ -74,7 +74,7 @@
     },
     "next-feature": {
       "component": {
-        "projectName": "dashboard",
+        "projectName": "ui",
         "inferPath": true
       },
       "feature": {

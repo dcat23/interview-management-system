@@ -1,5 +1,7 @@
 package xyz.catuns.imp.api.session;
 
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
@@ -154,11 +156,16 @@ public class InterviewSessionService {
         }
         if (search != null && !search.isBlank()) {
             String pattern = "%" + search.trim().toLowerCase(Locale.ROOT) + "%";
-            spec = spec.and((root, query, cb) -> cb.or(
-                    cb.like(cb.lower(root.get("round")), pattern),
-                    cb.like(cb.lower(root.get("mode")), pattern),
-                    cb.like(cb.lower(cb.coalesce(root.get("description"), "")), pattern)
-            ));
+            spec = spec.and((root, query, cb) -> {
+                Join<InterviewSession, InterviewProcess> processJoin = root.join("process", JoinType.LEFT);
+                Join<InterviewProcess, User> candidateJoin = processJoin.join("candidate", JoinType.LEFT);
+                return cb.or(
+                        cb.like(cb.lower(candidateJoin.get("name")), pattern),
+                        cb.like(cb.lower(root.get("round")), pattern),
+                        cb.like(cb.lower(root.get("mode")), pattern),
+                        cb.like(cb.lower(cb.coalesce(root.get("description"), "")), pattern)
+                );
+            });
         }
         Page<InterviewSession> sessions = sessionRepository.findAll(spec, validateSort(pageable));
 
