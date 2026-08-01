@@ -1,6 +1,6 @@
 import { RiArrowLeftLine, RiCompass3Line } from '@remixicon/react';
 
-import { Button } from '@app/dashboard/components/ui/common/button';
+import { Button } from '@feature/ui/components/ui/common/button';
 
 export default function ErrorBlock() {
   return (
@@ -20,22 +20,17 @@ export default function ErrorBlock() {
       </div>
 
       <div className="flex flex-col items-center gap-2 sm:flex-row">
-        <Button
-          render={<a href="#" />}
-          nativeButton={false}
-          className="w-full sm:w-auto"
-        >
-          <RiCompass3Line data-icon="inline-start" aria-hidden="true" />
-          Go Home
+        <Button asChild className="w-full sm:w-auto">
+          <a href="#">
+            <RiCompass3Line data-icon="inline-start" aria-hidden="true" />
+            Go Home
+          </a>
         </Button>
-        <Button
-          variant="outline"
-          render={<a href="#" />}
-          nativeButton={false}
-          className="w-full sm:w-auto"
-        >
-          <RiArrowLeftLine data-icon="inline-start" aria-hidden="true" />
-          Go Back
+        <Button asChild variant="outline" className="w-full sm:w-auto">
+          <a href="#">
+            <RiArrowLeftLine data-icon="inline-start" aria-hidden="true" />
+            Go Back
+          </a>
         </Button>
       </div>
     </section>

@@ -39,16 +39,16 @@ import { Area, AreaChart, CartesianGrid, XAxis } from 'recharts';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
-import { useIsMobile } from '@app/dashboard/hooks/ui/use-mobile';
-import { Badge } from '@app/dashboard/components/ui/common/badge';
-import { Button } from '@app/dashboard/components/ui/common/button';
+import { useIsMobile } from '@feature/ui/hooks/ui/use-mobile';
+import { Badge } from '@feature/ui/components/ui/common/badge';
+import { Button } from '@feature/ui/components/ui/common/button';
 import {
   type ChartConfig,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-} from '@app/dashboard/components/ui/common/chart';
-import { Checkbox } from '@app/dashboard/components/ui/common/checkbox';
+} from '@feature/ui/components/ui/common/chart';
+import { Checkbox } from '@feature/ui/components/ui/common/checkbox';
 import {
   Drawer,
   DrawerClose,
@@ -58,7 +58,7 @@ import {
   DrawerHeader,
   DrawerTitle,
   DrawerTrigger,
-} from '@app/dashboard/components/ui/common/drawer';
+} from '@feature/ui/components/ui/common/drawer';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -66,9 +66,9 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@app/dashboard/components/ui/common/dropdown-menu';
-import { Input } from '@app/dashboard/components/ui/common/input';
-import { Label } from '@app/dashboard/components/ui/common/label';
+} from '@feature/ui/components/ui/common/dropdown-menu';
+import { Input } from '@feature/ui/components/ui/common/input';
+import { Label } from '@feature/ui/components/ui/common/label';
 import {
   Select,
   SelectContent,
@@ -76,8 +76,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@app/dashboard/components/ui/common/select';
-import { Separator } from '@app/dashboard/components/ui/common/separator';
+} from '@feature/ui/components/ui/common/select';
+import { Separator } from '@feature/ui/components/ui/common/separator';
 import {
   Table,
   TableBody,
@@ -85,13 +85,13 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@app/dashboard/components/ui/common/table';
+} from '@feature/ui/components/ui/common/table';
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from '@app/dashboard/components/ui/common/tabs';
+} from '@feature/ui/components/ui/common/tabs';
 import {
   CaretDoubleLeftIcon,
   CaretDoubleRightIcon,

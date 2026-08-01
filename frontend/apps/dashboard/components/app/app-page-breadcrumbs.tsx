@@ -6,7 +6,7 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from '@app/dashboard/components/ui/common/breadcrumb';
+} from '@feature/ui/components/ui/common/breadcrumb';
 
 interface Crumb {
   label: string;

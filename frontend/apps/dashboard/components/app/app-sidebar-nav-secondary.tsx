@@ -3,7 +3,7 @@ import * as React from 'react';
 import {
   SidebarGroup,
   SidebarGroupContent,
-} from '@app/dashboard/components/ui/common/sidebar';
+} from '@feature/ui/components/ui/common/sidebar';
 import { NavItem } from '@feature/base/server';
 import AppSidebarNavMenu from './app-sidebar-nav-menu';
 

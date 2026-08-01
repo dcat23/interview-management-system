@@ -6,7 +6,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from '@app/dashboard/components/ui/common/sidebar';
+} from '@feature/ui/components/ui/common/sidebar';
 import { DASHBOARD_NAV } from '@app/dashboard/lib/constants/navigation';
 import { auth, User } from '@feature/auth/server';
 import { capitalize, Role, SECONDARY_NAV } from '@feature/base/server';

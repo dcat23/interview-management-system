@@ -11,14 +11,14 @@ import { redirect } from 'next/navigation';
 
 import { cn } from '@app/dashboard/lib/ui/utils';
 import type { InterviewSession, SessionStatus } from '@feature/base/server';
-import { Badge } from '../ui/common/badge';
+import { Badge } from '@feature/ui/components/ui/common/badge';
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuSeparator,
   ContextMenuTrigger,
-} from '@app/dashboard/components/ui/common/context-menu';
+} from '@feature/ui/components/ui/common/context-menu';
 
 interface Props {
   sessions: InterviewSession[];

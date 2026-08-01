@@ -7,7 +7,7 @@ import {
   getSessionById,
   getSessionQuestions,
 } from '@feature/backend/server';
-import { Button } from '@feature/ui/components/button';
+import { Button } from '@feature/ui/components/ui/common/button';
 import { ArrowLeft, MessageSquarePlus } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';

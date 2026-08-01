@@ -1,5 +1,5 @@
-import { Separator } from '@app/dashboard/components/ui/common/separator';
-import { SidebarTrigger } from '@app/dashboard/components/ui/common/sidebar';
+import { Separator } from '@feature/ui/components/ui/common/separator';
+import { SidebarTrigger } from '@feature/ui/components/ui/common/sidebar';
 
 export function SiteHeader() {
   return (

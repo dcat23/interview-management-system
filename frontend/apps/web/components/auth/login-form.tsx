@@ -1,14 +1,14 @@
 "use client"
 
 import { cn } from "@app/web/lib/ui/utils"
-import { Button } from "@app/web/components/ui/common/button"
+import { Button } from "@feature/ui/components/ui/common/button"
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@app/web/components/ui/common/card"
+} from "@feature/ui/components/ui/common/card"
 import {
   Field,
   FieldDescription,
@@ -16,8 +16,8 @@ import {
   FieldGroup,
   FieldLabel,
   FieldSeparator,
-} from "@app/web/components/ui/common/field"
-import { Input } from "@app/web/components/ui/common/input"
+} from "@feature/ui/components/ui/common/field"
+import { Input } from "@feature/ui/components/ui/common/input"
 import { ApiResponse } from "@next-feature/client"
 import { loginFormAction, LoginRequest } from "@feature/auth/server"
 import { useRouter } from "next/navigation"
@@ -62,7 +62,7 @@ export function LoginForm({
       });
     } else if (formState.error) {
       toast.error(formState.message);
-    } 
+    }
   }, [formState.message, formState.success, formState.error]);
 
   const displayError = (key: string) => {

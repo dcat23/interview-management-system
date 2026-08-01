@@ -24,22 +24,22 @@ import {
   Avatar,
   AvatarFallback,
   AvatarImage,
-} from '@app/dashboard/components/ui/common/avatar';
+} from '@feature/ui/components/ui/common/avatar';
 import {
   type ChartConfig,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-} from '@app/dashboard/components/ui/common/chart';
-import { Badge } from '@app/dashboard/components/ui/common/badge';
-import { Button } from '@app/dashboard/components/ui/common/button';
+} from '@feature/ui/components/ui/common/chart';
+import { Badge } from '@feature/ui/components/ui/common/badge';
+import { Button } from '@feature/ui/components/ui/common/button';
 import {
   Card,
   CardAction,
   CardContent,
   CardHeader,
   CardTitle,
-} from '@app/dashboard/components/ui/common/card';
+} from '@feature/ui/components/ui/common/card';
 import {
   Command,
   CommandDialog,
@@ -50,15 +50,15 @@ import {
   CommandList,
   CommandSeparator,
   CommandShortcut,
-} from '@app/dashboard/components/ui/common/command';
-import { Kbd, KbdGroup } from '@app/dashboard/components/ui/common/kbd';
+} from '@feature/ui/components/ui/common/command';
+import { Kbd, KbdGroup } from '@feature/ui/components/ui/common/kbd';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@app/dashboard/components/ui/common/dropdown-menu';
+} from '@feature/ui/components/ui/common/dropdown-menu';
 import {
   Sheet,
   SheetContent,
@@ -66,7 +66,7 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from '@app/dashboard/components/ui/common/sheet';
+} from '@feature/ui/components/ui/common/sheet';
 import {
   Sidebar,
   SidebarContent,
@@ -79,10 +79,10 @@ import {
   SidebarMenuItem,
   SidebarProvider,
   SidebarTrigger,
-} from '@app/dashboard/components/ui/common/sidebar';
-import { Toaster } from '@app/dashboard/components/ui/common/sonner';
+} from '@feature/ui/components/ui/common/sidebar';
+import { Toaster } from '@feature/ui/components/ui/common/sonner';
 import { PROJECT_NAME } from '@app/dashboard/lib/constants/metadata';
-import { Separator } from './common/separator';
+import { Separator } from '@feature/ui/components/ui/common/separator';
 
 const navItems = [
   { label: 'Overview', icon: RiLayoutGridLine },
@@ -331,23 +331,21 @@ export default function AppShellBlock({
 
           <div className="ml-auto flex items-center gap-2">
             <Sheet>
-              <SheetTrigger
-                render={
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    aria-label="Notifications"
-                    className="relative"
-                  >
-                    <RiNotification3Line className="size-5" />
-                    {unreadCount > 0 && (
-                      <span className="absolute -top-1 -right-1 flex size-4 items-center justify-center bg-primary text-[9px] leading-none font-bold text-primary-foreground ring-2 ring-background">
-                        {unreadCount}
-                      </span>
-                    )}
-                  </Button>
-                }
-              />
+              <SheetTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Notifications"
+                  className="relative"
+                >
+                  <RiNotification3Line className="size-5" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 flex size-4 items-center justify-center bg-primary text-[9px] leading-none font-bold text-primary-foreground ring-2 ring-background">
+                      {unreadCount}
+                    </span>
+                  )}
+                </Button>
+              </SheetTrigger>
               <SheetContent className="w-full sm:max-w-sm">
                 <SheetHeader className="gap-0.5 border-b border-border">
                   <SheetTitle>Notifications</SheetTitle>
@@ -671,7 +669,7 @@ export default function AppShellBlock({
 function AccountMenu({ trigger }: { trigger: React.ReactElement }) {
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger render={trigger} />
+      <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">
         <div className="flex flex-col px-2 py-1.5">
           <span className="text-xs font-medium text-foreground">

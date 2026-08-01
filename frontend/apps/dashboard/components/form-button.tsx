@@ -5,7 +5,7 @@ import { useFormStatus } from 'react-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { Check } from 'lucide-react';
 
-import { Button } from '@app/dashboard/components/ui/common/button';
+import { Button } from '@feature/ui/components/ui/common/button';
 import { cn } from '@app/dashboard/lib/ui/utils';
 
 type FormButtonStatus = 'idle' | 'loading' | 'success';

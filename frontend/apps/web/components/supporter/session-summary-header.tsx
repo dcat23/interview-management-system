@@ -1,4 +1,4 @@
-import { Card, CardContent } from '@feature/ui/components/card';
+import { Card, CardContent } from '@feature/ui/components/ui/common/card';
 import { Building2, Calendar, Clock, TableProperties } from "lucide-react";
 import type { SessionCardData } from './session-card';
 

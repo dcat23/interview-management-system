@@ -1,6 +1,6 @@
 import { RiErrorWarningLine, RiRefreshLine } from '@remixicon/react';
 
-import { Button } from '@app/dashboard/components/ui/common/button';
+import { Button } from '@feature/ui/components/ui/common/button';
 import Link from 'next/link';
 import { useEffect } from 'react';
 import { logger } from '@next-feature/logging';

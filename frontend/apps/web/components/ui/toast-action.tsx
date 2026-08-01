@@ -1,6 +1,6 @@
 import { toast } from "sonner"
 
-import { Button } from "@app/web/components/ui/common/button"
+import { Button } from "@feature/ui/components/ui/common/button"
 
 export type ToastActionType =
   | "default"

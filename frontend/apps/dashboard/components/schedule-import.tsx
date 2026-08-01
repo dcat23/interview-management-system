@@ -4,10 +4,10 @@ import { CheckCircle, FileText, Loader2, Upload, X } from 'lucide-react';
 import type React from 'react';
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { Button } from '@app/dashboard/components/ui/common/button';
-import { Card } from '@app/dashboard/components/ui/common/card';
-import { Progress } from '@app/dashboard/components/ui/common/progress';
-import { Separator } from '@app/dashboard/components/ui/common/separator';
+import { Button } from '@feature/ui/components/ui/common/button';
+import { Card } from '@feature/ui/components/ui/common/card';
+import { Progress } from '@feature/ui/components/ui/common/progress';
+import { Separator } from '@feature/ui/components/ui/common/separator';
 import { logger } from '@next-feature/logging';
 import { importCsv, ImportSummaryResponse } from '@feature/backend/server';
 

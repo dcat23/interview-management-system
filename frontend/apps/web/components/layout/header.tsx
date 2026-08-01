@@ -6,15 +6,15 @@ import { Menu, X, LogOut, Moon, Sun } from 'lucide-react';
 import { DynamicIcon } from 'lucide-react/dynamic';
 import { useRef, useState } from 'react';
 import { cn } from '@feature/ui/lib/ui/utils';
-import { Button } from '@feature/ui/components/button';
-import { Avatar, AvatarFallback } from '@feature/ui/components/avatar';
+import { Button } from '@feature/ui/components/ui/common/button';
+import { Avatar, AvatarFallback } from '@feature/ui/components/ui/common/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@feature/ui/components/dropdown-menu';
+} from '@feature/ui/components/ui/common/dropdown-menu';
 import { ThemeToggle } from '@app/web/components/theme-toggle';
 import { useTheme } from '@app/web/lib/providers/theme-provider';
 import { signOutAction, ROLE_HOME, type Role } from '@feature/auth/server';

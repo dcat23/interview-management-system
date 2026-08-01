@@ -2,7 +2,7 @@
 
 import { useCommandStore } from '@app/dashboard/stores/command-store';
 import { RiSearchLine } from '@remixicon/react';
-import { Kbd, KbdGroup } from '../ui/common/kbd';
+import { Kbd, KbdGroup } from '@feature/ui/components/ui/common/kbd';
 
 interface Props {}
 

@@ -3,7 +3,7 @@ import { AppSidebar } from '@app/dashboard/components/app/app-sidebar';
 import {
   SidebarInset,
   SidebarProvider,
-} from '@app/dashboard/components/ui/common/sidebar';
+} from '@feature/ui/components/ui/common/sidebar';
 import NavContextProvider from '@app/dashboard/stores/nav-context';
 import { ReactNode } from 'react';
 

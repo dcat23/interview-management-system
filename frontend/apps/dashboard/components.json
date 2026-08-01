@@ -14,10 +14,10 @@
   "rtl": false,
   "aliases": {
     "components": "@app/dashboard/components/ui",
-    "utils": "@app/dashboard/lib/ui/utils",
-    "ui": "@app/dashboard/components/ui/common",
-    "lib": "@app/dashboard/lib/ui",
-    "hooks": "@app/dashboard/hooks/ui"
+    "utils": "@feature/ui/lib/ui/utils",
+    "ui": "@feature/ui/components/ui/common",
+    "lib": "@feature/ui/lib/ui",
+    "hooks": "@feature/ui/hooks/ui"
   },
   "menuColor": "default-translucent",
   "menuAccent": "subtle",

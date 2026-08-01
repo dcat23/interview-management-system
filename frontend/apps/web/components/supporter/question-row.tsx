@@ -1,4 +1,4 @@
-import { Badge } from '@feature/ui/components/badge';
+import { Badge } from '@feature/ui/components/ui/common/badge';
 import { cn } from '@feature/ui/lib/ui/utils';
 import type { Question } from '@feature/base/server';
 

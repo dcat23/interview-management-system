@@ -1,6 +1,6 @@
 import Link from 'next/link';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@feature/ui/components/card';
-import { Badge } from '@feature/ui/components/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@feature/ui/components/ui/common/card';
+import { Badge } from '@feature/ui/components/ui/common/badge';
 import { CheckCircle2, ChevronRight, PenLine } from 'lucide-react';
 import type { SessionCardData } from '@app/web/components/supporter/session-card';
 

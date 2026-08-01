@@ -1,8 +1,8 @@
 import Link from 'next/link';
 import { Building2, ArrowUpRight } from 'lucide-react';
-import { Card, CardContent } from '@feature/ui/components/card';
-import { Badge } from '@feature/ui/components/badge';
-import { Button } from '@feature/ui/components/button';
+import { Card, CardContent } from '@feature/ui/components/ui/common/card';
+import { Badge } from '@feature/ui/components/ui/common/badge';
+import { Button } from '@feature/ui/components/ui/common/button';
 import type { Client } from '@feature/base/server';
 
 interface Props {

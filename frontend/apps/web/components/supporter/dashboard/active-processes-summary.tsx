@@ -1,6 +1,6 @@
 import { Suspense } from 'react';
 import Link from 'next/link';
-import { Card, CardContent } from '@feature/ui/components/card';
+import { Card, CardContent } from '@feature/ui/components/ui/common/card';
 import { Briefcase, ArrowRight } from 'lucide-react';
 import { getInterviewProcesses } from '@feature/backend/server';
 import { ActiveProcessesSummarySkeleton } from './active-processes-summary-skeleton';

@@ -1,13 +1,13 @@
 'use client';
 
-import { Button } from '@app/dashboard/components/ui/common/button';
+import { Button } from '@feature/ui/components/ui/common/button';
 import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from '@app/dashboard/components/ui/common/sidebar';
+} from '@feature/ui/components/ui/common/sidebar';
 import { EnvelopeIcon, PlusCircleIcon } from '@phosphor-icons/react';
 
 export function NavMain({

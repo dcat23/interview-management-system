@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { toast } from 'sonner';
-import { Card, CardContent, CardHeader, CardTitle } from '@feature/ui/components/card';
-import { Input } from '@feature/ui/components/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@feature/ui/components/ui/common/card';
+import { Input } from '@feature/ui/components/ui/common/input';
 import { Loader2, Search, ListChecks, Library } from 'lucide-react';
 import { LinkedQuestionRow, QuestionSearchResultRow } from './question-rows';
 import { getQuestions, linkQuestion, unlinkQuestion } from '@feature/backend/server';

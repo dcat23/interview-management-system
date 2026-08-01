@@ -1,4 +1,4 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@feature/ui/components/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@feature/ui/components/ui/common/tabs';
 import { CalendarX } from 'lucide-react';
 import { SessionCard } from '@app/web/components/supporter/session-card';
 import { EmptyState } from '@app/web/components/supporter/empty-state';

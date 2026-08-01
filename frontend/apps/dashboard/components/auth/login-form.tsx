@@ -1,14 +1,14 @@
 'use client';
 
 import { cn } from '@app/dashboard/lib/ui/utils';
-import { Button } from '@app/dashboard/components/ui/common/button';
+import { Button } from '@feature/ui/components/ui/common/button';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@app/dashboard/components/ui/common/card';
+} from '@feature/ui/components/ui/common/card';
 import {
   Field,
   FieldDescription,
@@ -16,8 +16,8 @@ import {
   FieldGroup,
   FieldLabel,
   FieldSeparator,
-} from '@app/dashboard/components/ui/common/field';
-import { Input } from '@app/dashboard/components/ui/common/input';
+} from '@feature/ui/components/ui/common/field';
+import { Input } from '@feature/ui/components/ui/common/input';
 import { ApiResponse } from '@next-feature/client';
 import { loginFormAction, LoginRequest } from '@feature/auth/server';
 import { useRouter } from 'next/navigation';

@@ -5,7 +5,7 @@ import { useFormStatus } from "react-dom"
 import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 import { Check } from "lucide-react"
 
-import { Button } from "@app/web/components/ui/common/button"
+import { Button } from "@feature/ui/components/ui/common/button"
 import { cn } from "@app/web/lib/ui/utils"
 
 type LoginButtonStatus = "idle" | "loading" | "success"

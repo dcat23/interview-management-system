@@ -6,7 +6,7 @@ import {
   RiUserAddLine,
 } from '@remixicon/react';
 
-import { Badge } from '@app/dashboard/components/ui/common/badge';
+import { Badge } from '@feature/ui/components/ui/common/badge';
 
 type Event = {
   icon: typeof RiGitMergeLine;

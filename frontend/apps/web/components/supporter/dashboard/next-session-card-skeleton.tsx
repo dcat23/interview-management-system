@@ -4,8 +4,8 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@feature/ui/components/card';
-import { Skeleton } from '@feature/ui/components/skeleton';
+} from '@feature/ui/components/ui/common/card';
+import { Skeleton } from '@feature/ui/components/ui/common/skeleton';
 import { ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 

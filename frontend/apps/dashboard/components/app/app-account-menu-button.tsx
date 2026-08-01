@@ -1,7 +1,7 @@
 'use client';
 
-import { Avatar, AvatarFallback, AvatarImage } from '../ui/common/avatar';
-import { SidebarMenuButton } from '../ui/common/sidebar';
+import { Avatar, AvatarFallback, AvatarImage } from '@feature/ui/components/ui/common/avatar';
+import { SidebarMenuButton } from '@feature/ui/components/ui/common/sidebar';
 
 interface Props {
   name?: string;

@@ -9,7 +9,7 @@ import {
   ContextMenuItem,
   ContextMenuSeparator,
   ContextMenuTrigger,
-} from '@app/dashboard/components/ui/common/context-menu';
+} from '@feature/ui/components/ui/common/context-menu';
 import { cn } from '@app/dashboard/lib/ui/utils';
 import {
   type Filter,

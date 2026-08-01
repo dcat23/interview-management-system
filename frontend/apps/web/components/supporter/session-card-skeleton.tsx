@@ -1,5 +1,5 @@
-import { Card, CardContent } from '@feature/ui/components/card';
-import { Skeleton } from '@feature/ui/components/skeleton';
+import { Card, CardContent } from '@feature/ui/components/ui/common/card';
+import { Skeleton } from '@feature/ui/components/ui/common/skeleton';
 
 export function SessionCardSkeleton() {
   return (

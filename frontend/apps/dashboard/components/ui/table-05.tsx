@@ -19,24 +19,24 @@ import {
   Trash2,
 } from 'lucide-react';
 import { useState } from 'react';
-import { Badge } from '@app/dashboard/components/ui/common/badge';
-import { Button } from '@app/dashboard/components/ui/common/button';
-import { Checkbox } from '@app/dashboard/components/ui/common/checkbox';
+import { Badge } from '@feature/ui/components/ui/common/badge';
+import { Button } from '@feature/ui/components/ui/common/button';
+import { Checkbox } from '@feature/ui/components/ui/common/checkbox';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@app/dashboard/components/ui/common/dropdown-menu';
-import { Input } from '@app/dashboard/components/ui/common/input';
+} from '@feature/ui/components/ui/common/dropdown-menu';
+import { Input } from '@feature/ui/components/ui/common/input';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@app/dashboard/components/ui/common/select';
+} from '@feature/ui/components/ui/common/select';
 import {
   Table,
   TableBody,
@@ -44,7 +44,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@app/dashboard/components/ui/common/table';
+} from '@feature/ui/components/ui/common/table';
 import { cn } from '@app/dashboard/lib/ui/utils';
 
 type Status = 'completed' | 'pending' | 'processing' | 'cancelled';
@@ -95,9 +95,12 @@ const columns: ColumnDef<Item>[] = [
     header: ({ table }) => (
       <Checkbox
         aria-label="Select all"
-        checked={table.getIsAllPageRowsSelected()}
-        indeterminate={
-          table.getIsSomePageRowsSelected() && !table.getIsAllPageRowsSelected()
+        checked={
+          table.getIsAllPageRowsSelected()
+            ? true
+            : table.getIsSomePageRowsSelected()
+              ? 'indeterminate'
+              : false
         }
         onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
       />
@@ -140,11 +143,11 @@ const columns: ColumnDef<Item>[] = [
     cell: () => (
       <div className="text-right">
         <DropdownMenu>
-          <DropdownMenuTrigger
-            render={<Button className="h-8 w-8" size="icon" variant="ghost" />}
-          >
-            <MoreHorizontal className="h-4 w-4" />
-            <span className="sr-only">Open menu</span>
+          <DropdownMenuTrigger asChild>
+            <Button className="h-8 w-8" size="icon" variant="ghost">
+              <MoreHorizontal className="h-4 w-4" />
+              <span className="sr-only">Open menu</span>
+            </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem>

@@ -20,13 +20,13 @@ import { createPortal } from 'react-dom';
 import tunnel from 'tunnel-rat';
 import { motion, useReducedMotion } from 'motion/react';
 
-import { Button } from '@app/dashboard/components/ui/common/button';
+import { Button } from '@feature/ui/components/ui/common/button';
 import {
   Field,
   FieldGroup,
   FieldLabel,
-} from '@app/dashboard/components/ui/common/field';
-import { Input } from '@app/dashboard/components/ui/common/input';
+} from '@feature/ui/components/ui/common/field';
+import { Input } from '@feature/ui/components/ui/common/input';
 import {
   Popover,
   PopoverContent,
@@ -34,14 +34,14 @@ import {
   PopoverHeader,
   PopoverTitle,
   PopoverTrigger,
-} from '@app/dashboard/components/ui/common/popover';
+} from '@feature/ui/components/ui/common/popover';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@app/dashboard/components/ui/common/select';
+} from '@feature/ui/components/ui/common/select';
 import { cn } from '@app/dashboard/lib/ui/utils';
 
 export interface TimelineSlotData {

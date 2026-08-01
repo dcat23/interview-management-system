@@ -1,4 +1,4 @@
-import { Badge } from '@feature/ui/components/badge';
+import { Badge } from '@feature/ui/components/ui/common/badge';
 import { cn } from '@feature/ui/lib/ui/utils';
 import type { FeedbackState } from '@app/web/lib/data/sessions';
 import type { SessionStatus } from '@feature/base/server';
@@ -41,6 +41,6 @@ export function FeedbackStatusBadge({ status }: { status: FeedbackState }) {
   if (status.content) {
     return <Badge variant="secondary">Draft saved</Badge>
   }
-  
+
   return <Badge variant="outline">No feedback yet</Badge>
 }

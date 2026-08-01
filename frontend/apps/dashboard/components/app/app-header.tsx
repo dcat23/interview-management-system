@@ -1,10 +1,10 @@
 // 'use client';
 
-import { Separator } from '@app/dashboard/components/ui/common/separator';
-import { SidebarTrigger } from '@app/dashboard/components/ui/common/sidebar';
+import { Separator } from '@feature/ui/components/ui/common/separator';
+import { SidebarTrigger } from '@feature/ui/components/ui/common/sidebar';
 // import { usePathname } from 'next/navigation';
 // import { Fragment, useMemo } from 'react';
-// import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '../ui/common/breadcrumb';
+// import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@feature/ui/components/ui/common/breadcrumb';
 import CommandButton from './command-button';
 
 

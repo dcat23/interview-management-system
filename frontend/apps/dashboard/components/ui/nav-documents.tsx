@@ -6,7 +6,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@app/dashboard/components/ui/common/dropdown-menu';
+} from '@feature/ui/components/ui/common/dropdown-menu';
 import {
   SidebarGroup,
   SidebarGroupLabel,
@@ -15,7 +15,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
-} from '@app/dashboard/components/ui/common/sidebar';
+} from '@feature/ui/components/ui/common/sidebar';
 import {
   DotsThreeOutlineIcon,
   FolderIcon,

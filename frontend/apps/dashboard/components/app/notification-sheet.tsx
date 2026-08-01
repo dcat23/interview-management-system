@@ -3,7 +3,7 @@
 import { RiNotification3Line } from '@remixicon/react';
 import { ReactNode } from 'react';
 import { toast } from 'sonner';
-import { Button } from '../ui/common/button';
+import { Button } from '@feature/ui/components/ui/common/button';
 import {
   Sheet,
   SheetContent,
@@ -11,7 +11,7 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from '../ui/common/sheet';
+} from '@feature/ui/components/ui/common/sheet';
 
 interface Props {
   data?: unknown;
@@ -25,23 +25,21 @@ export function NotificationSheet(props: Props) {
 
   return (
     <Sheet>
-      <SheetTrigger
-        render={
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label="Notifications"
-            className="relative"
-          >
-            <RiNotification3Line className="size-5" />
-            {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 flex size-4 items-center justify-center bg-primary text-[9px] leading-none font-bold text-primary-foreground ring-2 ring-background">
-                {unreadCount}
-              </span>
-            )}
-          </Button>
-        }
-      />
+      <SheetTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label="Notifications"
+          className="relative"
+        >
+          <RiNotification3Line className="size-5" />
+          {unreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 flex size-4 items-center justify-center bg-primary text-[9px] leading-none font-bold text-primary-foreground ring-2 ring-background">
+              {unreadCount}
+            </span>
+          )}
+        </Button>
+      </SheetTrigger>
       <SheetContent className="w-full sm:max-w-sm">
         <SheetHeader className="gap-0.5 border-b border-border">
           <SheetTitle>Notifications</SheetTitle>

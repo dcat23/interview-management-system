@@ -7,11 +7,11 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from '@app/dashboard/components/ui/common/breadcrumb';
+} from '@feature/ui/components/ui/common/breadcrumb';
 import {
   Badge,
   badgeVariants,
-} from '@app/dashboard/components/ui/common/badge';
+} from '@feature/ui/components/ui/common/badge';
 import type { VariantProps } from 'class-variance-authority';
 
 interface Crumb {

@@ -8,17 +8,17 @@ import { useClients } from '@app/dashboard/hooks/client/use-clients';
 import { useDebouncedValue } from '@app/dashboard/hooks/ui/use-debounced-value';
 import { cn } from '@app/dashboard/lib/ui/utils';
 import { InterviewProcess, ProcessStatus } from '@feature/base/server';
-import { Badge } from '../ui/common/badge';
+import { Badge } from '@feature/ui/components/ui/common/badge';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '../ui/common/select';
+} from '@feature/ui/components/ui/common/select';
 import { DataTable, DataTableColumn, DataTableSortState } from '../data-table';
 import { useRouter } from 'next/navigation';
-import { AnimatedCalendar } from '@app/dashboard/components/ui/common/calender';
+import { AnimatedCalendar } from '@feature/ui/components/ui/common/calender';
 
 const DEFAULT_PAGE_SIZE = 10;
 const ALL_STATUSES = 'all';

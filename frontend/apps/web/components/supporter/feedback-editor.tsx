@@ -2,10 +2,10 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { Card, CardContent, CardHeader, CardTitle } from '@feature/ui/components/card';
-import { Button } from '@feature/ui/components/button';
-import { Textarea } from '@feature/ui/components/textarea';
-import { Badge } from '@feature/ui/components/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@feature/ui/components/ui/common/card';
+import { Button } from '@feature/ui/components/ui/common/button';
+import { Textarea } from '@feature/ui/components/ui/common/textarea';
+import { Badge } from '@feature/ui/components/ui/common/badge';
 import { Check, Loader2, Lock, MessageSquare, Send } from 'lucide-react';
 import { ConfirmDialog } from './confirm-dialog';
 import { createFeedback, updateFeedback } from '@feature/backend/server';

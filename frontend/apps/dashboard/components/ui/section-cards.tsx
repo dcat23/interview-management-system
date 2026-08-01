@@ -1,6 +1,6 @@
 'use client';
 
-import { Badge } from '@app/dashboard/components/ui/common/badge';
+import { Badge } from '@feature/ui/components/ui/common/badge';
 import {
   Card,
   CardAction,
@@ -8,7 +8,7 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '@app/dashboard/components/ui/common/card';
+} from '@feature/ui/components/ui/common/card';
 import { TrendDownIcon, TrendUpIcon } from '@phosphor-icons/react';
 
 export function SectionCards() {

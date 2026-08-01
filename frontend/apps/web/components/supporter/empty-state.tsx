@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
-import { Card, CardContent } from '@feature/ui/components/card';
+import { Card, CardContent } from '@feature/ui/components/ui/common/card';
 
 export function EmptyState({
   icon: Icon,

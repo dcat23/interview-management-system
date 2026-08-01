@@ -1,6 +1,6 @@
 import type { InterviewProcess, ProcessStatus } from '@feature/base/server';
-import { Badge } from '@feature/ui/components/badge';
-import { Card, CardContent } from '@feature/ui/components/card';
+import { Badge } from '@feature/ui/components/ui/common/badge';
+import { Card, CardContent } from '@feature/ui/components/ui/common/card';
 import { Building2, Layers, User } from 'lucide-react';
 
 function statusVariant(status: ProcessStatus): 'default' | 'secondary' | 'outline' {

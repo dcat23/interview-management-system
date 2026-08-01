@@ -28,9 +28,9 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@app/dashboard/components/ui/common/alert-dialog';
-import { Button } from '@app/dashboard/components/ui/common/button';
-import { Checkbox } from '@app/dashboard/components/ui/common/checkbox';
+} from '@feature/ui/components/ui/common/alert-dialog';
+import { Button } from '@feature/ui/components/ui/common/button';
+import { Checkbox } from '@feature/ui/components/ui/common/checkbox';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,17 +38,17 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@app/dashboard/components/ui/common/dropdown-menu';
-import { Input } from '@app/dashboard/components/ui/common/input';
-import { Label } from '@app/dashboard/components/ui/common/label';
+} from '@feature/ui/components/ui/common/dropdown-menu';
+import { Input } from '@feature/ui/components/ui/common/input';
+import { Label } from '@feature/ui/components/ui/common/label';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@app/dashboard/components/ui/common/select';
-import { Skeleton } from '@app/dashboard/components/ui/common/skeleton';
+} from '@feature/ui/components/ui/common/select';
+import { Skeleton } from '@feature/ui/components/ui/common/skeleton';
 import {
   Table,
   TableBody,
@@ -56,7 +56,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@app/dashboard/components/ui/common/table';
+} from '@feature/ui/components/ui/common/table';
 import { generateThreeWordGuard } from '@app/dashboard/lib/ui/typed-guard';
 import type { Page } from '@feature/base/server';
 

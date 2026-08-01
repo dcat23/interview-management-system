@@ -4,12 +4,12 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from '@app/dashboard/components/ui/common/sidebar';
+} from '@feature/ui/components/ui/common/sidebar';
 import { NavItem } from '@feature/base/server';
 import { PlusCircleIcon, Upload } from 'lucide-react';
-import { Button } from '../ui/common/button';
+import { Button } from '@feature/ui/components/ui/common/button';
 import AppSidebarNavMenu from './app-sidebar-nav-menu';
-import { Tooltip } from '@app/dashboard/components/ui/common/tooltip';
+import { Tooltip } from '@feature/ui/components/ui/common/tooltip';
 
 export function AppSidebarNavMain({ items }: { items: NavItem[] }) {
   return (

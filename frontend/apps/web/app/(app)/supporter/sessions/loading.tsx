@@ -1,4 +1,4 @@
-import { Skeleton } from '@feature/ui/components/skeleton';
+import { Skeleton } from '@feature/ui/components/ui/common/skeleton';
 import { SessionCardSkeleton } from '@app/web/components/supporter/session-card-skeleton';
 
 export default function Loading() {

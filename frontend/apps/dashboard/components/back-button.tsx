@@ -1,7 +1,7 @@
 'use client';
 
 import { ReactNode } from 'react';
-import { Button } from './ui/common/button';
+import { Button } from '@feature/ui/components/ui/common/button';
 import { useRouter } from 'next/navigation';
 import { RiArrowLeftLine } from '@remixicon/react';
 

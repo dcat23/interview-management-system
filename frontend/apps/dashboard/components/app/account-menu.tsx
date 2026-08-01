@@ -12,7 +12,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '../ui/common/dropdown-menu';
+} from '@feature/ui/components/ui/common/dropdown-menu';
 import { ReactElement } from 'react';
 
 interface Props {
@@ -22,7 +22,7 @@ interface Props {
 export function AccountMenu({ trigger }: Props) {
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger render={trigger} />
+      <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">
         <div className="flex flex-col px-2 py-1.5">
           <span className="text-xs font-medium text-foreground">

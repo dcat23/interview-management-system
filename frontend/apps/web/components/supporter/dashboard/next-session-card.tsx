@@ -1,7 +1,7 @@
 import { Suspense } from 'react';
 import Link from 'next/link';
 import moment from 'moment';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@feature/ui/components/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@feature/ui/components/ui/common/card';
 import { Briefcase, Calendar, Clock, ArrowRight, CalendarClock } from 'lucide-react';
 import { getInterviewSessions } from '@feature/backend/server';
 import { ModeBadge } from '../session-badges';

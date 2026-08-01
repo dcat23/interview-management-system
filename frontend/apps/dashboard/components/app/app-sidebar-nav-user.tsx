@@ -4,7 +4,7 @@ import {
   Avatar,
   AvatarFallback,
   AvatarImage,
-} from '@app/dashboard/components/ui/common/avatar';
+} from '@feature/ui/components/ui/common/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,13 +13,13 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@app/dashboard/components/ui/common/dropdown-menu';
+} from '@feature/ui/components/ui/common/dropdown-menu';
 import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
-} from '@app/dashboard/components/ui/common/sidebar';
+} from '@feature/ui/components/ui/common/sidebar';
 import {
   BellIcon,
   CreditCardIcon,
