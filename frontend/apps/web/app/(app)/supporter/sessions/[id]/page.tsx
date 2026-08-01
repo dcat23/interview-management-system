@@ -41,6 +41,7 @@ async function loadSessionDetail(sessionId: string) {
 
   return {
     session: sessionCard,
+    clientId: process.clientId,
     linkedQuestions: linkedQuestionsResult.data,
     questionBank: questionBankResult.data.data,
   };
@@ -54,7 +55,7 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
     notFound();
   }
 
-  const { session, linkedQuestions, questionBank } = detail;
+  const { session, clientId, linkedQuestions, questionBank } = detail;
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
@@ -90,6 +91,7 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
 
       <QuestionLinker
         sessionId={session.id}
+        clientId={clientId}
         initialLinkedQuestions={linkedQuestions}
         questionBank={questionBank}
       />

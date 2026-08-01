@@ -8,12 +8,14 @@ import { Page, Pageable, Question, SessionQuestion, toRecord } from '@feature/ba
 /**
  * [get-questions]
  *
- * No `q` full-text search param yet — the search story hasn't been built on
- * the backend. Filters by clientId/topic only for now.
+ * `q` runs a full-text search (topic + body, ranked by relevance) on the
+ * backend via plainto_tsquery. When `q` is present the backend ignores
+ * `topic` — see GET /questions in the API reference.
  */
 export type GetQuestionsRequest = Pageable & {
   clientId?: string;
   topic?: string;
+  q?: string;
 };
 
 export type GetQuestionsResponse = Page<Question>;

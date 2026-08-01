@@ -314,12 +314,13 @@ List active questions with optional filters.
 
 **Query params**
 
-| Param      | Type   | Description            |
-|------------|--------|------------------------|
-| `clientId` | uuid   | Filter by end client   |
-| `topic`    | string | Partial match on topic |
-| `page`     | int    | Default `0`            |
-| `limit`    | int    | Default `20`           |
+| Param      | Type   | Description                                                          |
+|------------|--------|-----------------------------------------------------------------------|
+| `q`        | string | Full-text search across topic and body (PostgreSQL `plainto_tsquery`, ranked by relevance). When present, `topic` is ignored; `clientId` still applies. |
+| `clientId` | uuid   | Filter by end client                                                   |
+| `topic`    | string | Partial match on topic. Ignored when `q` is present.                  |
+| `page`     | int    | Default `0`                                                            |
+| `limit`    | int    | Default `20`                                                           |
 
 **Response `200`**
 ```json

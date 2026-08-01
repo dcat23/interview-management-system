@@ -233,6 +233,84 @@ class QuestionControllerTest {
     }
 
     @Nested
+    @DisplayName("GET /questions?q= — full-text search")
+    class FullTextSearch {
+
+        @Test
+        @DisplayName("matches on topic and body, ranked by relevance")
+        void matchesTopicAndBody() throws Exception {
+            UUID adminId = userRepository.findByEmail(ADMIN_EMAIL).get().getId();
+            seedQuestion(clientId, adminId, "Concurrency",
+                    "Technical", "Explain the Java memory model and how volatile works.");
+            seedQuestion(clientId, adminId, "Databases",
+                    "Technical", "When would you reach for a message queue?");
+
+            mockMvc.perform(get("/questions")
+                            .param("q", "java concurrency")
+                            .header("Authorization", "Bearer " + adminToken))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.content", hasSize(1)))
+                    .andExpect(jsonPath("$.content[0].topic").value("Concurrency"));
+        }
+
+        @Test
+        @DisplayName("non-matching term returns an empty page, not an error")
+        void nonMatchingTermReturnsEmpty() throws Exception {
+            mockMvc.perform(get("/questions")
+                            .param("q", "kubernetes-operator-xyz-nonexistent")
+                            .header("Authorization", "Bearer " + adminToken))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.content", hasSize(0)));
+        }
+
+        @Test
+        @DisplayName("q combined with clientId scopes results to that client")
+        void combinesWithClientIdFilter() throws Exception {
+            UUID adminId = userRepository.findByEmail(ADMIN_EMAIL).get().getId();
+            UUID otherClientId = seedClient("Other Corp", "Retail").getId();
+            seedQuestion(otherClientId, adminId, "Caching",
+                    "Technical", "Explain cache invalidation strategies.");
+            seedQuestion(clientId, adminId, "Caching Basics",
+                    "Technical", "Explain cache invalidation strategies for a CDN.");
+
+            mockMvc.perform(get("/questions")
+                            .param("q", "cache invalidation")
+                            .param("clientId", clientId.toString())
+                            .header("Authorization", "Bearer " + adminToken))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.content[*].clientId", everyItem(is(clientId.toString()))));
+        }
+
+        @Test
+        @DisplayName("special characters in q do not crash the endpoint")
+        void malformedQueryHandledSafely() throws Exception {
+            mockMvc.perform(get("/questions")
+                            .param("q", ":!!&|()")
+                            .header("Authorization", "Bearer " + adminToken))
+                    .andExpect(status().isOk());
+        }
+
+        @Test
+        @DisplayName("blank q falls back to the existing paginated listing")
+        void blankQFallsBackToExistingListing() throws Exception {
+            mockMvc.perform(get("/questions")
+                            .param("q", "   ")
+                            .header("Authorization", "Bearer " + adminToken))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.content", hasSize(greaterThanOrEqualTo(1))));
+        }
+
+        @Test
+        @DisplayName("candidate cannot search questions → 403")
+        void candidateForbidden() throws Exception {
+            mockMvc.perform(get("/questions")
+                            .param("q", "concurrency")
+                            .header("Authorization", "Bearer " + candidateToken))
+                    .andExpect(status().isForbidden());
+        }
+    }
+
+    @Nested
     @DisplayName("PATCH /questions/{id}")
     class UpdateQuestion {
 
