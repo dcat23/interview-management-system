@@ -1,0 +1,150 @@
+{
+  "summary": "Feedback Module: Draft, Submit & View-All/Edit-Own Authorization",
+  "description": "Builds the feedback module against the feedback table that already exists in the schema (migration V8__create_feedback.sql: session_id UNIQUE, supporter_id, body, is_submitted, submitted_at, updated_at — one record per session, plain-text body, no rating field) but has zero backend code (backend/api/src/main/java/xyz/catuns/imp/api/feedback is an empty placeholder package on every branch to date).\n\nSupersedes two prior, mutually-inconsistent specs:\n- docs/backlog/phase-3-epic-weeks-7-8-feedback-job-search.json's feedback story, which specced a separate POST /sessions/:id/feedback/submit endpoint and 'supporters can only read their own feedback' — using stale apps/api / com.ims package paths that don't match this codebase.\n- docs/backlog/phase-4-epic-backend-supporter-api-completion.json's feedback story, which correctly re-specced PATCH-based submit (matching docs/api-reference.md) but kept the 'supporter reads own only' restriction — and was never implemented.\n\nThis epic corrects the authorization model per current product direction: any supporter can view feedback for any session (consistent with the already-decided broadened supporter read access for processes/sessions in the Phase 4 completion epic), but a supporter may only create or edit the feedback record for sessions where they are the assigned supporter. Admins and marketers can read any submitted feedback; only the assigned supporter can write.\n\nThe supporter feedback UI already exists in frontend/apps/web (components/supporter/feedback-editor.tsx, awaiting-feedback-list.tsx, app/(app)/supporter/sessions/[id]/feedback/page.tsx) but is pure local mock state with no API calls — note this is apps/web, not frontend/apps/dashboard, which currently has no feedback pages at all; confirm which frontend app is the actual target before wiring, since dashboard is where recent branch activity has been concentrated.\n\nKey paths: <backend/api/src/main/java/xyz/catuns/imp/api/feedback>, <backend/api/src/main/resources/db/migration/V8__create_feedback.sql>, <frontend/apps/web/components/supporter/feedback-editor.tsx>",
+  "labels": ["feedback", "crud", "authorization", "supporter", "phase-3"],
+  "priority": "Medium",
+  "userType": "interview supporter",
+  "functionality": "submit structured feedback after conducting a session, see feedback left by other supporters on any session, but only edit the record for sessions they personally supported",
+  "benefit": "closes the interview feedback loop for admins/marketers while giving supporters visibility into how prior rounds went, without letting them alter another supporter's assessment",
+  "stories": [
+    {
+      "summary": "Implement FeedbackEntity, repository, and service",
+      "description": "JPA entity mapping to the existing feedback table — no new migration expected, only build against V8 as-is. Service methods: createDraft (409 if a record already exists for the session, since session_id is UNIQUE), updateDraft (409 once is_submitted=true), submit (sets submitted_at server-side and locks further writes), findBySessionId.\n\nKey paths: <backend/api/src/main/java/xyz/catuns/imp/api/feedback/FeedbackEntity.java>, <backend/api/src/main/java/xyz/catuns/imp/api/feedback/repository/FeedbackRepository.java>, <backend/api/src/main/java/xyz/catuns/imp/api/feedback/FeedbackService.java>",
+      "labels": ["feedback", "crud", "lifecycle", "phase-3"],
+      "priority": "High",
+      "storyPoints": 5,
+      "acceptanceCriteria": [
+        {
+          "scenario": "Supporter creates a feedback draft",
+          "given": "no feedback record exists yet for a session",
+          "when": "the assigned supporter creates a draft with a body",
+          "then": "a feedback record is persisted with is_submitted=false and a 201 response is returned"
+        },
+        {
+          "scenario": "Creating a second draft for the same session is rejected",
+          "given": "a feedback record already exists for a session",
+          "when": "a create is attempted again for that session",
+          "then": "a 409 Conflict response is returned, consistent with the session_id UNIQUE constraint"
+        },
+        {
+          "scenario": "Submitting locks the record",
+          "given": "a draft feedback record exists",
+          "when": "submit is called",
+          "then": "is_submitted becomes true, submitted_at is set server-side, and any further update attempt returns 409"
+        }
+      ],
+      "tasks": [
+        {
+          "summary": "Implement FeedbackEntity and FeedbackRepository",
+          "description": "Entity fields: id, sessionId, supporterId, body, isSubmitted, submittedAt, updatedAt — camelCase in DTOs, mapping to the existing snake_case columns. Repository: findBySessionId, existsBySessionId."
+        },
+        {
+          "summary": "Implement FeedbackService with createDraft, updateDraft, submit",
+          "description": "createDraft throws 409 if a record already exists for the session. updateDraft and submit both throw 409 if is_submitted is already true. submit sets submitted_at and is_submitted=true in one update."
+        },
+        {
+          "summary": "Add integration tests for the feedback lifecycle service",
+          "description": "Cover: create draft, duplicate create 409, update draft, submit, edit-after-submit 409."
+        }
+      ]
+    },
+    {
+      "summary": "Implement FeedbackController: view all, edit own",
+      "description": "Endpoints, all under /sessions/:id/feedback:\n- GET: any authenticated admin, marketer, or supporter can read the feedback for any session (no ownership restriction) — this is the corrected rule, replacing 'own only' from both prior specs. Candidates are not permitted.\n- POST: creates a draft. supporterId is derived from the JWT, not the request body. 403 if the caller is not the session's assigned supporter (cannot author feedback under another supporter's name, and cannot author feedback for a session they didn't support).\n- PATCH: updates the draft or submits it ({ body?, isSubmitted? }). 403 if the caller is not the record's supporterId — admins and marketers can GET but never POST/PATCH.\n\nKey paths: <backend/api/src/main/java/xyz/catuns/imp/api/feedback/FeedbackController.java>, <backend/api/src/main/java/xyz/catuns/imp/api/feedback/dto>",
+      "labels": ["feedback", "authorization", "api", "phase-3"],
+      "priority": "High",
+      "storyPoints": 5,
+      "acceptanceCriteria": [
+        {
+          "scenario": "Any supporter can view feedback on any session",
+          "given": "supporter A submitted feedback for a session they supported",
+          "when": "supporter B (not assigned to that session) calls GET /sessions/:id/feedback",
+          "then": "supporter A's feedback content is returned with a 200 response, not 403 or 404"
+        },
+        {
+          "scenario": "Only the assigned supporter can create feedback for a session",
+          "given": "a session is assigned to supporter A",
+          "when": "supporter B calls POST /sessions/:id/feedback",
+          "then": "a 403 Forbidden response is returned"
+        },
+        {
+          "scenario": "Only the authoring supporter can update their feedback",
+          "given": "supporter A authored a draft feedback record for a session",
+          "when": "supporter B calls PATCH /sessions/:id/feedback for that session",
+          "then": "a 403 Forbidden response is returned and the record is unchanged"
+        },
+        {
+          "scenario": "Admin and marketer can read but not write feedback",
+          "given": "an authenticated admin or marketer",
+          "when": "they call GET /sessions/:id/feedback",
+          "then": "a 200 response is returned; if they attempt POST or PATCH on the same endpoint, a 403 is returned"
+        },
+        {
+          "scenario": "Candidate cannot access feedback endpoints",
+          "given": "an authenticated candidate",
+          "when": "they call GET, POST, or PATCH /sessions/:id/feedback",
+          "then": "a 403 Forbidden response is returned"
+        }
+      ],
+      "tasks": [
+        {
+          "summary": "Add FeedbackResponse, CreateFeedbackRequest, UpdateFeedbackRequest DTOs",
+          "description": "camelCase JSON fields per project convention: id, sessionId, supporterId, body, isSubmitted, submittedAt, updatedAt. No @JsonProperty snake_case annotations."
+        },
+        {
+          "summary": "Implement FeedbackController with GET/POST/PATCH /sessions/:id/feedback",
+          "description": "GET: @PreAuthorize hasAnyRole('ADMIN','MARKETER','SUPPORTER'), unscoped. POST/PATCH: @PreAuthorize hasRole('SUPPORTER') plus an ownership check against the session's assigned supporterId (POST) or the feedback record's supporterId (PATCH), resolved from the JWT the same way SessionStatusTransitionService.resolveUserId does."
+        },
+        {
+          "summary": "Add integration tests for role-scoped access",
+          "description": "Cover all acceptance criteria above using Testcontainers Postgres: cross-supporter GET, cross-supporter POST/PATCH 403, admin/marketer read-only, candidate fully blocked."
+        },
+        {
+          "summary": "Update docs/api-reference.md and mark prior specs superseded",
+          "description": "Document the corrected view-all/edit-own rule. Add a note to both docs/backlog/phase-3-epic-weeks-7-8-feedback-job-search.json and docs/backlog/phase-4-epic-backend-supporter-api-completion.json pointing at this epic as the authoritative, actually-implemented feedback spec."
+        }
+      ]
+    },
+    {
+      "summary": "Wire the supporter feedback UI to the real API",
+      "description": "Replace the local mock state in the existing supporter feedback UI with real React Query hooks against the endpoints from the previous story. Add a read-only view for feedback authored by another supporter (view-all), keeping the editable draft/submit flow only when the viewer is the authoring supporter. First confirm with the team whether frontend/apps/web or frontend/apps/dashboard is the intended home for this page, since dashboard has no supporter routes today and has been the focus of recent work.\n\nKey paths: <frontend/apps/web/components/supporter/feedback-editor.tsx>, <frontend/apps/web/components/supporter/awaiting-feedback-list.tsx>, <frontend/apps/web/app/(app)/supporter/sessions/[id]/feedback/page.tsx>",
+      "labels": ["feedback", "frontend", "supporter", "phase-3"],
+      "priority": "Medium",
+      "storyPoints": 3,
+      "acceptanceCriteria": [
+        {
+          "scenario": "Own draft remains editable",
+          "given": "a supporter viewing their own unsubmitted feedback",
+          "when": "the feedback page loads",
+          "then": "the editable textarea, autosave PATCH, and submit button behave as today, but now persist to the real API instead of local state"
+        },
+        {
+          "scenario": "Another supporter's feedback is read-only",
+          "given": "a supporter viewing feedback authored by a different supporter",
+          "when": "the feedback page loads",
+          "then": "the content is shown read-only with no save or submit controls"
+        },
+        {
+          "scenario": "Submitted feedback is always read-only",
+          "given": "feedback has is_submitted=true, regardless of author",
+          "when": "any supporter views it",
+          "then": "the content is shown read-only with a submitted timestamp"
+        }
+      ],
+      "tasks": [
+        {
+          "summary": "Confirm target frontend app for the supporter feedback route",
+          "description": "Reconcile frontend/apps/web vs frontend/apps/dashboard before starting — do not duplicate the page in both."
+        },
+        {
+          "summary": "Define feedbackResponseSchema and React Query hooks",
+          "description": "Zod schema matching FeedbackResponse. useFeedback, useCreateFeedback, useUpdateFeedback hooks using the configured apiClient singleton."
+        },
+        {
+          "summary": "Replace mock state in feedback-editor.tsx with real API calls",
+          "description": "Swap the local useState/setTimeout simulation for the new hooks. Add the read-only branch for non-authoring viewers per the acceptance criteria."
+        }
+      ]
+    }
+  ]
+}

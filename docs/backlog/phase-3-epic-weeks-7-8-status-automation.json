@@ -1,0 +1,174 @@
+{
+  "summary": "Background Automation: Scheduled Session Transitions & Cross-Entity Status Cascade",
+  "description": "Replaces the background-job story in docs/backlog/phase-3-epic-weeks-7-8-feedback-job-search.json with a scope that matches the actual codebase: a single-module Spring Boot backend (backend/api, package xyz.catuns.imp.api) with an already-built session status state machine and Kafka producer, but no scheduler and no cross-entity cascade logic yet. Drops the advisory-lock/Micrometer/separate-service framing from the original spec — there is no evidence of a multi-instance deployment, and SessionStatusTransitionService.transitionByJob(...) already exists as a ready-made entry point (ChangeSource.BACKGROUND_JOB) that nothing currently calls.\n\nProduct decision: process status becomes fully derived from session outcomes, so a marketer's only manual actions are (a) mark a session PASSED, (b) mark a session REJECTED, or (c) schedule a new session — everything else follows automatically. The one manual-only escape hatch is CANCELLED: once a process is cancelled (independent business decision, e.g. client pulled the role), no session-driven cascade overwrites it; only an explicit PATCH /processes/:id can move it out of CANCELLED.\n\nFour system-initiated behaviors are in scope:\n1. Time-based: SCHEDULED sessions past their scheduledAt auto-transition to IN_REVIEW on an hourly job.\n2. Session→process cascade: a session transitioning to REJECTED auto-transitions its parent process to WITHDRAWN.\n3. Session→process cascade: a session transitioning to PASSED auto-transitions its parent process to COMPLETED.\n4. Session→session and session→process cascade: scheduling a new session for a process (a) auto-transitions any of that process's sessions still in IN_REVIEW to PASSED (which itself triggers behavior 3), then (b) reactivates the process to ACTIVE and clears closedAt — so adding the next round always wins over whatever terminal state the prior round just produced.\n\nKey paths: <backend/api/src/main/java/xyz/catuns/imp/api/job> (new), <backend/api/src/main/java/xyz/catuns/imp/api/session/SessionStatusTransitionService.java>, <backend/api/src/main/java/xyz/catuns/imp/api/session/InterviewSessionService.java>, <backend/api/src/main/java/xyz/catuns/imp/api/process/InterviewProcessService.java>",
+  "labels": ["background-job", "status-transitions", "process", "session", "automation", "phase-3"],
+  "priority": "High",
+  "userType": "system",
+  "functionality": "automatically keep process status in sync with session outcomes, so a marketer only ever marks a session PASSED/REJECTED or schedules the next round — never manually patches process status for the normal lifecycle",
+  "benefit": "removes manual status-management overhead and eliminates the stale/inconsistent process statuses that happen when marketers forget to update a process after a session outcome is recorded",
+  "stories": [
+    {
+      "summary": "Implement hourly scheduled job to auto-transition overdue SCHEDULED sessions to IN_REVIEW",
+      "description": "Add a @Scheduled job that runs hourly, finds sessions with status=SCHEDULED and scheduledAt in the past, and transitions each to IN_REVIEW via the existing SessionStatusTransitionService.transitionByJob(...) method. Since status_history.changed_by is nullable, background-initiated transitions pass null rather than requiring a synthetic 'system user' row.\n\nKey paths: <backend/api/src/main/java/xyz/catuns/imp/api/job/SessionAutoTransitionJob.java> (new), <backend/api/src/main/java/xyz/catuns/imp/api/session/repository/InterviewSessionRepository.java>",
+      "labels": ["background-job", "scheduler", "session", "phase-3"],
+      "priority": "High",
+      "storyPoints": 5,
+      "acceptanceCriteria": [
+        {
+          "scenario": "Overdue scheduled sessions are transitioned",
+          "given": "two sessions have status=SCHEDULED and scheduledAt in the past",
+          "when": "the hourly job executes",
+          "then": "both sessions are updated to IN_REVIEW, a status_history row is written for each with change_source=BACKGROUND_JOB and changed_by=null, and the existing SessionStatusEventPublisher fires for each"
+        },
+        {
+          "scenario": "Sessions not yet due are left untouched",
+          "given": "a session has status=SCHEDULED and scheduledAt in the future",
+          "when": "the hourly job executes",
+          "then": "the session status is unchanged and no status_history row is written for it"
+        },
+        {
+          "scenario": "A single failing transition does not abort the batch",
+          "given": "the job is processing 3 overdue sessions and one throws an unexpected exception",
+          "when": "the job runs",
+          "then": "the failure is logged, the other 2 sessions are still transitioned, and the job completes without crashing"
+        }
+      ],
+      "tasks": [
+        {
+          "summary": "Add findByStatusAndScheduledAtBefore query to InterviewSessionRepository",
+          "description": "New derived query method returning sessions matching a given SessionStatus with scheduledAt before a supplied Instant."
+        },
+        {
+          "summary": "Allow SessionStatusTransitionService.transitionByJob to accept a nullable actor",
+          "description": "Change the systemActorId parameter to be nullable (or overload) so StatusHistory.changedBy is persisted as null for system-initiated transitions, matching the existing nullable column."
+        },
+        {
+          "summary": "Create job package and SessionAutoTransitionJob",
+          "description": "New package backend/api/src/main/java/xyz/catuns/imp/api/job. @Scheduled(cron) hourly trigger. Query overdue SCHEDULED sessions, call transitionByJob for each, catch and log per-item failures without stopping the loop."
+        },
+        {
+          "summary": "Add integration test for the scheduled job",
+          "description": "Cover: overdue sessions transitioned, future-scheduled sessions untouched, per-item failure isolation. Write the test class per project convention for CI to run."
+        }
+      ]
+    },
+    {
+      "summary": "Cascade terminal session outcomes to process status (PASSED→COMPLETED, REJECTED→WITHDRAWN)",
+      "description": "When a session transitions to PASSED or REJECTED — whether via the manual PATCH /sessions/:id/status endpoint or a background-initiated transition — automatically update the parent InterviewProcess status (COMPLETED for PASSED, WITHDRAWN for REJECTED) and set closedAt to now. CANCELLED is the one process state this cascade never overwrites: if the process is already CANCELLED, the cascade is a no-op, since cancellation is an independent manual decision. Any other current process status (ACTIVE, COMPLETED, WITHDRAWN) is overwritten to reflect the latest session outcome — this lets a later round's REJECTED withdraw a process that a prior round had already marked COMPLETED, matching the fully-derived status model. NO_SHOW and CANCELLED session statuses do not cascade to the process in this story.\n\nKey paths: <backend/api/src/main/java/xyz/catuns/imp/api/session/SessionStatusTransitionService.java>, <backend/api/src/main/java/xyz/catuns/imp/api/process/repository/InterviewProcessRepository.java>",
+      "labels": ["status-transitions", "process", "session", "phase-3"],
+      "priority": "High",
+      "storyPoints": 5,
+      "acceptanceCriteria": [
+        {
+          "scenario": "REJECTED session withdraws the process",
+          "given": "a session belongs to a process with status ACTIVE",
+          "when": "the session transitions from IN_REVIEW to REJECTED",
+          "then": "the process status is updated to WITHDRAWN, closedAt is set to the current time, in the same transaction as the session transition"
+        },
+        {
+          "scenario": "PASSED session completes the process",
+          "given": "a session belongs to a process with status ACTIVE",
+          "when": "the session transitions from IN_REVIEW to PASSED",
+          "then": "the process status is updated to COMPLETED and closedAt is set to the current time"
+        },
+        {
+          "scenario": "A later outcome overwrites an earlier one",
+          "given": "a process was previously set to COMPLETED by an earlier round's PASSED session",
+          "when": "a subsequent round's session on the same process transitions to REJECTED",
+          "then": "the process status is overwritten to WITHDRAWN and closedAt is updated to the new time"
+        },
+        {
+          "scenario": "CANCELLED process is never overwritten by the cascade",
+          "given": "a process has status CANCELLED",
+          "when": "a session under that process transitions to PASSED or REJECTED",
+          "then": "the process status and closedAt remain unchanged"
+        },
+        {
+          "scenario": "NO_SHOW and CANCELLED session outcomes do not cascade",
+          "given": "a session belongs to an ACTIVE process",
+          "when": "the session transitions to NO_SHOW or CANCELLED",
+          "then": "the process status is unchanged"
+        },
+        {
+          "scenario": "Cascade applies regardless of transition source",
+          "given": "a session is transitioned to PASSED or REJECTED by the background job rather than a manual PATCH",
+          "when": "the transition completes",
+          "then": "the same process cascade runs, unaffected by change_source"
+        }
+      ],
+      "tasks": [
+        {
+          "summary": "Inject process cascade logic into SessionStatusTransitionService.applyTransition",
+          "description": "After persisting the session transition and writing status_history, if toStatus==PASSED or toStatus==REJECTED, load the parent InterviewProcess and update its status (COMPLETED or WITHDRAWN respectively) + closedAt=now, guarded only by a check that current process status != CANCELLED. Reuse the same @Transactional boundary already on applyTransition."
+        },
+        {
+          "summary": "Add integration tests for the PASSED/REJECTED cascade",
+          "description": "Cover: ACTIVE→COMPLETED on PASSED, ACTIVE→WITHDRAWN on REJECTED, later outcome overwrites an earlier COMPLETED/WITHDRAWN, CANCELLED process never overwritten, NO_SHOW/CANCELLED session statuses don't cascade, cascade fires for both MANUAL and BACKGROUND_JOB change sources."
+        }
+      ]
+    },
+    {
+      "summary": "Cascade new session creation to auto-pass the prior IN_REVIEW session and reactivate the process",
+      "description": "When a marketer or admin schedules a new session for a process (POST /processes/:id/sessions), two things happen in order, in the same transaction: (1) any existing session on that process still in IN_REVIEW status is transitioned to PASSED via SessionStatusTransitionService.transitionByJob(...) — which, per the previous story, will itself set the process to COMPLETED; then (2) the process is reactivated to ACTIVE with closedAt cleared to null, since scheduling the next round means the process is ongoing again. Order matters: step 2 always runs after step 1, so the net effect of adding a new round to a just-completed process is that the prior session ends up PASSED and the process ends up ACTIVE, not COMPLETED. As with the other cascades, a process in CANCELLED status is left untouched — a cancelled process cannot be silently reactivated by scheduling a session against it.\n\nKey paths: <backend/api/src/main/java/xyz/catuns/imp/api/session/InterviewSessionService.java>",
+      "labels": ["status-transitions", "session", "process", "phase-3"],
+      "priority": "High",
+      "storyPoints": 5,
+      "acceptanceCriteria": [
+        {
+          "scenario": "Prior IN_REVIEW session is auto-passed when the next round is scheduled",
+          "given": "a process has a session in IN_REVIEW status",
+          "when": "a marketer calls POST /processes/:id/sessions to schedule a new session on the same process",
+          "then": "the IN_REVIEW session is transitioned to PASSED with a status_history row (change_source=BACKGROUND_JOB), and the new session is created with status SCHEDULED"
+        },
+        {
+          "scenario": "Process ends up ACTIVE, not COMPLETED, after adding the next round",
+          "given": "a process has a session in IN_REVIEW status",
+          "when": "a new session is scheduled for that process, triggering the prior session's PASSED cascade to COMPLETED",
+          "then": "the process's final status after the request completes is ACTIVE with closedAt=null, not COMPLETED"
+        },
+        {
+          "scenario": "Reactivation applies even to an already-COMPLETED or WITHDRAWN process",
+          "given": "a process has status COMPLETED or WITHDRAWN from a previous round's outcome",
+          "when": "a marketer schedules a new session for that process",
+          "then": "the process status is set to ACTIVE and closedAt is cleared"
+        },
+        {
+          "scenario": "CANCELLED processes are not reactivated by session creation",
+          "given": "a process has status CANCELLED",
+          "when": "a new session is scheduled for that process",
+          "then": "the session is still created, but the process status remains CANCELLED"
+        },
+        {
+          "scenario": "No side effect when nothing is in review",
+          "given": "a process has no sessions in IN_REVIEW status",
+          "when": "a new session is created for that process",
+          "then": "no other session's status changes, and the process is still reactivated to ACTIVE per the rules above"
+        },
+        {
+          "scenario": "Multiple IN_REVIEW sessions are all auto-passed",
+          "given": "a process has two sessions concurrently in IN_REVIEW status (an edge case)",
+          "when": "a new session is created for that process",
+          "then": "both IN_REVIEW sessions transition to PASSED"
+        }
+      ],
+      "tasks": [
+        {
+          "summary": "Add prior-IN_REVIEW lookup to InterviewSessionRepository",
+          "description": "Derived query method returning sessions for a processId with status=IN_REVIEW."
+        },
+        {
+          "summary": "Wire the auto-pass cascade into InterviewSessionService.create",
+          "description": "Before persisting the new session, look up IN_REVIEW sessions for processId and call transitionService.transitionByJob for each to move them to PASSED (this internally triggers the process→COMPLETED cascade from the previous story)."
+        },
+        {
+          "summary": "Wire the process reactivation into InterviewSessionService.create",
+          "description": "After the auto-pass step and after persisting the new session, reload the process and — unless its status is CANCELLED — set status=ACTIVE and closedAt=null, overriding whatever the auto-pass cascade just set."
+        },
+        {
+          "summary": "Add integration tests for the auto-pass + reactivation cascade",
+          "description": "Cover: single IN_REVIEW session auto-passed, process ends ACTIVE not COMPLETED, reactivation from COMPLETED/WITHDRAWN, CANCELLED process not reactivated, no-op when nothing is IN_REVIEW, multiple IN_REVIEW sessions all auto-passed."
+        }
+      ]
+    }
+  ]
+}

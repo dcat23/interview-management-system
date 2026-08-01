@@ -21,6 +21,8 @@ public interface InterviewSessionRepository extends JpaRepository<InterviewSessi
 
     List<InterviewSession> findByProcessIdOrderByScheduledAt(UUID processId);
 
+    List<InterviewSession> findByStatusAndScheduledAtBefore(SessionStatus status, Instant before);
+
     @Query("SELECT MIN(s.scheduledAt) FROM InterviewSession s WHERE s.processId = :processId")
     Optional<Instant> findEarliestScheduledAtByProcessId(@Param("processId") UUID processId);
 
