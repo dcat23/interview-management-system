@@ -4,7 +4,6 @@ import { RiErrorWarningLine, RiRefreshLine } from '@remixicon/react';
 
 import { Button } from '@app/dashboard/components/ui/common/button';
 import Link from 'next/link';
-import { useEffect } from 'react';
 import { logger } from '@next-feature/logging';
 
 const DEFAULT_ERROR_MESSAGE =
@@ -17,11 +16,10 @@ export default function ErrorBlock({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  useEffect(() => {
-    if (error) {
-      logger.error(error.message);
-    }
-  }, [error]);
+  if (error) {
+    logger.error(error, error.message);
+  }
+
   return (
     <section className="flex min-h-svh w-full flex-col items-center justify-center gap-6 bg-background px-6 py-12 text-center text-foreground">
       <div className="flex size-16 items-center justify-center border border-border bg-muted/30">
@@ -52,7 +50,7 @@ export default function ErrorBlock({
         </Link>
       </div>
 
-      <p className="font-mono text-xs text-muted-foreground">{error.message}</p>
+      <p className="font-mono text-xs text-muted-foreground">Digest: {error.digest}</p>
     </section>
   );
 }

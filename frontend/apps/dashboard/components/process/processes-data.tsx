@@ -176,7 +176,7 @@ export function ProcessesData() {
                 <SelectTrigger className="h-9 w-40">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent position={'item-aligned'}>
                   <SelectItem value={ALL_STATUSES}>All statuses</SelectItem>
                   {Object.entries(statusConfig).map(([value, config]) => (
                     <SelectItem key={value} value={value}>
@@ -196,7 +196,7 @@ export function ProcessesData() {
                 <SelectTrigger className="h-9 w-44">
                   <SelectValue placeholder="Client" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent position={'item-aligned'}>
                   <SelectItem value={ALL_CLIENTS}>All clients</SelectItem>
                   {clientsPage?.data.map((client) => (
                     <SelectItem key={client.id} value={client.id}>

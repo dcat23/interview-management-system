@@ -16,6 +16,8 @@ const log = logger.child({ module: 'backend-client' });
 const apiClient = new ApiClient({
   baseURL: BACKEND_API_URL,
   onAuthenticated: async (config) => {
+    log.info(config.data, `${config.method?.toUpperCase()} ${config.url}`);
+
     try {
       const { auth } = await import('@feature/auth/server');
       const session = await auth();
@@ -23,12 +25,9 @@ const apiClient = new ApiClient({
       if (token) {
         config.headers.Authorization = `Bearer ${token}`
       }
-
-
     } catch (error) {
-      
+      log.error(error, "onaAuthenticated")
     }
-    log.info(`${config.method?.toUpperCase()} ${config.url} ${config.data ?? ""}`)
   },
 });
 
