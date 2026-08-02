@@ -9,7 +9,7 @@ import './global.css';
 import Providers from './providers';
 import { Layout } from '../components/layout';
 import { Geist, JetBrains_Mono, Oxanium } from 'next/font/google';
-import { cn } from '@app/dashboard/lib/ui/utils';
+import { cn } from '@feature/ui/lib/ui/utils';
 
 const geistHeading = Geist({ subsets: ['latin'], variable: '--font-heading' });
 

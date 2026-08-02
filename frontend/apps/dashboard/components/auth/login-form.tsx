@@ -1,6 +1,6 @@
 'use client';
 
-import { cn } from '@app/dashboard/lib/ui/utils';
+import { cn } from '@feature/ui/lib/ui/utils';
 import { Button } from '@feature/ui/components/ui/common/button';
 import {
   Card,
@@ -23,7 +23,7 @@ import { loginFormAction, LoginRequest } from '@feature/auth/server';
 import { useRouter } from 'next/navigation';
 import { useActionState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { FormButton } from '@app/dashboard/components/form-button';
+import { FormButton } from '@app/dashboard/components/ui/common/form-button';
 
 interface Props<T> extends React.ComponentProps<'div'> {
   action?: (

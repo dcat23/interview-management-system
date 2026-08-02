@@ -2,7 +2,7 @@ import { RiCompass3Line } from '@remixicon/react';
 
 import { Button } from '@feature/ui/components/ui/common/button';
 import Link from 'next/link';
-import BackButton from '../components/back-button';
+import BackButton from '../components/ui/common/back-button';
 
 export default function ErrorBlock() {
   return (

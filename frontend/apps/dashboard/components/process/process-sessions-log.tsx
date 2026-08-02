@@ -9,7 +9,7 @@ import {
 import moment from 'moment';
 import { redirect } from 'next/navigation';
 
-import { cn } from '@app/dashboard/lib/ui/utils';
+import { cn } from '@feature/ui/lib/ui/utils';
 import type { InterviewSession, SessionStatus } from '@feature/base/server';
 import { Badge } from '@feature/ui/components/ui/common/badge';
 import {

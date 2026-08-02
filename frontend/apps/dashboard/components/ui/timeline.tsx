@@ -42,7 +42,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@feature/ui/components/ui/common/select';
-import { cn } from '@app/dashboard/lib/ui/utils';
+import { cn } from '@feature/ui/lib/ui/utils';
 
 export interface TimelineSlotData {
   id: string;

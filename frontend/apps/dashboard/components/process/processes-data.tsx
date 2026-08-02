@@ -6,7 +6,7 @@ import moment from 'moment';
 import { useProcesses } from '@app/dashboard/hooks/process/use-processes';
 import { useClients } from '@app/dashboard/hooks/client/use-clients';
 import { useDebouncedValue } from '@app/dashboard/hooks/ui/use-debounced-value';
-import { cn } from '@app/dashboard/lib/ui/utils';
+import { cn } from '@feature/ui/lib/ui/utils';
 import { InterviewProcess, ProcessStatus } from '@feature/base/server';
 import { Badge } from '@feature/ui/components/ui/common/badge';
 import {
@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@feature/ui/components/ui/common/select';
-import { DataTable, DataTableColumn, DataTableSortState } from '../data-table';
+import { DataTable, DataTableColumn, DataTableSortState } from '../ui/common/data-table';
 import { useRouter } from 'next/navigation';
 import { AnimatedCalendar } from '@feature/ui/components/ui/common/calender';
 

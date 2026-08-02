@@ -58,7 +58,9 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
           <StatusBadge status={session.status} />
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <p className="text-muted-foreground">{session.technology}</p>
+          <Link href={`/supporter/processes/${session.processId}`}>
+            <p className="text-muted-foreground">{session.technology}</p>
+          </Link>
           <ModeBadge mode={session.mode} />
         </div>
       </div>

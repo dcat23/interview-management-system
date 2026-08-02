@@ -57,7 +57,7 @@ import {
   TableHeader,
   TableRow,
 } from '@feature/ui/components/ui/common/table';
-import { generateThreeWordGuard } from '@app/dashboard/lib/ui/typed-guard';
+import { generateThreeWordGuard } from '@feature/ui/lib/ui/typed-guard';
 import type { Page } from '@feature/base/server';
 
 export type DataTableColumn<TData> = {
