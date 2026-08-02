@@ -1,5 +1,5 @@
 import AppHeader from '@app/dashboard/components/app/app-header';
-import { AppSidebar } from '@app/dashboard/components/app/app-sidebar';
+import { AppSidebar } from '@app/dashboard/components/app/sidebar/app-sidebar';
 import {
   SidebarInset,
   SidebarProvider,

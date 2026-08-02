@@ -37,7 +37,7 @@ export async function AppSidebar({ role, ...props }: Props) {
               asChild
               className="data-[slot=sidebar-menu-button]:p-1.5!"
             >
-              <Link href="/">
+              <Link href="/frontend/apps/dashboard/public">
                 <CommandIcon className="size-5!" />
                 <span className="text-base font-semibold">
                   {capitalize(user.role)} Portal

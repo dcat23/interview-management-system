@@ -67,3 +67,28 @@ export const getSessionById = withApi(async (id: string) => {
   const endpoint = `/sessions/${id}`;
   return api.get<GetSessionByIdResponse>(endpoint);
 }, {});
+
+/**
+ * [transition-session-status]
+ *
+ * PATCH /sessions/:id/status. Applies a status transition through the
+ * session's state machine. Permitted roles depend on the from/to pair -
+ * 403 if the caller's role isn't permitted, 409 if the transition itself
+ * is invalid for the session's current status.
+ */
+const transitionSessionStatusSchema = z.object({
+  targetStatus: z.enum(['SCHEDULED', 'IN_REVIEW', 'PASSED', 'REJECTED', 'NO_SHOW', 'CANCELLED']),
+});
+export type TransitionSessionStatusRequest = z.infer<typeof transitionSessionStatusSchema>;
+export type TransitionSessionStatusResponse = InterviewSession;
+
+export const transitionSessionStatus = withApi(async (sessionId: string, options: TransitionSessionStatusRequest) => {
+  const parsed = transitionSessionStatusSchema.safeParse(options);
+
+  if (!parsed.success) {
+    throw parsed.error;
+  }
+
+  const endpoint = `/sessions/${sessionId}/status`;
+  return api.patch<TransitionSessionStatusResponse>(endpoint, parsed.data);
+}, {});

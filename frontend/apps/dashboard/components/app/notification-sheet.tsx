@@ -1,7 +1,7 @@
 'use client';
 
 import { RiNotification3Line } from '@remixicon/react';
-import { ReactNode } from 'react';
+import { ReactNode, useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@feature/ui/components/ui/common/button';
 import {
@@ -14,11 +14,21 @@ import {
 } from '@feature/ui/components/ui/common/sheet';
 
 interface Props {
-  data?: unknown;
   children?: ReactNode;
 }
 
-export function NotificationSheet(props: Props) {
+interface Note {
+  unread: boolean;
+  tone: string;
+  id: string;
+  time: string;
+  detail: string;
+  icon: any;
+  title: string;
+}
+
+export function NotificationSheet({ children }: Props) {
+  const [notes, setNotes] = useState<Note[]>([]);
   const unreadCount = notes.filter((n) => n.unread).length;
   const markAllRead = () =>
     setNotes((prev) => prev.map((n) => ({ ...n, unread: false })));

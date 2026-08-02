@@ -84,7 +84,7 @@
         "useAuth": true
       },
       "declaration": {
-        "projectName": "dashboard"
+        "projectName": "base"
       },
       "action": {
         "projectName": "backend",

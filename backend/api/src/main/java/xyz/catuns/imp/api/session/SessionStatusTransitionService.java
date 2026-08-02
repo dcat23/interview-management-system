@@ -41,6 +41,8 @@ public class SessionStatusTransitionService {
         fromScheduled.put(SessionStatus.IN_REVIEW, Set.of(UserRole.SUPPORTER));
         fromScheduled.put(SessionStatus.CANCELLED, Set.of(UserRole.MARKETER, UserRole.ADMIN));
         ALLOWED_TRANSITIONS.put(SessionStatus.SCHEDULED, fromScheduled);
+        // NO_SHOW is treated like SCHEDULED: same outgoing transitions/roles.
+        ALLOWED_TRANSITIONS.put(SessionStatus.NO_SHOW, fromScheduled);
 
         Map<SessionStatus, Set<UserRole>> fromInReview = new EnumMap<>(SessionStatus.class);
         fromInReview.put(SessionStatus.PASSED,   Set.of(UserRole.SUPPORTER, UserRole.MARKETER));

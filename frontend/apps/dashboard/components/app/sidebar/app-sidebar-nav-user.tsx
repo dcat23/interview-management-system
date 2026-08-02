@@ -27,6 +27,8 @@ import {
   SignOutIcon,
   UserCircleIcon,
 } from '@phosphor-icons/react';
+import { signOutAction } from '@feature/auth/server';
+import SignOutMenuItem from '@app/dashboard/components/sign-out-menu-item';
 
 export function AppSidebarNavUser({
   user,
@@ -97,10 +99,7 @@ export function AppSidebarNavUser({
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <SignOutIcon />
-              Log out
-            </DropdownMenuItem>
+            <SignOutMenuItem />
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>
