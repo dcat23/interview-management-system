@@ -153,12 +153,13 @@ class ScheduleImportControllerTest {
         JsonNode result = importCsv(csv).get("results").get(0);
         UUID processId = UUID.fromString(result.get("processId").asText());
 
-        // Re-importing the same round with an earlier date updates the existing session.
+        // Re-importing the same round with an earlier date still moves scheduledAt/startedAt,
+        // but the outcome is UNCHANGED since the status itself didn't change (still Scheduled).
         String rescheduledCsv = CSV_HEADER + "\n"
                 + "Import Candidate Three,Import Lead Three,Java,05-Dec-26,10:00 AM EST,1 Hour,Video,"
                 + "Import Test Corp,Round 1,Scheduled\n";
         JsonNode rescheduledResult = importCsv(rescheduledCsv).get("results").get(0);
-        assertThat(rescheduledResult.get("outcome").asText()).isEqualTo("UPDATED");
+        assertThat(rescheduledResult.get("outcome").asText()).isEqualTo("UNCHANGED");
 
         Instant expectedScheduledAt = ScheduleDateTimeParser.parse("05-Dec-26", "10:00 AM EST");
         assertThat(processRepository.findById(processId).orElseThrow().getStartedAt())

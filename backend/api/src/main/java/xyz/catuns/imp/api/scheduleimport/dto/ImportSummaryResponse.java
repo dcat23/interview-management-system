@@ -6,23 +6,23 @@ public record ImportSummaryResponse(
         int totalRows,
         int imported,
         int updated,
+        int unchanged,
         int failed,
         List<ImportRowResult> results
 ) {
     public static ImportSummaryResponse from(List<ImportRowResult> results) {
-        // Map<ImportOutcome,List<ImportRowResult>> output = new HashMap<>();
         int imported = 0;
         int updated = 0;
+        int unchanged = 0;
         int failed = 0;
         for (ImportRowResult result : results) {
             switch (result.outcome()) {
                 case IMPORTED -> imported++;
                 case UPDATED -> updated++;
+                case UNCHANGED -> unchanged++;
                 case FAILED -> failed++;
             }
-            // output.computeIfAbsent(result.outcome(), k -> new ArrayList<>())
-            //     .add(result);
         }
-        return new ImportSummaryResponse(results.size(), imported, updated, failed, results);
+        return new ImportSummaryResponse(results.size(), imported, updated, unchanged, failed, results);
     }
 }

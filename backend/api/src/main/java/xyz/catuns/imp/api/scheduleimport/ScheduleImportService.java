@@ -120,7 +120,7 @@ public class ScheduleImportService {
 
             return new ImportRowResult(
                     row.rowNumber(),
-                    writeResult.created() ? ImportRowResult.ImportOutcome.IMPORTED : ImportRowResult.ImportOutcome.UPDATED,
+                    writeResult.outcome(),
                     candidateId, writeResult.processId(), writeResult.sessionId(),
                     warnings, null);
         } catch (RowImportException e) {
@@ -185,7 +185,7 @@ public class ScheduleImportService {
         Optional<InterviewSession> existingSession = sessionRepository.findByProcessIdAndRoundIgnoreCase(process.getId(), round);
 
         InterviewSession session;
-        boolean created;
+        ImportRowResult.ImportOutcome outcome;
         if (existingSession.isPresent()) {
             session = existingSession.get();
             session.setScheduledAt(scheduledAt);
@@ -193,11 +193,15 @@ public class ScheduleImportService {
             session.setMode(mode);
             // CSV status defaults to SCHEDULED for missing/unrecognized values, which is the
             // vast majority of rows. Re-importing shouldn't regress a session's status back to
-            // SCHEDULED once it has progressed further (e.g. PASSED, REJECTED, CANCELLED).
-            if (status != SessionStatus.SCHEDULED) {
+            // SCHEDULED once it has progressed further (e.g. PASSED, REJECTED, CANCELLED,
+            // RESCHEDULED), and a row that doesn't actually change the status is UNCHANGED
+            // rather than UPDATED - re-importing the same sheet shouldn't report every
+            // already-scheduled row as an update.
+            boolean statusChanged = status != SessionStatus.SCHEDULED && status != session.getStatus();
+            if (statusChanged) {
                 session.setStatus(status);
             }
-            created = false;
+            outcome = statusChanged ? ImportRowResult.ImportOutcome.UPDATED : ImportRowResult.ImportOutcome.UNCHANGED;
         } else {
             UUID supporterId = callerSupporterId != null
                     ? callerSupporterId
@@ -211,12 +215,12 @@ public class ScheduleImportService {
             session.setDurationMinutes(durationMinutes);
             session.setStatus(status);
             session.setScheduledAt(scheduledAt);
-            created = true;
+            outcome = ImportRowResult.ImportOutcome.IMPORTED;
         }
 
         session = sessionRepository.save(session);
         process = syncProcessStartedAt(process);
-        return new RowWriteResult(process.getId(), session.getId(), created);
+        return new RowWriteResult(process.getId(), session.getId(), outcome);
     }
 
     private InterviewProcess syncProcessStartedAt(InterviewProcess process) {
@@ -300,6 +304,6 @@ public class ScheduleImportService {
                 .ifPresent(cache -> touchedProcessIds.forEach(cache::evict));
     }
 
-    private record RowWriteResult(UUID processId, UUID sessionId, boolean created) {
+    private record RowWriteResult(UUID processId, UUID sessionId, ImportRowResult.ImportOutcome outcome) {
     }
 }

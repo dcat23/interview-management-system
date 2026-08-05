@@ -7,7 +7,7 @@ import { logger } from '@next-feature/logging/server';
 
 const log = logger.child({ module: 'schedule-import' });
 
-export type ImportRowOutcome = 'IMPORTED' | 'UPDATED' | 'FAILED';
+export type ImportRowOutcome = 'IMPORTED' | 'UPDATED' | 'UNCHANGED' | 'FAILED';
 
 export interface ImportRowResult {
   rowNumber: number;
@@ -23,6 +23,7 @@ export interface ImportSummaryResponse {
   totalRows: number;
   imported: number;
   updated: number;
+  unchanged: number;
   failed: number;
   results: ImportRowResult[];
 }
