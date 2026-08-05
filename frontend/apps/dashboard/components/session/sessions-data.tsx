@@ -1,13 +1,14 @@
 'use client';
 
-import { useState } from 'react';
 import moment from 'moment';
 
 import { useSessions } from '@app/dashboard/hooks/session/use-sessions';
 import { useDebouncedValue } from '@app/dashboard/hooks/ui/use-debounced-value';
+import { useSessionsFilterStore } from '@app/dashboard/stores/sessions-filter-store';
 import { cn } from '@feature/ui/lib/ui/utils';
 import { InterviewSession, SessionStatus } from '@feature/base/server';
 import { Badge } from '@feature/ui/components/ui/common/badge';
+import { Button } from '@feature/ui/components/ui/common/button';
 import {
   Select,
   SelectContent,
@@ -15,11 +16,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@feature/ui/components/ui/common/select';
-import { DataTable, DataTableColumn, DataTableSortState } from '../ui/common/data-table';
+import { DataTable, DataTableColumn } from '../ui/common/data-table';
 import { useRouter } from 'next/navigation';
 import { AnimatedCalendar } from '@feature/ui/components/ui/common/calender';
+import { RefreshCw } from 'lucide-react';
 
-const DEFAULT_PAGE_SIZE = 10;
 const ALL_STATUSES = 'all';
 
 const statusConfig: Record<
@@ -106,15 +107,19 @@ const columns: DataTableColumn<InterviewSession>[] = [
 ];
 
 export function SessionsData() {
-  const [page, setPage] = useState(0);
-  const [limit, setLimit] = useState(DEFAULT_PAGE_SIZE);
-  const [search, setSearch] = useState('');
-  const [status, setStatus] = useState<SessionStatus | undefined>(undefined);
-  const [sortState, setSortState] = useState<DataTableSortState>(null);
-  const [dateRange, setDateRange] = useState<{
-    from: Date | undefined;
-    to: Date | undefined;
-  }>();
+  const page = useSessionsFilterStore((state) => state.page);
+  const setPage = useSessionsFilterStore((state) => state.setPage);
+  const limit = useSessionsFilterStore((state) => state.limit);
+  const setLimit = useSessionsFilterStore((state) => state.setLimit);
+  const search = useSessionsFilterStore((state) => state.search);
+  const setSearch = useSessionsFilterStore((state) => state.setSearch);
+  const status = useSessionsFilterStore((state) => state.filters.status);
+  const setFilters = useSessionsFilterStore((state) => state.setFilters);
+  const sortState = useSessionsFilterStore((state) => state.sortState);
+  const setSortState = useSessionsFilterStore((state) => state.setSortState);
+  const dateRange = useSessionsFilterStore((state) => state.dateRange);
+  const setDateRange = useSessionsFilterStore((state) => state.setDateRange);
+  const resetFilters = useSessionsFilterStore((state) => state.reset);
   const debouncedSearch = useDebouncedValue(search, 400);
   const router = useRouter();
 
@@ -141,46 +146,34 @@ export function SessionsData() {
           pageResponse={pageResponse}
           isLoading={isLoading}
           onPageChange={setPage}
-          onPageSizeChange={(nextLimit) => {
-            setLimit(nextLimit);
-            setPage(0);
-          }}
+          onPageSizeChange={setLimit}
           columns={columns}
           getRowId={(row) => row.id}
           enableRowSelection
           enableSorting
           sortState={sortState}
-          onSortStateChange={(nextSortState) => {
-            setSortState(nextSortState);
-            setPage(0);
-          }}
+          onSortStateChange={setSortState}
           searchPlaceholder="Search sessions"
           searchValue={search}
-          onSearchValueChange={(value) => {
-            setSearch(value);
-            setPage(0);
-          }}
+          onSearchValueChange={setSearch}
           toolbarActions={() => (
             <>
               <AnimatedCalendar
                 mode="range"
                 className="h-8 w-44"
                 value={dateRange}
-                onChange={(value) => {
-                  setDateRange(value);
-                  setPage(0);
-                }}
+                onChange={setDateRange}
                 placeholder="Select date range"
               />
               <Select
                 value={status ?? ALL_STATUSES}
                 onValueChange={(value) => {
-                  setStatus(
-                    value === ALL_STATUSES
-                      ? undefined
-                      : (value as SessionStatus),
-                  );
-                  setPage(0);
+                  setFilters({
+                    status:
+                      value === ALL_STATUSES
+                        ? undefined
+                        : (value as SessionStatus),
+                  });
                 }}
               >
                 <SelectTrigger className="h-9 w-40">
@@ -195,6 +188,15 @@ export function SessionsData() {
                   ))}
                 </SelectContent>
               </Select>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-8 w-8"
+                onClick={resetFilters}
+              >
+                <span className="sr-only">Reset filters</span>
+                <RefreshCw className="h-4 w-4" />
+              </Button>
             </>
           )}
           emptyMessage="No sessions yet."

@@ -9,7 +9,12 @@ import { NavItem } from '@feature/base/server';
 import { PlusCircleIcon, Upload } from 'lucide-react';
 import { Button } from '@feature/ui/components/ui/common/button';
 import AppSidebarNavMenu from './app-sidebar-nav-menu';
-import { Tooltip } from '@feature/ui/components/ui/common/tooltip';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@feature/ui/components/ui/common/tooltip';
+import Link from 'next/link';
 
 export function AppSidebarNavMain({ items }: { items: NavItem[] }) {
   return (
@@ -25,13 +30,20 @@ export function AppSidebarNavMain({ items }: { items: NavItem[] }) {
               <span>Quick Create</span>
             </SidebarMenuButton>
             <Tooltip>
-              <Button
-                size="icon"
-                className="size-8 group-data-[collapsible=icon]:opacity-0"
-                variant="outline"
-              >
-                <Upload />
-              </Button>
+              <TooltipTrigger asChild>
+                <Link href={"/upload"}>
+                  <Button
+                    size="icon"
+                    className="size-8 group-data-[collapsible=icon]:opacity-0"
+                    variant="outline"
+                  >
+                    <Upload />
+                  </Button>
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent side="right" align="center">
+                Upload Schedule
+              </TooltipContent>
             </Tooltip>
           </SidebarMenuItem>
         </SidebarMenu>

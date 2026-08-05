@@ -1,14 +1,15 @@
 'use client';
 
-import { useState } from 'react';
 import moment from 'moment';
 
 import { useProcesses } from '@app/dashboard/hooks/process/use-processes';
 import { useClients } from '@app/dashboard/hooks/client/use-clients';
 import { useDebouncedValue } from '@app/dashboard/hooks/ui/use-debounced-value';
+import { useProcessesFilterStore } from '@app/dashboard/stores/processes-filter-store';
 import { cn } from '@feature/ui/lib/ui/utils';
 import { InterviewProcess, ProcessStatus } from '@feature/base/server';
 import { Badge } from '@feature/ui/components/ui/common/badge';
+import { Button } from '@feature/ui/components/ui/common/button';
 import {
   Select,
   SelectContent,
@@ -16,11 +17,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@feature/ui/components/ui/common/select';
-import { DataTable, DataTableColumn, DataTableSortState } from '../ui/common/data-table';
+import { DataTable, DataTableColumn } from '../ui/common/data-table';
 import { useRouter } from 'next/navigation';
 import { AnimatedCalendar } from '@feature/ui/components/ui/common/calender';
+import { RefreshCw } from 'lucide-react';
 
-const DEFAULT_PAGE_SIZE = 10;
 const ALL_STATUSES = 'all';
 const ALL_CLIENTS = 'all';
 
@@ -92,16 +93,20 @@ const columns: DataTableColumn<InterviewProcess>[] = [
 ];
 
 export function ProcessesData() {
-  const [page, setPage] = useState(0);
-  const [limit, setLimit] = useState(DEFAULT_PAGE_SIZE);
-  const [search, setSearch] = useState('');
-  const [status, setStatus] = useState<ProcessStatus | undefined>(undefined);
-  const [clientId, setClientId] = useState<string | undefined>(undefined);
-  const [sortState, setSortState] = useState<DataTableSortState>(null);
-  const [dateRange, setDateRange] = useState<{
-    from: Date | undefined;
-    to: Date | undefined;
-  }>();
+  const page = useProcessesFilterStore((state) => state.page);
+  const setPage = useProcessesFilterStore((state) => state.setPage);
+  const limit = useProcessesFilterStore((state) => state.limit);
+  const setLimit = useProcessesFilterStore((state) => state.setLimit);
+  const search = useProcessesFilterStore((state) => state.search);
+  const setSearch = useProcessesFilterStore((state) => state.setSearch);
+  const status = useProcessesFilterStore((state) => state.filters.status);
+  const clientId = useProcessesFilterStore((state) => state.filters.clientId);
+  const setFilters = useProcessesFilterStore((state) => state.setFilters);
+  const sortState = useProcessesFilterStore((state) => state.sortState);
+  const setSortState = useProcessesFilterStore((state) => state.setSortState);
+  const dateRange = useProcessesFilterStore((state) => state.dateRange);
+  const setDateRange = useProcessesFilterStore((state) => state.setDateRange);
+  const resetFilters = useProcessesFilterStore((state) => state.reset);
   const debouncedSearch = useDebouncedValue(search, 400);
   const router = useRouter();
 
@@ -131,46 +136,34 @@ export function ProcessesData() {
           pageResponse={pageResponse}
           isLoading={isLoading}
           onPageChange={setPage}
-          onPageSizeChange={(nextLimit) => {
-            setLimit(nextLimit);
-            setPage(0);
-          }}
+          onPageSizeChange={setLimit}
           columns={columns}
           getRowId={(row) => row.id}
           enableRowSelection
           enableSorting
           sortState={sortState}
-          onSortStateChange={(nextSortState) => {
-            setSortState(nextSortState);
-            setPage(0);
-          }}
+          onSortStateChange={setSortState}
           searchPlaceholder="Search processes"
           searchValue={search}
-          onSearchValueChange={(value) => {
-            setSearch(value);
-            setPage(0);
-          }}
+          onSearchValueChange={setSearch}
           toolbarActions={() => (
             <>
               <AnimatedCalendar
                 mode="range"
                 className="h-8 w-44"
                 value={dateRange}
-                onChange={(value) => {
-                  setDateRange(value);
-                  setPage(0);
-                }}
+                onChange={setDateRange}
                 placeholder="Select date range"
               />
               <Select
                 value={status ?? ALL_STATUSES}
                 onValueChange={(value) => {
-                  setStatus(
-                    value === ALL_STATUSES
-                      ? undefined
-                      : (value as ProcessStatus),
-                  );
-                  setPage(0);
+                  setFilters({
+                    status:
+                      value === ALL_STATUSES
+                        ? undefined
+                        : (value as ProcessStatus),
+                  });
                 }}
               >
                 <SelectTrigger className="h-9 w-40">
@@ -189,8 +182,9 @@ export function ProcessesData() {
               <Select
                 value={clientId ?? ALL_CLIENTS}
                 onValueChange={(value) => {
-                  setClientId(value === ALL_CLIENTS ? undefined : value);
-                  setPage(0);
+                  setFilters({
+                    clientId: value === ALL_CLIENTS ? undefined : value,
+                  });
                 }}
               >
                 <SelectTrigger className="h-9 w-44">
@@ -205,6 +199,15 @@ export function ProcessesData() {
                   ))}
                 </SelectContent>
               </Select>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-8 w-8"
+                onClick={resetFilters}
+              >
+                <span className="sr-only">Reset filters</span>
+                <RefreshCw className="h-4 w-4" />
+              </Button>
             </>
           )}
           emptyMessage="No processes yet."

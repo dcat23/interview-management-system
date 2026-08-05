@@ -97,7 +97,8 @@
         ]
       },
       "store": {
-        "projectName": "dashboard"
+        "projectName": "dashboard",
+        "export": false
       }
     },
     "@nx/react": {
