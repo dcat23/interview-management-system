@@ -201,8 +201,7 @@ public class ScheduleImportService {
         } else {
             UUID supporterId = callerSupporterId != null
                     ? callerSupporterId
-                    : supporterAssigner.assign(supporters, scheduledAt, durationMinutes)
-                        .orElseThrow(() -> new RowImportException("No available supporter for this time slot"));
+                    : supporterAssigner.assign(supporters, scheduledAt, durationMinutes);
 
             session = new InterviewSession();
             session.setProcessId(process.getId());
@@ -243,8 +242,15 @@ public class ScheduleImportService {
             return SessionStatus.SCHEDULED;
         }
         String normalized = statusRaw.trim();
-        if (normalized.equalsIgnoreCase("Scheduled") || normalized.equalsIgnoreCase("Reschedule")) {
+        if (normalized.equalsIgnoreCase("Scheduled")) {
             return SessionStatus.SCHEDULED;
+        }
+        if (normalized.equalsIgnoreCase("Cancelled") || normalized.equalsIgnoreCase("Canceled")) {
+            return SessionStatus.CANCELLED;
+        }
+        // CSV sheets use the imperative "Reschedule"; the app's status is the past-tense RESCHEDULED.
+        if (normalized.equalsIgnoreCase("Reschedule") || normalized.equalsIgnoreCase("Rescheduled")) {
+            return SessionStatus.RESCHEDULED;
         }
         warnings.add("Unrecognized status '" + statusRaw + "', defaulted to Scheduled");
         return SessionStatus.SCHEDULED;

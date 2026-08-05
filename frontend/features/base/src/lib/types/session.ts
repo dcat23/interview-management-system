@@ -33,4 +33,4 @@ export interface InterviewSession {
  * (Jackson default) — there is no lowercasing step for SessionStatus like
  * there is for Role in AuthService#login. Matches SessionStatus.java.
  */
-export type SessionStatus = 'SCHEDULED' | 'IN_REVIEW' | 'PASSED' | 'REJECTED' | 'NO_SHOW' | 'CANCELLED';
+export type SessionStatus = 'SCHEDULED' | 'IN_REVIEW' | 'PASSED' | 'REJECTED' | 'NO_SHOW' | 'CANCELLED' | 'RESCHEDULED';

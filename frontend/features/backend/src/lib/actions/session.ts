@@ -77,7 +77,7 @@ export const getSessionById = withApi(async (id: string) => {
  * is invalid for the session's current status.
  */
 const transitionSessionStatusSchema = z.object({
-  targetStatus: z.enum(['SCHEDULED', 'IN_REVIEW', 'PASSED', 'REJECTED', 'NO_SHOW', 'CANCELLED']),
+  targetStatus: z.enum(['SCHEDULED', 'IN_REVIEW', 'PASSED', 'REJECTED', 'NO_SHOW', 'CANCELLED', 'RESCHEDULED']),
 });
 export type TransitionSessionStatusRequest = z.infer<typeof transitionSessionStatusSchema>;
 export type TransitionSessionStatusResponse = InterviewSession;

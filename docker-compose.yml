@@ -11,6 +11,7 @@ services:
       JWT_EXPIRATION: 10h
       FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://web:4200}
       JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=75.0
+      LOGGING_LEVEL_ROOT: INFO
     mem_limit: 1g
     depends_on:
       postgres:

@@ -57,6 +57,11 @@ const statusConfig: Record<
     className:
       'bg-slate-500/15 text-slate-700 dark:bg-slate-500/10 dark:text-slate-400',
   },
+  RESCHEDULED: {
+    label: 'Rescheduled',
+    className:
+      'bg-violet-500/15 text-violet-700 dark:bg-violet-500/10 dark:text-violet-400',
+  },
 };
 
 function StatusBadge({ status }: { status: SessionStatus }) {

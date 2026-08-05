@@ -26,6 +26,7 @@ const statusConfig: Record<
   REJECTED: { label: 'Rejected', tone: 'destructive' },
   NO_SHOW: { label: 'No show', tone: 'destructive' },
   CANCELLED: { label: 'Cancelled', tone: 'destructive' },
+  RESCHEDULED: { label: 'Rescheduled', tone: 'default' },
 };
 
 export function SessionStateToggleCard({ session, className }: Props) {

@@ -43,6 +43,10 @@ public class SessionStatusTransitionService {
         ALLOWED_TRANSITIONS.put(SessionStatus.SCHEDULED, fromScheduled);
         // NO_SHOW is treated like SCHEDULED: same outgoing transitions/roles.
         ALLOWED_TRANSITIONS.put(SessionStatus.NO_SHOW, fromScheduled);
+        // RESCHEDULED is treated like SCHEDULED: same outgoing transitions/roles, but (unlike
+        // SCHEDULED) it is not picked up by SessionAutoTransitionJob's overdue query, so it
+        // never auto-transitions to IN_REVIEW on its own.
+        ALLOWED_TRANSITIONS.put(SessionStatus.RESCHEDULED, fromScheduled);
 
         Map<SessionStatus, Set<UserRole>> fromInReview = new EnumMap<>(SessionStatus.class);
         fromInReview.put(SessionStatus.PASSED,   Set.of(UserRole.SUPPORTER, UserRole.MARKETER));

@@ -15,6 +15,7 @@ const STATUS_LABEL: Record<SessionCardData['status'], string> = {
   REJECTED: 'Rejected',
   NO_SHOW: 'No Show',
   CANCELLED: 'Cancelled',
+  RESCHEDULED: 'Rescheduled',
 };
 
 // There is no activity/audit-log endpoint on the backend yet, so this feed is

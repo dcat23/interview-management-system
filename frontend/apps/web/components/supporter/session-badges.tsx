@@ -10,6 +10,7 @@ const statusStyles: Record<SessionStatus, string> = {
   REJECTED: 'border-destructive/30 bg-destructive/10 text-destructive',
   NO_SHOW: 'border-border bg-muted text-muted-foreground',
   CANCELLED: 'border-border bg-muted text-muted-foreground',
+  RESCHEDULED: 'border-violet-500/30 bg-violet-500/10 text-violet-600 dark:text-violet-400',
 };
 
 export function StatusBadge({ status, className }: { status: SessionStatus; className?: string }) {

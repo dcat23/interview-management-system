@@ -3,6 +3,9 @@
 import { withApi } from '@next-feature/client/server';
 import { ApiError } from '../config/client';
 import { BACKEND_API_URL } from '../config/env';
+import { logger } from '@next-feature/logging/server';
+
+const log = logger.child({ module: 'schedule-import' });
 
 export type ImportRowOutcome = 'IMPORTED' | 'UPDATED' | 'FAILED';
 
@@ -49,5 +52,8 @@ export const importCsv = withApi(async (file: File) => {
       .build();
   }
 
-  return response.json() as Promise<ImportSummaryResponse>;
+  const data = await response.json();
+  log.info(data, "Schedule import response")
+
+  return data as ImportSummaryResponse;
 }, {});
