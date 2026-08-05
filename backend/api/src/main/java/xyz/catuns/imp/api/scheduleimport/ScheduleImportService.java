@@ -191,7 +191,12 @@ public class ScheduleImportService {
             session.setScheduledAt(scheduledAt);
             session.setDurationMinutes(durationMinutes);
             session.setMode(mode);
-            session.setStatus(status);
+            // CSV status defaults to SCHEDULED for missing/unrecognized values, which is the
+            // vast majority of rows. Re-importing shouldn't regress a session's status back to
+            // SCHEDULED once it has progressed further (e.g. PASSED, REJECTED, CANCELLED).
+            if (status != SessionStatus.SCHEDULED) {
+                session.setStatus(status);
+            }
             created = false;
         } else {
             UUID supporterId = callerSupporterId != null
