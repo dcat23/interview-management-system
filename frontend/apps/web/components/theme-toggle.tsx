@@ -1,13 +1,13 @@
 'use client';
 
 import { Moon, Sun, Monitor } from 'lucide-react';
-import { Button } from '@feature/ui/components/button';
+import { Button } from '@feature/ui/components/ui/common/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@feature/ui/components/dropdown-menu';
+} from '@feature/ui/components/ui/common/dropdown-menu';
 import { useTheme } from '@app/web/lib/providers/theme-provider';
 
 export function ThemeToggle() {

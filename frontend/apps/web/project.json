@@ -46,6 +46,12 @@
       "options": {
         "jestConfig": "apps/web/jest.config.cts"
       }
+    },
+    "shadcn": {
+      "executor": "next-feature:shadcn",
+      "options": {
+        "args": "apply --preset b3Zgm1YpDG --yes"
+      }
     }
   }
 }

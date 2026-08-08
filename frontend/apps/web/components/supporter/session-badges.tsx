@@ -1,5 +1,5 @@
-import { Badge } from '@feature/ui/components/badge';
-import { cn } from '@feature/ui/lib/utils';
+import { Badge } from '@feature/ui/components/ui/common/badge';
+import { cn } from '@feature/ui/lib/ui/utils';
 import type { FeedbackState } from '@app/web/lib/data/sessions';
 import type { SessionStatus } from '@feature/base/server';
 
@@ -10,6 +10,7 @@ const statusStyles: Record<SessionStatus, string> = {
   REJECTED: 'border-destructive/30 bg-destructive/10 text-destructive',
   NO_SHOW: 'border-border bg-muted text-muted-foreground',
   CANCELLED: 'border-border bg-muted text-muted-foreground',
+  RESCHEDULED: 'border-violet-500/30 bg-violet-500/10 text-violet-600 dark:text-violet-400',
 };
 
 export function StatusBadge({ status, className }: { status: SessionStatus; className?: string }) {
@@ -41,6 +42,6 @@ export function FeedbackStatusBadge({ status }: { status: FeedbackState }) {
   if (status.content) {
     return <Badge variant="secondary">Draft saved</Badge>
   }
-  
+
   return <Badge variant="outline">No feedback yet</Badge>
 }

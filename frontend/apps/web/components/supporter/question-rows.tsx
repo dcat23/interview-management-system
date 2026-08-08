@@ -1,5 +1,5 @@
-import { Badge } from '@feature/ui/components/badge';
-import { Button } from '@feature/ui/components/button';
+import { Badge } from '@feature/ui/components/ui/common/badge';
+import { Button } from '@feature/ui/components/ui/common/button';
 import { HelpCircle, Plus, X } from 'lucide-react';
 import type { Question } from '@feature/base/server';
 

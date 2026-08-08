@@ -19,6 +19,7 @@ import xyz.catuns.imp.api.session.dto.UpdateSessionRequest;
 import xyz.catuns.imp.api.session.entity.SessionStatus;
 
 import java.net.URI;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -64,19 +65,31 @@ public class SessionController {
     }
 
     @GetMapping("/sessions")
-    @Operation(summary = "List sessions", description = "Paginated, filterable session listing across all processes. Admin, marketer, and supporter roles only.")
+    @Operation(
+            summary = "List sessions",
+            description = "Paginated, filterable session listing across all processes. Admin, marketer, and "
+                    + "supporter roles only. Supports free-text search (candidate name, round, mode, description), a "
+                    + "scheduledAt date-range filter (scheduledFrom/scheduledTo as yyyy-MM-dd, inclusive), "
+                    + "and sorting (?sort=field,asc|desc - round, mode, durationMinutes, status, scheduledAt, "
+                    + "statusChangedAt, createdAt, updatedAt)."
+    )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Paginated session list"),
+            @ApiResponse(responseCode = "400", description = "Unsortable field requested, or scheduledFrom after scheduledTo"),
             @ApiResponse(responseCode = "403", description = "Insufficient role")
     })
     public ResponseEntity<PageResponse<InterviewSessionResponse>> list(
+            @RequestParam(required = false) String search,
             @RequestParam(required = false) SessionStatus status,
             @RequestParam(required = false) UUID processId,
             @RequestParam(required = false) UUID supporterId,
+            @RequestParam(required = false) LocalDate scheduledFrom,
+            @RequestParam(required = false) LocalDate scheduledTo,
             Pageable pageable
     ) {
         return ResponseEntity.ok(
-                PageResponse.from(sessionService.list(status, processId, supporterId, pageable))
+                PageResponse.from(sessionService.list(search, status, processId, supporterId,
+                        scheduledFrom, scheduledTo, pageable))
         );
     }
 

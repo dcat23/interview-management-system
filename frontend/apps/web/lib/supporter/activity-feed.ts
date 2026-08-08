@@ -15,6 +15,7 @@ const STATUS_LABEL: Record<SessionCardData['status'], string> = {
   REJECTED: 'Rejected',
   NO_SHOW: 'No Show',
   CANCELLED: 'Cancelled',
+  RESCHEDULED: 'Rescheduled',
 };
 
 // There is no activity/audit-log endpoint on the backend yet, so this feed is
@@ -31,7 +32,7 @@ export function buildActivityFeed(
     .map((s) => ({
       id: `session-${s.id}`,
       processId: s.processId,
-      message: `${s.candidateName} — ${s.technology} Round ${s.round} marked ${STATUS_LABEL[s.status]}`,
+      message: `${s.candidateName} — ${s.technology} ${s.round} marked ${STATUS_LABEL[s.status]}`,
       timestamp: s.statusChangedAt as string,
     }));
 

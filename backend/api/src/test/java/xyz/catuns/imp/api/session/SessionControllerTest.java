@@ -31,6 +31,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -330,6 +331,109 @@ class SessionControllerTest {
     @DisplayName("GET /sessions")
     class ListSessions {
 
+        private UUID searchFixtureSessionId;
+        private UUID pastScheduledSessionId;
+
+        @BeforeEach
+        void seedSearchFixtures() {
+            InterviewSession session = sessionRepository.findByProcessIdOrderByRound(candidate1ProcessId).stream()
+                    .filter(s -> "Search-Fixture-Round".equalsIgnoreCase(s.getRound()))
+                    .findFirst()
+                    .orElseGet(() -> {
+                        InterviewSession fixture = new InterviewSession();
+                        fixture.setProcessId(candidate1ProcessId);
+                        fixture.setSupporterId(supporter1Id);
+                        fixture.setRound("Search-Fixture-Round");
+                        fixture.setMode("Distinctive-Search-Mode");
+                        fixture.setDurationMinutes(30);
+                        fixture.setScheduledAt(Instant.now().plus(60, ChronoUnit.DAYS));
+                        return sessionRepository.save(fixture);
+                    });
+            searchFixtureSessionId = session.getId();
+
+            InterviewSession pastSession = sessionRepository.findByProcessIdOrderByRound(candidate1ProcessId).stream()
+                    .filter(s -> "DateRange-Fixture-Round".equalsIgnoreCase(s.getRound()))
+                    .findFirst()
+                    .orElseGet(() -> {
+                        InterviewSession fixture = new InterviewSession();
+                        fixture.setProcessId(candidate1ProcessId);
+                        fixture.setSupporterId(supporter1Id);
+                        fixture.setRound("DateRange-Fixture-Round");
+                        fixture.setMode("Video");
+                        fixture.setDurationMinutes(30);
+                        fixture.setScheduledAt(Instant.parse("2020-01-15T12:00:00Z"));
+                        return sessionRepository.save(fixture);
+                    });
+            pastScheduledSessionId = pastSession.getId();
+        }
+
+        @Test
+        @DisplayName("filters by scheduledAt date range")
+        void filtersByScheduledAtRange() throws Exception {
+            mockMvc.perform(get("/sessions")
+                            .param("scheduledFrom", "2020-01-01")
+                            .param("scheduledTo", "2020-01-31")
+                            .header("Authorization", "Bearer " + adminToken))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data[*].id",
+                            org.hamcrest.Matchers.hasItem(pastScheduledSessionId.toString())))
+                    .andExpect(jsonPath("$.data[*].id",
+                            org.hamcrest.Matchers.not(org.hamcrest.Matchers.hasItem(searchFixtureSessionId.toString()))));
+        }
+
+        @Test
+        @DisplayName("scheduledTo is inclusive of the whole day")
+        void scheduledToIsInclusiveOfWholeDay() throws Exception {
+            mockMvc.perform(get("/sessions")
+                            .param("scheduledFrom", "2020-01-15")
+                            .param("scheduledTo", "2020-01-15")
+                            .header("Authorization", "Bearer " + adminToken))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data[*].id",
+                            org.hamcrest.Matchers.hasItem(pastScheduledSessionId.toString())));
+        }
+
+        @Test
+        @DisplayName("scheduledFrom after scheduledTo → 400")
+        void invalidScheduledRangeReturns400() throws Exception {
+            mockMvc.perform(get("/sessions")
+                            .param("scheduledFrom", "2025-01-01")
+                            .param("scheduledTo", "2020-01-01")
+                            .header("Authorization", "Bearer " + adminToken))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("search matches round")
+        void searchMatchesRound() throws Exception {
+            mockMvc.perform(get("/sessions")
+                            .param("search", "Search-Fixture-Round")
+                            .header("Authorization", "Bearer " + adminToken))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data[*].id",
+                            org.hamcrest.Matchers.hasItem(searchFixtureSessionId.toString())));
+        }
+
+        @Test
+        @DisplayName("search matches mode")
+        void searchMatchesMode() throws Exception {
+            mockMvc.perform(get("/sessions")
+                            .param("search", "Distinctive-Search-Mode")
+                            .header("Authorization", "Bearer " + adminToken))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data[*].id",
+                            org.hamcrest.Matchers.hasItem(searchFixtureSessionId.toString())));
+        }
+
+        @Test
+        @DisplayName("unsortable field → 400")
+        void unsortableFieldReturns400() throws Exception {
+            mockMvc.perform(get("/sessions")
+                            .param("sort", "processId,asc")
+                            .header("Authorization", "Bearer " + adminToken))
+                    .andExpect(status().isBadRequest());
+        }
+
         @Test
         @DisplayName("admin lists sessions across all processes, paginated")
         void adminListsAll() throws Exception {
@@ -532,6 +636,89 @@ class SessionControllerTest {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isNotFound());
+        }
+    }
+
+    @Nested
+    @DisplayName("process.startedAt sync")
+    class ProcessStartedAtSync {
+
+        @Test
+        @DisplayName("creating the first session for a process sets startedAt to its scheduledAt")
+        void firstSessionSetsStartedAt() throws Exception {
+            UUID processId = seedProcess(candidate1ProcessCandidateId(), clientIdOf(candidate1ProcessId), marketerId, "Sync-First").getId();
+            Instant scheduledAt = Instant.now().plus(30, ChronoUnit.DAYS).truncatedTo(ChronoUnit.MILLIS);
+            CreateSessionRequest request = new CreateSessionRequest(
+                    supporter1Id, "Round 1", "Video", 60, null, scheduledAt);
+
+            mockMvc.perform(post("/processes/" + processId + "/sessions")
+                            .header("Authorization", "Bearer " + marketerToken)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isCreated());
+
+            InterviewProcess process = processRepository.findById(processId).orElseThrow();
+            assertThat(process.getStartedAt()).isEqualTo(scheduledAt);
+        }
+
+        @Test
+        @DisplayName("adding an earlier session moves startedAt backward")
+        void earlierSessionMovesStartedAtBackward() throws Exception {
+            UUID processId = seedProcess(candidate1ProcessCandidateId(), clientIdOf(candidate1ProcessId), marketerId, "Sync-Earlier").getId();
+            Instant laterScheduledAt = Instant.now().plus(30, ChronoUnit.DAYS).truncatedTo(ChronoUnit.MILLIS);
+            Instant earlierScheduledAt = Instant.now().plus(10, ChronoUnit.DAYS).truncatedTo(ChronoUnit.MILLIS);
+
+            mockMvc.perform(post("/processes/" + processId + "/sessions")
+                            .header("Authorization", "Bearer " + marketerToken)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(new CreateSessionRequest(
+                                    supporter1Id, "Round 1", "Video", 60, null, laterScheduledAt))))
+                    .andExpect(status().isCreated());
+
+            mockMvc.perform(post("/processes/" + processId + "/sessions")
+                            .header("Authorization", "Bearer " + marketerToken)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(new CreateSessionRequest(
+                                    supporter2Id, "Round 2", "Video", 60, null, earlierScheduledAt))))
+                    .andExpect(status().isCreated());
+
+            InterviewProcess process = processRepository.findById(processId).orElseThrow();
+            assertThat(process.getStartedAt()).isEqualTo(earlierScheduledAt);
+        }
+
+        @Test
+        @DisplayName("rescheduling a session earlier corrects startedAt")
+        void reschedulingEarlierCorrectsStartedAt() throws Exception {
+            UUID processId = seedProcess(candidate1ProcessCandidateId(), clientIdOf(candidate1ProcessId), marketerId, "Sync-Reschedule").getId();
+            Instant originalScheduledAt = Instant.now().plus(30, ChronoUnit.DAYS).truncatedTo(ChronoUnit.MILLIS);
+
+            String response = mockMvc.perform(post("/processes/" + processId + "/sessions")
+                            .header("Authorization", "Bearer " + marketerToken)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(new CreateSessionRequest(
+                                    supporter1Id, "Round 1", "Video", 60, null, originalScheduledAt))))
+                    .andExpect(status().isCreated())
+                    .andReturn().getResponse().getContentAsString();
+            UUID sessionId = UUID.fromString(objectMapper.readTree(response).get("id").asText());
+
+            Instant rescheduledAt = Instant.now().plus(5, ChronoUnit.DAYS).truncatedTo(ChronoUnit.MILLIS);
+            mockMvc.perform(patch("/sessions/" + sessionId)
+                            .header("Authorization", "Bearer " + marketerToken)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(
+                                    new UpdateSessionRequest(null, null, null, null, null, rescheduledAt))))
+                    .andExpect(status().isOk());
+
+            InterviewProcess process = processRepository.findById(processId).orElseThrow();
+            assertThat(process.getStartedAt()).isEqualTo(rescheduledAt);
+        }
+
+        private UUID candidate1ProcessCandidateId() {
+            return processRepository.findById(candidate1ProcessId).orElseThrow().getCandidateId();
+        }
+
+        private UUID clientIdOf(UUID processId) {
+            return processRepository.findById(processId).orElseThrow().getClientId();
         }
     }
 }

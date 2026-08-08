@@ -7,7 +7,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import xyz.catuns.imp.api.client.dto.ClientResponse;
@@ -28,18 +28,24 @@ public class ClientController {
     private final ClientService clientService;
 
     @GetMapping
-    @Operation(summary = "List clients", description = "Returns paginated end clients. Admin, marketer, and supporter roles.")
+    @Operation(
+            summary = "List clients",
+            description = "Returns paginated end clients. Admin, marketer, and supporter roles. Supports "
+                    + "free-text search (name, industry) and sorting (?sort=field,asc|desc - name, industry, "
+                    + "active, createdAt)."
+    )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Paginated client list"),
+            @ApiResponse(responseCode = "400", description = "Unsortable field requested"),
             @ApiResponse(responseCode = "403", description = "Insufficient role")
     })
     public ResponseEntity<PageResponse<ClientResponse>> list(
             @RequestParam(required = false) Boolean isActive,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int limit
+            @RequestParam(required = false) String search,
+            Pageable pageable
     ) {
         return ResponseEntity.ok(
-                PageResponse.from(clientService.list(isActive, PageRequest.of(page, limit)))
+                PageResponse.from(clientService.list(isActive, search, pageable))
         );
     }
 

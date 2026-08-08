@@ -1,45 +1,76 @@
 'use client';
 
-import { useMemo, useState, useTransition } from 'react';
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { toast } from 'sonner';
-import { Card, CardContent, CardHeader, CardTitle } from '@feature/ui/components/card';
-import { Input } from '@feature/ui/components/input';
-import { Search, ListChecks, Library } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@feature/ui/components/ui/common/card';
+import { Input } from '@feature/ui/components/ui/common/input';
+import { Loader2, Search, ListChecks, Library } from 'lucide-react';
 import { LinkedQuestionRow, QuestionSearchResultRow } from './question-rows';
-import { linkQuestion, unlinkQuestion } from '@feature/backend/server';
+import { getQuestions, linkQuestion, unlinkQuestion } from '@feature/backend/server';
 import type { Question, SessionQuestion } from '@feature/base/server';
+
+const SEARCH_DEBOUNCE_MS = 300;
+const SEARCH_RESULT_LIMIT = 20;
 
 interface Props {
   sessionId: string;
+  clientId: string;
   initialLinkedQuestions: SessionQuestion[];
   questionBank: Question[];
 }
 
-export function QuestionLinker({ sessionId, initialLinkedQuestions, questionBank }: Props) {
+export function QuestionLinker({ sessionId, clientId, initialLinkedQuestions, questionBank }: Props) {
   const [linked, setLinked] = useState<SessionQuestion[]>(
     [...initialLinkedQuestions].sort((a, b) => a.displayOrder - b.displayOrder),
   );
   const [query, setQuery] = useState('');
+  const [results, setResults] = useState<Question[]>(questionBank);
+  const [isSearching, setIsSearching] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const questionByIdFromResults = useRef(new Map(questionBank.map((q) => [q.id, q])));
 
-  const questionById = useMemo(() => new Map(questionBank.map((q) => [q.id, q])), [questionBank]);
   const linkedIds = useMemo(() => new Set(linked.map((sq) => sq.questionId)), [linked]);
 
   const linkedQuestions = useMemo(
     () =>
       linked
-        .map((sq) => ({ sessionQuestion: sq, question: questionById.get(sq.questionId) }))
+        .map((sq) => ({ sessionQuestion: sq, question: questionByIdFromResults.current.get(sq.questionId) }))
         .filter((entry): entry is { sessionQuestion: SessionQuestion; question: Question } => Boolean(entry.question)),
-    [linked, questionById],
+    [linked],
   );
 
-  const results = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return questionBank;
-    return questionBank.filter(
-      (item) => item.body.toLowerCase().includes(q) || item.topic.toLowerCase().includes(q),
-    );
-  }, [query, questionBank]);
+  useEffect(() => {
+    return () => {
+      if (searchTimer.current) clearTimeout(searchTimer.current);
+    };
+  }, []);
+
+  function handleQueryChange(value: string) {
+    setQuery(value);
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+
+    const term = value.trim();
+    if (!term) {
+      setIsSearching(false);
+      setResults(questionBank);
+      return;
+    }
+
+    setIsSearching(true);
+    searchTimer.current = setTimeout(async () => {
+      const response = await getQuestions({ clientId, q: term, limit: SEARCH_RESULT_LIMIT });
+      setIsSearching(false);
+      if (response.success) {
+        for (const question of response.data.data) {
+          questionByIdFromResults.current.set(question.id, question);
+        }
+        setResults(response.data.data);
+      } else {
+        toast.error(response.message ?? 'Failed to search questions');
+      }
+    }, SEARCH_DEBOUNCE_MS);
+  }
 
   function link(questionId: string) {
     if (isPending || linkedIds.has(questionId)) return;
@@ -107,10 +138,13 @@ export function QuestionLinker({ sessionId, initialLinkedQuestions, questionBank
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(e) => handleQueryChange(e.target.value)}
               placeholder="Search questions or topics..."
-              className="pl-9"
+              className="pl-9 pr-9"
             />
+            {isSearching && (
+              <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+            )}
           </div>
           <div className="space-y-2">
             {results.length > 0 ? (

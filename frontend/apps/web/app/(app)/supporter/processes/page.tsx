@@ -1,6 +1,5 @@
 import { getInterviewProcesses } from '@feature/backend/server';
 import { ProcessCard } from '@app/web/components/supporter/process-card';
-import { buildProcessCards } from '@app/web/lib/supporter/process-cards';
 
 // No pagination UI on this page yet — fetch a generously large page so the
 // "all processes" read-only view is effectively complete for current data volumes.
@@ -8,7 +7,7 @@ const MAX_PROCESSES = 100;
 
 async function SupporterProcessesPage() {
   const { data: processPage } = await getInterviewProcesses({ limit: MAX_PROCESSES });
-  const processCards = await buildProcessCards(processPage.data);
+  const processCards = processPage.data;
 
   return (
     <div className="mx-auto max-w-6xl space-y-8">

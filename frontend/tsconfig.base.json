@@ -27,7 +27,8 @@
       "@feature/auth/*": ["features/auth/src/*"],
       "@feature/backend": ["features/backend/src/index.ts"],
       "@feature/backend/server": ["features/backend/src/server.ts"],
-      "@feature/backend/*": ["features/backend/src/*"]
+      "@feature/backend/*": ["features/backend/src/*"],
+      "@app/dashboard/*": ["apps/dashboard/*"]
     }
   },
   "exclude": ["node_modules", "tmp"]

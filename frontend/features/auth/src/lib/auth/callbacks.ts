@@ -1,6 +1,7 @@
 import type { NextAuthConfig } from 'next-auth';
 import { Role } from '../types';
 import { logger } from '@next-feature/logging/server';
+import moment from 'moment';
 
 const log = logger.child({ module: "auth-callbacks"})
 
@@ -17,8 +18,10 @@ export const jwt: Callbacks['jwt'] = async ({ token, user }) => {
     delete token.error;
     return token;
   }
+  const expirationThreshold = moment(token.expiration).subtract(5, 'm');
+  const isExpiringSoon = moment().isSameOrAfter(expirationThreshold);
 
-  const isExpiringSoon = Date.now() >= token.expiration - 6000;
+
   if (!isExpiringSoon) {
     return token;
   }
@@ -26,11 +29,17 @@ export const jwt: Callbacks['jwt'] = async ({ token, user }) => {
   // Dynamic import avoids a static cycle through lib/auth/index.ts (which
   // pulls in the credentials provider and its `login` action) — auth.config.ts
   // must stay importable without that provider graph.
+  log.info(
+    {
+      expiration: expirationThreshold.fromNow().valueOf(),
+    },
+    'Jwt token expiration',
+  );
   const { refresh } = await import('../actions/auth');
   const response = await refresh({ refreshToken: token.refreshToken });
 
   if (!response.success || !response.data) {
-    log.info(JSON.stringify(response.error?.body));
+    log.info(response.error?.body, "Refresh failed");
     // Refresh token is old, invalid, or already used — flag the token as
     // errored so the session callback and middleware can treat this as
     // unauthenticated and bounce the user to /login instead of silently

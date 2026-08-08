@@ -1,6 +1,6 @@
 'use client';
 
-import { Button } from '@feature/ui/components/button';
+import { Button } from '@feature/ui/components/ui/common/button';
 import {
   Dialog,
   DialogContent,
@@ -8,7 +8,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@feature/ui/components/dialog';
+} from '@feature/ui/components/ui/common/dialog';
 
 export function ConfirmDialog({
   open,

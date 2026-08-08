@@ -1,9 +1,8 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@feature/ui/components/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@feature/ui/components/ui/common/tabs';
 import { CalendarX } from 'lucide-react';
 import { SessionCard } from '@app/web/components/supporter/session-card';
 import { EmptyState } from '@app/web/components/supporter/empty-state';
 import { getInterviewSessions } from '@feature/backend/server';
-import { buildSessionCards } from '@app/web/lib/supporter/session-cards';
 
 // No pagination UI on this page yet — fetch a generously large page so the
 // "all sessions" read-only view is effectively complete for current data volumes.
@@ -11,7 +10,7 @@ const MAX_SESSIONS = 100;
 
 export default async function SessionsPage() {
   const { data: sessionPage } = await getInterviewSessions({ limit: MAX_SESSIONS });
-  const sessionCards = await buildSessionCards(sessionPage.data);
+  const sessionCards = sessionPage.data;
 
   const now = Date.now();
   const upcoming = sessionCards.filter((s) => new Date(s.scheduledAt).getTime() >= now);

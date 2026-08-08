@@ -5,39 +5,24 @@ import { usePathname } from 'next/navigation';
 import { Menu, X, LogOut, Moon, Sun } from 'lucide-react';
 import { DynamicIcon } from 'lucide-react/dynamic';
 import { useRef, useState } from 'react';
-import { cn } from '@feature/ui/lib/utils';
-import { Button } from '@feature/ui/components/button';
-import { Avatar, AvatarFallback } from '@feature/ui/components/avatar';
+import { cn } from '@feature/ui/lib/ui/utils';
+import { Button } from '@feature/ui/components/ui/common/button';
+import { Avatar, AvatarFallback } from '@feature/ui/components/ui/common/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@feature/ui/components/dropdown-menu';
+} from '@feature/ui/components/ui/common/dropdown-menu';
 import { ThemeToggle } from '@app/web/components/theme-toggle';
 import { useTheme } from '@app/web/lib/providers/theme-provider';
 import { signOutAction, ROLE_HOME, type Role } from '@feature/auth/server';
-import { ROLE_NAV, type NavItem } from '@feature/base/server';
+import { ROLE_NAV, getCurrentPage } from '@feature/base/server';
 
 interface Props {
   email?: string | null;
   role?: Role | null;
-}
-
-// Picks the longest-href match rather than the first, so a base route like
-// "/supporter" doesn't shadow more specific sibling routes like
-// "/supporter/sessions" that also prefix-match against it.
-function getCurrentPage(pathname: string, navigation: NavItem[]) {
-  let match: NavItem | null = null;
-  for (const item of navigation) {
-    if (pathname === item.href || pathname.startsWith(item.href + '/')) {
-      if (!match || item.href.length > match.href.length) {
-        match = item;
-      }
-    }
-  }
-  return match;
 }
 
 function initials(email: string) {

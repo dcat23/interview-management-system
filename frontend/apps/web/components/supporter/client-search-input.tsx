@@ -1,5 +1,5 @@
 import { Search } from 'lucide-react';
-import { Input } from '@feature/ui/components/input';
+import { Input } from '@feature/ui/components/ui/common/input';
 
 interface Props {
   value: string;

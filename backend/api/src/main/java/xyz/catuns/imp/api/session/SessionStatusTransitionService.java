@@ -6,6 +6,11 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import xyz.catuns.imp.api.client.entity.Client;
+import xyz.catuns.imp.api.client.repository.ClientRepository;
+import xyz.catuns.imp.api.process.entity.InterviewProcess;
+import xyz.catuns.imp.api.process.entity.ProcessStatus;
+import xyz.catuns.imp.api.process.repository.InterviewProcessRepository;
 import xyz.catuns.imp.api.session.dto.InterviewSessionResponse;
 import xyz.catuns.imp.api.session.entity.*;
 import xyz.catuns.imp.api.session.event.SessionStatusChangedEvent;
@@ -36,6 +41,12 @@ public class SessionStatusTransitionService {
         fromScheduled.put(SessionStatus.IN_REVIEW, Set.of(UserRole.SUPPORTER));
         fromScheduled.put(SessionStatus.CANCELLED, Set.of(UserRole.MARKETER, UserRole.ADMIN));
         ALLOWED_TRANSITIONS.put(SessionStatus.SCHEDULED, fromScheduled);
+        // NO_SHOW is treated like SCHEDULED: same outgoing transitions/roles.
+        ALLOWED_TRANSITIONS.put(SessionStatus.NO_SHOW, fromScheduled);
+        // RESCHEDULED is treated like SCHEDULED: same outgoing transitions/roles, but (unlike
+        // SCHEDULED) it is not picked up by SessionAutoTransitionJob's overdue query, so it
+        // never auto-transitions to IN_REVIEW on its own.
+        ALLOWED_TRANSITIONS.put(SessionStatus.RESCHEDULED, fromScheduled);
 
         Map<SessionStatus, Set<UserRole>> fromInReview = new EnumMap<>(SessionStatus.class);
         fromInReview.put(SessionStatus.PASSED,   Set.of(UserRole.SUPPORTER, UserRole.MARKETER));
@@ -50,6 +61,8 @@ public class SessionStatusTransitionService {
     private final InterviewSessionMapper sessionMapper;
     private final UserRepository userRepository;
     private final SessionStatusEventPublisher eventPublisher;
+    private final InterviewProcessRepository processRepository;
+    private final ClientRepository clientRepository;
 
     @PreAuthorize("isAuthenticated()")
     @Transactional
@@ -107,6 +120,8 @@ public class SessionStatusTransitionService {
         history.setChangeSource(changeSource);
         statusHistoryRepository.save(history);
 
+        cascadeProcessStatus(session.getProcessId(), toStatus);
+
         eventPublisher.publish(new SessionStatusChangedEvent(
                 session.getId(),
                 session.getProcessId(),
@@ -116,7 +131,33 @@ public class SessionStatusTransitionService {
                 changeSource
         ));
 
-        return sessionMapper.toResponse(session);
+        InterviewProcess process = processRepository.findById(session.getProcessId()).orElse(null);
+        String candidateName = process != null
+                ? userRepository.findById(process.getCandidateId()).map(User::getName).orElse(null) : null;
+        String clientName = process != null
+                ? clientRepository.findById(process.getClientId()).map(Client::getName).orElse(null) : null;
+        String technology = process != null ? process.getTechnology() : null;
+        return sessionMapper.toResponse(session, candidateName, clientName, technology);
+    }
+
+    private void cascadeProcessStatus(UUID processId, SessionStatus toStatus) {
+        ProcessStatus targetProcessStatus = switch (toStatus) {
+            case PASSED -> ProcessStatus.COMPLETED;
+            case REJECTED -> ProcessStatus.WITHDRAWN;
+            default -> null;
+        };
+        if (targetProcessStatus == null) {
+            return;
+        }
+
+        InterviewProcess process = processRepository.findById(processId).orElse(null);
+        if (process == null || process.getStatus() == ProcessStatus.CANCELLED) {
+            return;
+        }
+
+        process.setStatus(targetProcessStatus);
+        process.setClosedAt(Instant.now());
+        processRepository.save(process);
     }
 
     private UUID resolveUserId(String email) {

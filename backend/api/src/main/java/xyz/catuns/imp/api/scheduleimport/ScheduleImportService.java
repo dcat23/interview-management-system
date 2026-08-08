@@ -120,7 +120,7 @@ public class ScheduleImportService {
 
             return new ImportRowResult(
                     row.rowNumber(),
-                    writeResult.created() ? ImportRowResult.ImportOutcome.IMPORTED : ImportRowResult.ImportOutcome.UPDATED,
+                    writeResult.outcome(),
                     candidateId, writeResult.processId(), writeResult.sessionId(),
                     warnings, null);
         } catch (RowImportException e) {
@@ -185,19 +185,27 @@ public class ScheduleImportService {
         Optional<InterviewSession> existingSession = sessionRepository.findByProcessIdAndRoundIgnoreCase(process.getId(), round);
 
         InterviewSession session;
-        boolean created;
+        ImportRowResult.ImportOutcome outcome;
         if (existingSession.isPresent()) {
             session = existingSession.get();
             session.setScheduledAt(scheduledAt);
             session.setDurationMinutes(durationMinutes);
             session.setMode(mode);
-            session.setStatus(status);
-            created = false;
+            // CSV status defaults to SCHEDULED for missing/unrecognized values, which is the
+            // vast majority of rows. Re-importing shouldn't regress a session's status back to
+            // SCHEDULED once it has progressed further (e.g. PASSED, REJECTED, CANCELLED,
+            // RESCHEDULED), and a row that doesn't actually change the status is UNCHANGED
+            // rather than UPDATED - re-importing the same sheet shouldn't report every
+            // already-scheduled row as an update.
+            boolean statusChanged = status != SessionStatus.SCHEDULED && status != session.getStatus();
+            if (statusChanged) {
+                session.setStatus(status);
+            }
+            outcome = statusChanged ? ImportRowResult.ImportOutcome.UPDATED : ImportRowResult.ImportOutcome.UNCHANGED;
         } else {
             UUID supporterId = callerSupporterId != null
                     ? callerSupporterId
-                    : supporterAssigner.assign(supporters, scheduledAt, durationMinutes)
-                        .orElseThrow(() -> new RowImportException("No available supporter for this time slot"));
+                    : supporterAssigner.assign(supporters, scheduledAt, durationMinutes);
 
             session = new InterviewSession();
             session.setProcessId(process.getId());
@@ -207,11 +215,22 @@ public class ScheduleImportService {
             session.setDurationMinutes(durationMinutes);
             session.setStatus(status);
             session.setScheduledAt(scheduledAt);
-            created = true;
+            outcome = ImportRowResult.ImportOutcome.IMPORTED;
         }
 
         session = sessionRepository.save(session);
-        return new RowWriteResult(process.getId(), session.getId(), created);
+        process = syncProcessStartedAt(process);
+        return new RowWriteResult(process.getId(), session.getId(), outcome);
+    }
+
+    private InterviewProcess syncProcessStartedAt(InterviewProcess process) {
+        Instant earliestScheduledAt = sessionRepository.findEarliestScheduledAtByProcessId(process.getId())
+                .orElse(process.getStartedAt());
+        if (!earliestScheduledAt.equals(process.getStartedAt())) {
+            process.setStartedAt(earliestScheduledAt);
+            process = processRepository.save(process);
+        }
+        return process;
     }
 
     private UUID resolveCallerSupporterId(Authentication authentication) {
@@ -227,8 +246,15 @@ public class ScheduleImportService {
             return SessionStatus.SCHEDULED;
         }
         String normalized = statusRaw.trim();
-        if (normalized.equalsIgnoreCase("Scheduled") || normalized.equalsIgnoreCase("Reschedule")) {
+        if (normalized.equalsIgnoreCase("Scheduled")) {
             return SessionStatus.SCHEDULED;
+        }
+        if (normalized.equalsIgnoreCase("Cancelled") || normalized.equalsIgnoreCase("Canceled")) {
+            return SessionStatus.CANCELLED;
+        }
+        // CSV sheets use the imperative "Reschedule"; the app's status is the past-tense RESCHEDULED.
+        if (normalized.equalsIgnoreCase("Reschedule") || normalized.equalsIgnoreCase("Rescheduled")) {
+            return SessionStatus.RESCHEDULED;
         }
         warnings.add("Unrecognized status '" + statusRaw + "', defaulted to Scheduled");
         return SessionStatus.SCHEDULED;
@@ -278,6 +304,6 @@ public class ScheduleImportService {
                 .ifPresent(cache -> touchedProcessIds.forEach(cache::evict));
     }
 
-    private record RowWriteResult(UUID processId, UUID sessionId, boolean created) {
+    private record RowWriteResult(UUID processId, UUID sessionId, ImportRowResult.ImportOutcome outcome) {
     }
 }

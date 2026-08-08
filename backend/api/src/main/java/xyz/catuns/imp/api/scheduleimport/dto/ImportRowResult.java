@@ -13,6 +13,6 @@ public record ImportRowResult(
         String error
 ) {
     public enum ImportOutcome {
-        IMPORTED, UPDATED, FAILED
+        IMPORTED, UPDATED, UNCHANGED, FAILED
     }
 }

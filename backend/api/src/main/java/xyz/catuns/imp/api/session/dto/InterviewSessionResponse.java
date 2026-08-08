@@ -18,6 +18,9 @@ public record InterviewSessionResponse(
         Instant statusChangedAt,
         UUID statusChangedBy,
         Instant createdAt,
-        Instant updatedAt
+        Instant updatedAt,
+        String candidateName,
+        String clientName,
+        String technology
 ) {
 }

@@ -261,7 +261,14 @@ Returns `404` if the id does not exist or does not belong to a user with the `CA
 
 List end clients.
 
-**Query params:** `isActive` (boolean, default `true`), `page`, `limit`
+**Query params:**
+
+| Param            | Notes                                                                                                                     |
+|------------------|---------------------------------------------------------------------------------------------------------------------------|
+| `isActive`       | Boolean, default `true`.                                                                                                  |
+| `page` / `limit` | Default `0` / `20`.                                                                                                       |
+| `search`         | Free text, matched (case-insensitive, substring) against name and industry.                                               |
+| `sort`           | `field,asc\|desc`, repeatable. Sortable fields: `name`, `industry`, `active`, `createdAt`. Any other field returns `400`. |
 
 **Response `200`**
 ```json
@@ -307,12 +314,13 @@ List active questions with optional filters.
 
 **Query params**
 
-| Param | Type | Description |
-|---|---|---|
-| `clientId` | uuid | Filter by end client |
-| `topic` | string | Partial match on topic |
-| `page` | int | Default `0` |
-| `limit` | int | Default `20` |
+| Param      | Type   | Description                                                          |
+|------------|--------|-----------------------------------------------------------------------|
+| `q`        | string | Full-text search across topic and body (PostgreSQL `plainto_tsquery`, ranked by relevance). When present, `topic` is ignored; `clientId` still applies. |
+| `clientId` | uuid   | Filter by end client                                                   |
+| `topic`    | string | Partial match on topic. Ignored when `q` is present.                  |
+| `page`     | int    | Default `0`                                                            |
+| `limit`    | int    | Default `20`                                                           |
 
 **Response `200`**
 ```json
@@ -397,10 +405,20 @@ Soft-delete a question. Sets `active = false`. The question remains in the datab
 
 List interview processes.
 
-**Query params:** `page` (default `0`), `limit` (default `20`)
+**Query params:**
+
+| Param      | Notes                                                                                                                                                                                    |
+|------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `page`     | Default `0`.                                                                                                                                                                             |
+| `limit`    | Default `20`.                                                                                                                                                                            |
+| `search`   | Free text, matched (case-insensitive, substring) against candidate name, client name, technology, and job id.                                                                            |
+| `status`   | Exact match: `ACTIVE`, `COMPLETED`, `WITHDRAWN`, `CANCELLED`.                                                                                                                            |
+| `clientId` | Exact match on `clientId`.                                                                                                                                                               |
+| `startedFrom` / `startedTo` | `yyyy-MM-dd` (plain date, no time/zone). Filters on `startedAt`, inclusive on both ends - `startedTo` covers the entire day (interpreted as UTC day boundaries). `400` if `startedFrom` is after `startedTo`. |
+| `sort`     | `field,asc\|desc`, repeatable. Sortable fields: `candidateName`, `clientName`, `technology`, `status`, `startedAt`, `closedAt`, `createdAt`, `updatedAt`. Any other field returns `400`. |
 
 **Role constraints:**
-- Candidate: own processes only (filtered automatically by JWT identity)
+- Candidate: own processes only (filtered automatically by JWT identity) — `search`/`status`/`clientId`/date-range further narrow within that set
 - Admin / marketer / supporter: all processes
 
 **Response `200`**
@@ -419,7 +437,8 @@ List interview processes.
       "startedAt": "2024-01-01T00:00:00Z",
       "closedAt": null,
       "createdAt": "2024-01-01T00:00:00Z",
-      "updatedAt": "2024-01-15T12:00:00Z"
+      "updatedAt": "2024-01-15T12:00:00Z",
+      "sessions": null
     }
   ],
   "total": 15,
@@ -427,6 +446,8 @@ List interview processes.
   "limit": 20
 }
 ```
+
+`sessions` is always `null` here — it's only populated by `GET /processes/:id` (see below), to avoid an extra query per row.
 
 `status` values: `ACTIVE`, `COMPLETED`, `WITHDRAWN`, `CANCELLED`
 
@@ -450,7 +471,7 @@ Open a new interview process for a candidate.
 }
 ```
 
-`status` defaults to `ACTIVE`. `startedAt` set server-side.
+`status` defaults to `ACTIVE`. `startedAt` set server-side — initially the creation time, then kept in sync with the earliest session's `scheduledAt` once a session is created for the process (via `POST /processes/:id/sessions` or CSV import; see [Schedule import](#schedule-import)).
 
 **Response `201`** — returns created process object.
 
@@ -464,7 +485,7 @@ Get process by ID.
 - Candidate: own process only
 - Admin / marketer / supporter: any process
 
-**Response `200`** — returns process object (same shape as list item).
+**Response `200`** — same shape as a list item, plus a populated `sessions` array (the process's sessions, ordered by `scheduledAt`; `[]` if none). `sessions` is `null` on list responses (`GET /processes`) to avoid an extra query per row.
 
 ---
 
@@ -543,7 +564,15 @@ All submitted feedback across all rounds in a process, ordered by `scheduledAt` 
 
 List sessions across all processes, paginated.
 
-**Query params:** `status`, `processId`, `supporterId` (all optional filters), `page` (default `0`), `limit` (default `20`)
+**Query params:**
+
+| Param                                  | Notes                                                                                                                                                                                    |
+|----------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `status` / `processId` / `supporterId` | Optional exact-match filters.                                                                                                                                                            |
+| `page` / `limit`                       | Default `0` / `20`.                                                                                                                                                                      |
+| `search`                               | Free text, matched (case-insensitive, substring) against round, mode, and description.                                                                                                   |
+| `scheduledFrom` / `scheduledTo`        | `yyyy-MM-dd` (plain date, no time/zone). Filters on `scheduledAt`, inclusive on both ends - `scheduledTo` covers the entire day (interpreted as UTC day boundaries). `400` if `scheduledFrom` is after `scheduledTo`. |
+| `sort`                                 | `field,asc\|desc`, repeatable. Sortable fields: `round`, `mode`, `durationMinutes`, `status`, `scheduledAt`, `statusChangedAt`, `createdAt`, `updatedAt`. Any other field returns `400`. |
 
 **Response `200`**
 ```json
@@ -581,7 +610,7 @@ List sessions within a process.
 - Candidate: own process only; denied 403 if the process does not belong to them
 - Admin / marketer / supporter: all sessions in the process, regardless of assignment
 
-**Response `200`** — array of session objects.
+**Response `200`** — array of session objects, ordered by `scheduledAt`.
 
 ```json
 [
@@ -672,14 +701,14 @@ Transition session status. Role constraints are enforced server-side.
 
 **Permitted transitions by role**
 
-| From | To | Roles |
-|---|---|---|
-| `SCHEDULED` | `IN_REVIEW` | `supporter` |
-| `SCHEDULED` | `CANCELLED` | `marketer`, `admin` |
-| `IN_REVIEW` | `PASSED` | `supporter`, `marketer` |
-| `IN_REVIEW` | `REJECTED` | `supporter`, `marketer` |
-| `IN_REVIEW` | `NO_SHOW` | `supporter`, `marketer` |
-| `IN_REVIEW` | `CANCELLED` | `marketer`, `admin` |
+| From        | To          | Roles                   |
+|-------------|-------------|-------------------------|
+| `SCHEDULED` | `IN_REVIEW` | `supporter`             |
+| `SCHEDULED` | `CANCELLED` | `marketer`, `admin`     |
+| `IN_REVIEW` | `PASSED`    | `supporter`, `marketer` |
+| `IN_REVIEW` | `REJECTED`  | `supporter`, `marketer` |
+| `IN_REVIEW` | `NO_SHOW`   | `supporter`, `marketer` |
+| `IN_REVIEW` | `CANCELLED` | `marketer`, `admin`     |
 
 Returns `409` if the transition is not permitted from the current status.
 Returns `403` if the caller's role is not permitted for the requested transition.
@@ -778,12 +807,12 @@ Unlink a question from a session. The question remains in the bank.
 
 ## Feedback
 
-### `GET /sessions/:id/feedback` · `admin` `supporter`
+### `GET /sessions/:id/feedback` · `admin` `marketer` `supporter`
 
 Get feedback for a session.
 
-- Supporter: own feedback only (draft or submitted)
-- Admin: any submitted feedback
+- Any supporter, marketer, or admin may read the feedback for any session (view-all), regardless of who authored it.
+- Only writes (`POST`/`PATCH`) are scoped to the assigned supporter — see below.
 
 Returns `404` if no feedback record exists yet.
 
@@ -791,7 +820,7 @@ Returns `404` if no feedback record exists yet.
 
 ### `POST /sessions/:id/feedback` · `supporter`
 
-Create a feedback draft.
+Create a feedback draft. Only the session's assigned supporter may create it — returns `403` otherwise.
 
 **Request**
 ```json
@@ -808,7 +837,7 @@ Returns `409` if a feedback record already exists — use `PATCH` to update.
 
 ### `PATCH /sessions/:id/feedback` · `supporter`
 
-Update or submit feedback.
+Update or submit feedback. Only the authoring supporter may update it — returns `403` otherwise, including for admin and marketer.
 
 **Request** (all fields optional)
 ```json
@@ -818,7 +847,7 @@ Update or submit feedback.
 }
 ```
 
-Once `isSubmitted = true`, `body` becomes read-only. `submittedAt` set server-side on submission.
+Once `isSubmitted = true`, `body` becomes read-only and any further `PATCH` returns `409`. `submittedAt` set server-side on submission.
 
 **Response `200`** — returns updated feedback object.
 
@@ -834,24 +863,25 @@ Bulk-imports an interview schedule CSV, reconciling it against `users`, `end_cli
 
 CSV columns (header row required, in any order):
 
-| Column | Maps to |
-|---|---|
-| `Candidate Name` | Candidate user, matched/created by name |
-| `Lead Name` | Marketer user, matched/created by name |
-| `Technology` | `interview_processes.technology`; trailing `(...)` parsed as `jobId` when it contains a digit |
-| `Interview Date` | e.g. `01-Jul-26` (`dd-MMM-yy`) |
-| `Time` | e.g. `1 PM EST`, `2:30 PM EST` — interpreted in `America/New_York` |
-| `Duration` | e.g. `1 Hour`, `45 Min` — must match this shape or the row fails |
-| `Mode of interview` | `interview_sessions.mode` (free text) |
-| `Client name` | End client, matched/created by name |
-| `Interview Round` | `interview_sessions.round` (free text) |
-| `Status` | `Scheduled`/`Reschedule` → `SCHEDULED`; anything else defaults to `SCHEDULED` with a warning |
+| Column              | Maps to                                                                                       |
+|---------------------|-----------------------------------------------------------------------------------------------|
+| `Candidate Name`    | Candidate user, matched/created by name                                                       |
+| `Lead Name`         | Marketer user, matched/created by name                                                        |
+| `Technology`        | `interview_processes.technology`; trailing `(...)` parsed as `jobId` when it contains a digit |
+| `Interview Date`    | e.g. `01-Jul-26` (`dd-MMM-yy`)                                                                |
+| `Time`              | e.g. `1 PM EST`, `2:30 PM EST` — interpreted in `America/New_York`                            |
+| `Duration`          | e.g. `1 Hour`, `45 Min` — must match this shape or the row fails                              |
+| `Mode of interview` | `interview_sessions.mode` (free text)                                                         |
+| `Client name`       | End client, matched/created by name                                                           |
+| `Interview Round`   | `interview_sessions.round` (free text)                                                        |
+| `Status`            | `Scheduled`/`Reschedule` → `SCHEDULED`; anything else defaults to `SCHEDULED` with a warning  |
 
 **Matching rules:**
 - Candidate/marketer name matching is case-insensitive (falls back to first-token match). No match → an inactive placeholder user is created (`<slug>.candidate@system.local` / `<slug>.marketer@system.local`, random password) for an admin to reconcile later.
 - Rows are grouped into one `interview_process` by `(candidateId, clientId, jobId)` when a job id was parsed from `Technology`; otherwise by exact `(candidateId, clientId, technology)` text match. Round order is not validated — `jobId` (not round-name sequencing) is what ties multiple rows together, and chronological order simply follows each session's `scheduledAt`.
 - Sessions are upserted by `(processId, round)`: a row matching an existing session updates `scheduledAt`/`durationMinutes`/`mode` in place (covers reschedules and re-importing the same sheet) rather than duplicating.
 - Supporter assignment: if the caller has the `supporter` role, they're assigned to every session they import. Otherwise a supporter is auto-assigned per session — first excluding anyone with a conflicting time window, then picking the least-loaded remaining supporter. No supporter available → that row fails.
+- After each row, the process's `startedAt` is recomputed as `MIN(scheduledAt)` across its sessions — so it reflects the earliest imported round regardless of row order in the sheet, not the moment the CSV happened to be uploaded.
 
 **Response `200`**
 ```json
@@ -908,9 +938,9 @@ All list endpoints that return paginated results use:
 
 ## Rate limiting
 
-| Scope | Limit |
-|---|---|
-| `POST /auth/login` | 10 requests / minute per IP |
+| Scope               | Limit                          |
+|---------------------|--------------------------------|
+| `POST /auth/login`  | 10 requests / minute per IP    |
 | All other endpoints | 300 requests / minute per user |
 
 Rate limit headers returned on every response:

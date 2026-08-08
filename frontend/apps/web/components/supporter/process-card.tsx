@@ -1,6 +1,6 @@
 import type { InterviewProcess, ProcessStatus } from '@feature/base/server';
-import { Badge } from '@feature/ui/components/badge';
-import { Card, CardContent } from '@feature/ui/components/card';
+import { Badge } from '@feature/ui/components/ui/common/badge';
+import { Card, CardContent } from '@feature/ui/components/ui/common/card';
 import { Building2, Layers, User } from 'lucide-react';
 
 function statusVariant(status: ProcessStatus): 'default' | 'secondary' | 'outline' {
@@ -9,12 +9,7 @@ function statusVariant(status: ProcessStatus): 'default' | 'secondary' | 'outlin
   return 'secondary';
 }
 
-export type ProcessCardData = InterviewProcess & {
-  candidateName: string;
-  clientName: string;
-  currentRound: string | null;
-  sessionCount: number;
-};
+export type ProcessCardData = InterviewProcess;
 
 interface Props {
   process: ProcessCardData;

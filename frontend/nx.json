@@ -74,8 +74,8 @@
     },
     "next-feature": {
       "component": {
-        "projectName": "dynamic-table",
-        "kind": "generic"
+        "projectName": "ui",
+        "inferPath": true
       },
       "feature": {
         "orgName": "feature"
@@ -84,7 +84,7 @@
         "useAuth": true
       },
       "declaration": {
-        "projectName": "dynamic-table"
+        "projectName": "base"
       },
       "action": {
         "projectName": "backend",
@@ -92,8 +92,13 @@
       },
       "dotenv": {
         "projects": [
-          "web"
+          "web",
+          "dashboard"
         ]
+      },
+      "store": {
+        "projectName": "dashboard",
+        "export": false
       }
     },
     "@nx/react": {

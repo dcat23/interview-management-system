@@ -28,6 +28,7 @@ public class CsvScheduleParser {
             .setSkipHeaderRecord(true)
             .setIgnoreSurroundingSpaces(true)
             .setTrim(true)
+            .setAllowMissingColumnNames(true)
             .build();
 
     public List<ScheduleCsvRow> parse(InputStream inputStream) {

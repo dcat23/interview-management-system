@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@feature/ui/components/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@feature/ui/components/ui/common/card';
 import { Activity, ArrowRight } from 'lucide-react';
 import type { ActivityItem } from '@app/web/lib/supporter/activity-feed';
 

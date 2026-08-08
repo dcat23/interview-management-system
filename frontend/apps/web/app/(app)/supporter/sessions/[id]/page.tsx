@@ -1,16 +1,13 @@
 import { QuestionLinker } from '@app/web/components/supporter/question-linker';
 import { ModeBadge, StatusBadge } from '@app/web/components/supporter/session-badges';
 import { SessionSummaryHeader } from '@app/web/components/supporter/session-summary-header';
-import type { SessionCardData } from '@app/web/components/supporter/session-card';
 import {
-  getCandidateById,
-  getClients,
   getProcessById,
   getQuestions,
   getSessionById,
   getSessionQuestions,
 } from '@feature/backend/server';
-import { Button } from '@feature/ui/components/button';
+import { Button } from '@feature/ui/components/ui/common/button';
 import { ArrowLeft, MessageSquarePlus } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -19,28 +16,17 @@ async function loadSessionDetail(sessionId: string) {
   const { data: session } = await getSessionById(sessionId);
   if (!session.id) return null;
 
-  const [processResult, clientsResult, linkedQuestionsResult] = await Promise.all([
+  const [processResult, linkedQuestionsResult] = await Promise.all([
     getProcessById(session.processId),
-    getClients({ limit: 100 }),
     getSessionQuestions(sessionId),
   ]);
   const process = processResult.data;
-  const client = clientsResult.data.data.find((c) => c.id === process.clientId);
 
-  const [candidateResult, questionBankResult] = await Promise.all([
-    getCandidateById(process.candidateId),
-    getQuestions({ clientId: process.clientId, limit: 100 }),
-  ]);
-
-  const sessionCard: SessionCardData = {
-    ...session,
-    candidateName: candidateResult.data.name ?? 'Unknown candidate',
-    clientName: client?.name ?? 'Unknown client',
-    technology: process.technology,
-  };
+  const questionBankResult = await getQuestions({ clientId: process.clientId, limit: 100 });
 
   return {
-    session: sessionCard,
+    session,
+    clientId: process.clientId,
     linkedQuestions: linkedQuestionsResult.data,
     questionBank: questionBankResult.data.data,
   };
@@ -54,7 +40,7 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
     notFound();
   }
 
-  const { session, linkedQuestions, questionBank } = detail;
+  const { session, clientId, linkedQuestions, questionBank } = detail;
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
@@ -72,7 +58,9 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
           <StatusBadge status={session.status} />
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <p className="text-muted-foreground">{session.technology}</p>
+          <Link href={`/supporter/processes/${session.processId}`}>
+            <p className="text-muted-foreground">{session.technology}</p>
+          </Link>
           <ModeBadge mode={session.mode} />
         </div>
       </div>
@@ -90,6 +78,7 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
 
       <QuestionLinker
         sessionId={session.id}
+        clientId={clientId}
         initialLinkedQuestions={linkedQuestions}
         questionBank={questionBank}
       />

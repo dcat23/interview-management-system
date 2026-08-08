@@ -1,4 +1,4 @@
-import { Card, CardContent } from '@feature/ui/components/card';
+import { Card, CardContent } from '@feature/ui/components/ui/common/card';
 import { Building2, Calendar, Clock, TableProperties } from "lucide-react";
 import type { SessionCardData } from './session-card';
 
@@ -39,7 +39,7 @@ export function SessionSummaryHeader({ session }: { session: SessionCardData }) 
         <div className="grid gap-4 sm:grid-cols-2">
           <DetailItem icon={Calendar} label="Date" value={formatDate(session.scheduledAt)} />
           <DetailItem icon={Clock} label="Time" value={formatTime(session.scheduledAt, session.durationMinutes)} />
-          <DetailItem icon={Building2} label="Company" value={session.clientName} />
+          <DetailItem icon={Building2} label="Company" value={session.clientName ?? 'Unknown client'} />
           <DetailItem icon={TableProperties} label="Round" value={session.round} />
         </div>
         {session.description && (

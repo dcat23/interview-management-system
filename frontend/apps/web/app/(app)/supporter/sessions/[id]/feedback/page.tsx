@@ -1,37 +1,41 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Building2, Calendar, Clock, TableProperties } from 'lucide-react';
-import { Card, CardContent } from '@feature/ui/components/card';
-import { FeedbackEditor, FeedbackSubmitted } from '@app/web/components/supporter/feedback-editor';
-import { sessions, getSessionById } from '@app/web/lib/data/sessions';
+import { ArrowLeft } from 'lucide-react';
+import { auth } from '@feature/auth/server';
+import { getFeedback, getSessionById } from '@feature/backend/server';
+import { SessionSummaryHeader } from '@app/web/components/supporter/session-summary-header';
+import { StatusBadge } from '@app/web/components/supporter/session-badges';
+import { FeedbackEditor } from '@app/web/components/supporter/feedback-editor';
 
-// This page is still backed by mock data — the feedback API (GET/POST/PATCH
-// /sessions/:id/feedback) hasn't been built on the backend yet, so it can't
-// be wired to real data the way the sessions list/detail pages were. It no
-// longer reuses SessionSummaryHeader (now typed to the real, wired
-// InterviewSession shape) to keep this mock path self-contained until the
-// feedback story ships.
+async function loadFeedbackPageData(sessionId: string) {
+  const [authSession, sessionResult] = await Promise.all([auth(), getSessionById(sessionId)]);
+  if (!sessionResult.data.id) return null;
 
-export function generateStaticParams() {
-  return sessions.map((session) => ({ id: session.id }));
-}
+  const feedbackResult = await getFeedback(sessionId);
 
-function formatDate(dateString: string) {
-  return new Date(dateString).toLocaleDateString('en-US', {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-  });
+  // 404 just means no feedback has been written yet — not an error.
+  const feedback = feedbackResult.success ? feedbackResult.data : null;
+  const currentUserId = authSession?.user?.id ?? null;
+  const isOwnFeedback = feedback
+    ? feedback.supporterId === currentUserId
+    : sessionResult.data.supporterId === currentUserId;
+
+  return {
+    session: sessionResult.data,
+    feedback,
+    isOwnFeedback,
+  };
 }
 
 export default async function FeedbackPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const session = getSessionById(id);
+  const detail = await loadFeedbackPageData(id);
 
-  if (!session) {
+  if (!detail) {
     notFound();
   }
+
+  const { session, feedback, isOwnFeedback } = detail;
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -42,40 +46,18 @@ export default async function FeedbackPage({ params }: { params: Promise<{ id: s
         <ArrowLeft className="h-4 w-4" />
         Back to Session
       </Link>
-      
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">{session.candidateName}</h1>
-        <p className="mt-1 text-muted-foreground">
-          {session.technology}
-        </p>
+
+      <div className="space-y-2">
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">{session.candidateName}</h1>
+          <StatusBadge status={session.status} />
+        </div>
+        <p className="text-muted-foreground">{session.technology}</p>
       </div>
 
-      <Card className="bg-card">
-        <CardContent className="grid gap-4 p-6 sm:grid-cols-2">
-          <div className="flex items-center gap-2 text-sm">
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-            {formatDate(session.date)}
-          </div>
-          <div className="flex items-center gap-2 text-sm">
-            <Clock className="h-4 w-4 text-muted-foreground" />
-            {session.time}
-          </div>
-          <div className="flex items-center gap-2 text-sm">
-            <Building2 className="h-4 w-4 text-muted-foreground" />
-            {session.clientName}
-          </div>
-          <div className="flex items-center gap-2 text-sm">
-            <TableProperties className="h-4 w-4 text-muted-foreground" />
-            Round {session.round}
-          </div>
-        </CardContent>
-      </Card>
+      <SessionSummaryHeader session={session} />
 
-      {session.feedback.submitted ? (
-        <FeedbackSubmitted feedback={session.feedback} />
-      ) : (
-        <FeedbackEditor initialContent={session.feedback.content} />
-      )}
+      <FeedbackEditor sessionId={session.id} feedback={feedback} isOwnFeedback={isOwnFeedback} />
     </div>
   );
 }

@@ -3,10 +3,10 @@ import { ClientsBrowser } from '@app/web/components/supporter/clients-browser';
 
 // No pagination UI on this page yet — fetch a generously large page so the
 // "all clients" read-only view is effectively complete for current data volumes.
-const MAX_CLIENTS = 100;
+const MAX_CLIENTS = Number.MAX_SAFE_INTEGER;
 
 async function SupporterClientsPage() {
-  const { data: clientPage } = await getClients({ limit: MAX_CLIENTS });
+  const { data: clientPage } = await getClients({ limit: MAX_CLIENTS, sort: "name,asc" });
 
   return (
     <div className="mx-auto max-w-7xl space-y-8">

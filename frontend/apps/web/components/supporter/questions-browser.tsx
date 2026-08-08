@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Search, FileQuestionMark } from 'lucide-react';
-import { Input } from '@feature/ui/components/input';
+import { Input } from '@feature/ui/components/ui/common/input';
 import type { Client, Question } from '@feature/base/server';
 import { QuestionRow } from '@app/web/components/supporter/question-row';
 import { TopicFilterPills } from '@app/web/components/supporter/topic-filter-pills';

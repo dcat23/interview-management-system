@@ -1,4 +1,7 @@
 app:
+  job:
+    session-auto-transition:
+      cron: "0 0 * * * *"
   kafka:
     partitions: 1
     replicas: 1

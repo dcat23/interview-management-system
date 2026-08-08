@@ -10,7 +10,7 @@ const envSchema = z.object({
   LOGGING_BROWSER_BEACON_PATH: z.string(),
   LOGGING_SERVICE_NAME: z.string(),
   /* schema end */
-})
+});
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace

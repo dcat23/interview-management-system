@@ -1,5 +1,5 @@
-import { Role } from "./user";
-import { type IconName } from "lucide-react/dynamic"
+import type { Role } from "./user";
+import type { IconName } from "lucide-react/dynamic"
 
 /**
  * [nav-item]
@@ -12,18 +12,34 @@ export interface NavItem {
     icon: IconName
 }
 
+export const DASHBOARD: NavItem = { 
+    name: 'Home', href: '/dashboard', icon: 'layout-dashboard' 
+}
+export const QUESTIONS: NavItem = { 
+    name: 'Questions', href: '/questions', icon: 'book-open' 
+}
+export const PROCESSES: NavItem = { 
+    name: 'Processes', href: '/processes', icon: 'briefcase'
+}
+export const SESSIONS: NavItem = { 
+    name: 'Sessions', href: '/sessions', icon: 'calendar-check' 
+}
+export const SETTINGS: NavItem = { 
+    name: 'Settings', href: '/settings', icon: 'settings' 
+}
 /**
  * [role-nav-items]
  * next-feature@0.1.4-0
  * July 25th 2026, 3:10:39 am
  */
 const supporter: NavItem[] = [
-    { name: 'Dashboard', href: '/supporter', icon: 'layout-dashboard' },
-    { name: 'My Sessions', href: '/supporter/sessions', icon: 'calendar-check' },
+    { name: 'Sessions', href: '/supporter/sessions', icon: 'calendar-check' },
     { name: 'Processes', href: '/supporter/processes', icon: 'briefcase' },
     { name: 'Clients', href: '/supporter/clients', icon: 'building-2' },
     { name: 'Questions', href: '/supporter/questions', icon: 'book-open' },
-]
+    SETTINGS,
+] as const;
+
 export const ROLE_NAV: Record<Role, NavItem[]> = {
     candidate: [
         { name: 'My Processes', href: '/candidate/processes', icon: 'briefcase' },
@@ -38,3 +54,21 @@ export const ROLE_NAV: Record<Role, NavItem[]> = {
         { name: 'Question Bank', href: '/admin/questions', icon: 'book-open' },
     ],
 } as const;
+
+export const COMMON_NAV: NavItem[] =[
+    DASHBOARD,
+    SESSIONS,
+    PROCESSES,
+    QUESTIONS,
+]
+
+export const AVAILABLE_NAV: NavItem[] =[
+    DASHBOARD,
+    SESSIONS,
+    PROCESSES
+]
+
+
+export const SECONDARY_NAV: NavItem[] =[
+    SETTINGS
+]

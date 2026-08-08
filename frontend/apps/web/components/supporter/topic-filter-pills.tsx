@@ -1,4 +1,4 @@
-import { Button } from '@feature/ui/components/button';
+import { Button } from '@feature/ui/components/ui/common/button';
 
 interface Props {
   topics: string[];

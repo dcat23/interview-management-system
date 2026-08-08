@@ -1,5 +1,6 @@
 package xyz.catuns.imp.api.process;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -22,12 +23,18 @@ import xyz.catuns.imp.api.process.dto.UpdateProcessRequest;
 import xyz.catuns.imp.api.process.entity.InterviewProcess;
 import xyz.catuns.imp.api.process.entity.ProcessStatus;
 import xyz.catuns.imp.api.process.repository.InterviewProcessRepository;
+import xyz.catuns.imp.api.session.entity.InterviewSession;
+import xyz.catuns.imp.api.session.repository.InterviewSessionRepository;
 import xyz.catuns.imp.api.user.entity.User;
 import xyz.catuns.imp.api.user.entity.UserRole;
 import xyz.catuns.imp.api.user.repository.UserRepository;
 
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -42,6 +49,7 @@ class ProcessControllerTest {
     @Autowired UserRepository userRepository;
     @Autowired ClientRepository clientRepository;
     @Autowired InterviewProcessRepository processRepository;
+    @Autowired InterviewSessionRepository sessionRepository;
     @Autowired PasswordEncoder passwordEncoder;
 
     private static final String ADMIN_EMAIL    = "proc-admin@example.com";
@@ -63,6 +71,7 @@ class ProcessControllerTest {
 
     private UUID adminId;
     private UUID marketerId;
+    private UUID supporterId;
     private UUID candidate1Id;
     private UUID candidate2Id;
     private UUID clientId;
@@ -72,7 +81,7 @@ class ProcessControllerTest {
     void setup() throws Exception {
         adminId     = seedUser(ADMIN_EMAIL,     "Proc Admin",      ADMIN_PASSWORD,      UserRole.ADMIN).getId();
         marketerId  = seedUser(MARKETER_EMAIL,  "Proc Marketer",   MARKETER_PASSWORD,   UserRole.MARKETER).getId();
-                      seedUser(SUPPORTER_EMAIL, "Proc Supporter",  SUPPORTER_PASSWORD,  UserRole.SUPPORTER);
+        supporterId = seedUser(SUPPORTER_EMAIL, "Proc Supporter",  SUPPORTER_PASSWORD,  UserRole.SUPPORTER).getId();
         candidate1Id = seedUser(CANDIDATE1_EMAIL, "Proc Candidate1", CANDIDATE1_PASSWORD, UserRole.CANDIDATE).getId();
         candidate2Id = seedUser(CANDIDATE2_EMAIL, "Proc Candidate2", CANDIDATE2_PASSWORD, UserRole.CANDIDATE).getId();
 
@@ -229,6 +238,149 @@ class ProcessControllerTest {
     @DisplayName("GET /processes")
     class ListProcesses {
 
+        private UUID otherClientId;
+        private UUID otherClientProcessId;
+        private UUID completedProcessId;
+        private UUID pastStartedProcessId;
+
+        @BeforeEach
+        void seedFilterFixtures() {
+            otherClientId = seedClient("Process Filter Corp", "Retail").getId();
+            otherClientProcessId = seedProcess(candidate1Id, otherClientId, marketerId, "Rust-Search-Fixture").getId();
+
+            InterviewProcess completedProcess = seedProcess(candidate2Id, clientId, marketerId, "Completed-Search-Fixture");
+            completedProcess.setStatus(ProcessStatus.COMPLETED);
+            completedProcessId = processRepository.save(completedProcess).getId();
+
+            InterviewProcess pastProcess = seedProcess(candidate1Id, clientId, marketerId, "DateRange-Search-Fixture");
+            pastProcess.setStartedAt(Instant.parse("2020-01-15T12:00:00Z"));
+            pastStartedProcessId = processRepository.save(pastProcess).getId();
+        }
+
+        @Test
+        @DisplayName("filters by startedAt date range")
+        void filtersByStartedAtRange() throws Exception {
+            mockMvc.perform(get("/processes")
+                            .param("startedFrom", "2020-01-01")
+                            .param("startedTo", "2020-01-31")
+                            .header("Authorization", "Bearer " + adminToken))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data[*].id",
+                            org.hamcrest.Matchers.hasItem(pastStartedProcessId.toString())))
+                    .andExpect(jsonPath("$.data[*].id",
+                            org.hamcrest.Matchers.not(org.hamcrest.Matchers.hasItem(ownProcessId.toString()))));
+        }
+
+        @Test
+        @DisplayName("startedTo is inclusive of the whole day")
+        void startedToIsInclusiveOfWholeDay() throws Exception {
+            mockMvc.perform(get("/processes")
+                            .param("startedFrom", "2020-01-15")
+                            .param("startedTo", "2020-01-15")
+                            .header("Authorization", "Bearer " + adminToken))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data[*].id",
+                            org.hamcrest.Matchers.hasItem(pastStartedProcessId.toString())));
+        }
+
+        @Test
+        @DisplayName("startedFrom after startedTo → 400")
+        void invalidStartedRangeReturns400() throws Exception {
+            mockMvc.perform(get("/processes")
+                            .param("startedFrom", "2025-01-01")
+                            .param("startedTo", "2020-01-01")
+                            .header("Authorization", "Bearer " + adminToken))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("filters by status")
+        void filtersByStatus() throws Exception {
+            mockMvc.perform(get("/processes")
+                            .param("status", "COMPLETED")
+                            .header("Authorization", "Bearer " + adminToken))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data[*].status",
+                            org.hamcrest.Matchers.everyItem(org.hamcrest.Matchers.is("COMPLETED"))))
+                    .andExpect(jsonPath("$.data[*].id",
+                            org.hamcrest.Matchers.hasItem(completedProcessId.toString())));
+        }
+
+        @Test
+        @DisplayName("filters by clientId")
+        void filtersByClientId() throws Exception {
+            mockMvc.perform(get("/processes")
+                            .param("clientId", otherClientId.toString())
+                            .header("Authorization", "Bearer " + adminToken))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data[*].clientId",
+                            org.hamcrest.Matchers.everyItem(org.hamcrest.Matchers.is(otherClientId.toString()))))
+                    .andExpect(jsonPath("$.data[*].id",
+                            org.hamcrest.Matchers.hasItem(otherClientProcessId.toString())));
+        }
+
+        @Test
+        @DisplayName("search matches candidate name")
+        void searchMatchesCandidateName() throws Exception {
+            mockMvc.perform(get("/processes")
+                            .param("search", "Proc Candidate1")
+                            .header("Authorization", "Bearer " + adminToken))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data").isNotEmpty())
+                    .andExpect(jsonPath("$.data[*].candidateId",
+                            org.hamcrest.Matchers.everyItem(org.hamcrest.Matchers.is(candidate1Id.toString()))));
+        }
+
+        @Test
+        @DisplayName("search matches technology")
+        void searchMatchesTechnology() throws Exception {
+            mockMvc.perform(get("/processes")
+                            .param("search", "Rust-Search-Fixture")
+                            .header("Authorization", "Bearer " + adminToken))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data[*].id",
+                            org.hamcrest.Matchers.hasItem(otherClientProcessId.toString())));
+        }
+
+        @Test
+        @DisplayName("search matches client name")
+        void searchMatchesClientName() throws Exception {
+            mockMvc.perform(get("/processes")
+                            .param("search", "Process Filter Corp")
+                            .header("Authorization", "Bearer " + adminToken))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data[*].id",
+                            org.hamcrest.Matchers.hasItem(otherClientProcessId.toString())));
+        }
+
+        @Test
+        @DisplayName("sorts by candidateName ascending")
+        void sortsByCandidateNameAscending() throws Exception {
+            String response = mockMvc.perform(get("/processes")
+                            .param("sort", "candidateName,asc")
+                            .param("limit", "100")
+                            .header("Authorization", "Bearer " + adminToken))
+                    .andExpect(status().isOk())
+                    .andReturn().getResponse().getContentAsString();
+
+            JsonNode data = objectMapper.readTree(response).get("data");
+            List<String> candidateNames = new ArrayList<>();
+            data.forEach(node -> candidateNames.add(node.get("candidateName").asText()));
+
+            List<String> expectedOrder = new ArrayList<>(candidateNames);
+            expectedOrder.sort(String::compareTo);
+            assertThat(candidateNames).isEqualTo(expectedOrder);
+        }
+
+        @Test
+        @DisplayName("unsortable field → 400")
+        void unsortableFieldReturns400() throws Exception {
+            mockMvc.perform(get("/processes")
+                            .param("sort", "marketerId,asc")
+                            .header("Authorization", "Bearer " + adminToken))
+                    .andExpect(status().isBadRequest());
+        }
+
         @Test
         @DisplayName("admin sees all processes")
         void adminSeesAll() throws Exception {
@@ -278,6 +430,26 @@ class ProcessControllerTest {
     @DisplayName("GET /processes/{id}")
     class GetProcessById {
 
+        private UUID sessionId;
+
+        @BeforeEach
+        void seedSession() {
+            InterviewSession session = sessionRepository.findByProcessIdOrderByRound(ownProcessId).stream()
+                    .filter(s -> "Detail-Fixture-Round".equalsIgnoreCase(s.getRound()))
+                    .findFirst()
+                    .orElseGet(() -> {
+                        InterviewSession fixture = new InterviewSession();
+                        fixture.setProcessId(ownProcessId);
+                        fixture.setSupporterId(supporterId);
+                        fixture.setRound("Detail-Fixture-Round");
+                        fixture.setMode("Video");
+                        fixture.setDurationMinutes(45);
+                        fixture.setScheduledAt(java.time.Instant.now().plus(14, java.time.temporal.ChronoUnit.DAYS));
+                        return sessionRepository.save(fixture);
+                    });
+            sessionId = session.getId();
+        }
+
         @Test
         @DisplayName("admin can get any process")
         void adminCanGet() throws Exception {
@@ -285,6 +457,30 @@ class ProcessControllerTest {
                             .header("Authorization", "Bearer " + adminToken))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.id").value(ownProcessId.toString()));
+        }
+
+        @Test
+        @DisplayName("includes sessions for the process")
+        void includesSessions() throws Exception {
+            mockMvc.perform(get("/processes/" + ownProcessId)
+                            .header("Authorization", "Bearer " + adminToken))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.sessions[*].id",
+                            org.hamcrest.Matchers.hasItem(sessionId.toString())))
+                    .andExpect(jsonPath("$.sessions[*].round",
+                            org.hamcrest.Matchers.hasItem("Detail-Fixture-Round")));
+        }
+
+        @Test
+        @DisplayName("returns an empty sessions array for a process with no sessions")
+        void emptySessionsForProcessWithoutSessions() throws Exception {
+            UUID emptyProcessId = seedProcess(candidate2Id, clientId, marketerId, "GetById-No-Sessions").getId();
+
+            mockMvc.perform(get("/processes/" + emptyProcessId)
+                            .header("Authorization", "Bearer " + adminToken))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.sessions").isArray())
+                    .andExpect(jsonPath("$.sessions").isEmpty());
         }
 
         @Test

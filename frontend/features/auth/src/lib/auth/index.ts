@@ -4,6 +4,8 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import { authConfig } from './auth.config';
 import { login, me } from '../actions/auth';
 import { logger } from '@next-feature/logging/server';
+import { ProblemDetail } from '@next-feature/client';
+import { ApiAuthError } from './error';
 
 const log = logger.child({ module: "nextauth-config"})
 
@@ -43,8 +45,7 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
         }
         
         if (response.error) {
-          log.error(`authorize() ${JSON.stringify(response.error.body)}`);
-          
+          throw new ApiAuthError(response.error.body) 
         }
 
         throw new CredentialsSignin(response.message);

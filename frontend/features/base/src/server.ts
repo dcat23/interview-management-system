@@ -1,5 +1,7 @@
+export * from './lib/constants/session';
 export * from './lib/types/api';
 export * from './lib/types/client';
+export * from './lib/types/feedback';
 export * from './lib/types/nav';
 export * from './lib/types/process';
 export * from './lib/types/question';
@@ -7,3 +9,4 @@ export * from './lib/types/session';
 export * from './lib/types/user';
 export * from './lib/utils/api';
 export * from './lib/utils/index';
+export * from './lib/utils/strings';

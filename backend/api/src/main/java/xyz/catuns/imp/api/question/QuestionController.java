@@ -30,6 +30,7 @@ import xyz.catuns.imp.api.question.dto.UpdateQuestionRequest;
 public class QuestionController {
 
     private final QuestionService questionService;
+    private final QuestionSearchService questionSearchService;
     private final SessionQuestionService sessionQuestionService;
 
     @PostMapping("/questions")
@@ -43,7 +44,11 @@ public class QuestionController {
     public PageResponse<QuestionResponse> list(
             @RequestParam(required = false) UUID clientId,
             @RequestParam(required = false) String topic,
+            @RequestParam(required = false) String q,
             Pageable pageable) {
+        if (q != null && !q.isBlank()) {
+            return PageResponse.from(questionSearchService.search(q, clientId, pageable));
+        }
         return PageResponse.from(questionService.list(clientId, topic, pageable));
     }
 
