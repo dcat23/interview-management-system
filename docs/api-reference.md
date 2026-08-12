@@ -4,6 +4,8 @@ Base URL: `https://api.{domain}/v1`
 
 All endpoints require `Authorization: Bearer {accessToken}` unless marked **public**.
 
+Endpoints marked `ai_agent` also accept `X-API-Key: {key}` in place of the Bearer header — see [API keys](#api-keys).
+
 Responses are `application/json`. Errors follow the standard error envelope below.
 
 ---
@@ -45,6 +47,7 @@ Responses are `application/json`. Errors follow the standard error envelope belo
 | `marketer` | Marketer |
 | `supporter` | Interview supporter |
 | `candidate` | Candidate |
+| `ai_agent` | MCP-capable AI client authenticated via `X-API-Key`, resolved to the issuing supporter's identity — see [API keys](#api-keys) |
 
 ---
 
@@ -135,6 +138,73 @@ Partially updates the authenticated user's own `name`/`email`. Role and active s
 Returns `409` if the email is already in use by another user.
 
 **Response `200`** — returns updated profile (same shape as `GET /auth/me`).
+
+---
+
+## API keys
+
+Lets a supporter issue a key an MCP-capable AI client (Claude Desktop, claude.ai) can use to call this API directly during a live interview, authenticated via `X-API-Key` instead of a JWT. A key resolves to its issuing supporter's identity but carries only the `ai_agent` role — never the supporter's own role — so it can reach the `ai_agent`-marked endpoints above regardless of what the supporter could otherwise do, and nothing else.
+
+### `POST /api-keys` · `admin` `supporter`
+
+Issue a new key, owned by the caller.
+
+**Request**
+```json
+{
+  "name": "Claude Desktop",
+  "expiresInDays": 90
+}
+```
+
+`expiresInDays` optional — defaults to `90`, capped at `180`.
+
+**Response `201`**
+```json
+{
+  "id": "uuid",
+  "name": "Claude Desktop",
+  "keyPrefix": "aik_XXXXXXXX",
+  "key": "aik_...",
+  "expiresAt": "2026-11-10T00:00:00Z",
+  "createdAt": "2026-08-12T00:00:00Z"
+}
+```
+
+`key` is the raw, plaintext key — returned exactly once, in this response. It is never stored and can never be retrieved again; only its SHA-256 hash is persisted.
+
+---
+
+### `GET /api-keys` · `admin` `supporter`
+
+List the caller's own keys.
+
+**Response `200`**
+```json
+[
+  {
+    "id": "uuid",
+    "name": "Claude Desktop",
+    "keyPrefix": "aik_XXXXXXXX",
+    "scope": "AI_AGENT",
+    "revoked": false,
+    "revokedAt": null,
+    "expiresAt": "2026-11-10T00:00:00Z",
+    "lastUsedAt": "2026-08-12T09:30:00Z",
+    "createdAt": "2026-08-12T00:00:00Z"
+  }
+]
+```
+
+Never includes the hash or raw key.
+
+---
+
+### `DELETE /api-keys/:id` · `admin` `owner`
+
+Soft-revokes a key (`revoked = true`, `revokedAt` set) so it can no longer authenticate. Owner or admin — an admin can kill a leaked key even if the owning supporter is unavailable.
+
+**Response `204`** No content.
 
 ---
 
@@ -257,7 +327,7 @@ Returns `404` if the id does not exist or does not belong to a user with the `CA
 
 ## End clients
 
-### `GET /clients` · `admin` `marketer` `supporter`
+### `GET /clients` · `admin` `marketer` `supporter` `ai_agent`
 
 List end clients.
 
@@ -308,7 +378,7 @@ List end clients.
 
 ## Question bank
 
-### `GET /questions` · `admin` `marketer` `supporter`
+### `GET /questions` · `admin` `marketer` `supporter` `ai_agent`
 
 List active questions with optional filters.
 
@@ -366,7 +436,7 @@ Create a question in the bank. `createdBy` set from JWT. `version` defaults to `
 
 ---
 
-### `GET /questions/:id` · `admin` `marketer` `supporter`
+### `GET /questions/:id` · `admin` `marketer` `supporter` `ai_agent`
 
 Get a single question including version history metadata.
 
@@ -560,7 +630,7 @@ All submitted feedback across all rounds in a process, ordered by `scheduledAt` 
 
 ## Interview sessions
 
-### `GET /sessions` · `admin` `marketer` `supporter`
+### `GET /sessions` · `admin` `marketer` `supporter` `ai_agent`
 
 List sessions across all processes, paginated.
 
@@ -656,13 +726,13 @@ Schedule a new round within a process.
 
 ---
 
-### `GET /sessions/:id` · `admin` `marketer` `supporter` `candidate`
+### `GET /sessions/:id` · `admin` `marketer` `supporter` `candidate` `ai_agent`
 
 Get session by ID.
 
 **Role constraints:**
 - Candidate: sessions belonging to their own process only
-- Admin / marketer / supporter: any session, regardless of assignment
+- Admin / marketer / supporter / AI agent: any session, regardless of assignment — agent reads are intentionally not scoped to the issuing supporter
 
 **Response `200`** — returns session object.
 
@@ -752,7 +822,7 @@ Full audit trail of all status transitions for a session.
 
 ## Session questions
 
-### `GET /sessions/:id/questions` · `admin` `marketer` `supporter` `candidate`
+### `GET /sessions/:id/questions` · `admin` `marketer` `supporter` `candidate` `ai_agent`
 
 Get questions linked to a session, ordered by `displayOrder`.
 
@@ -773,11 +843,11 @@ Get questions linked to a session, ordered by `displayOrder`.
 
 ---
 
-### `POST /sessions/:id/questions` · `admin` `supporter`
+### `POST /sessions/:id/questions` · `admin` `supporter` `ai_agent`
 
 Link a question from the bank to this session.
 
-**Role constraint:** Supporter must be the assigned supporter for this session.
+**Role constraint:** Supporter must be the assigned supporter for this session. AI agent writes are **not** scoped to an assignment — an agent key can link a question to any session.
 
 **Request**
 ```json

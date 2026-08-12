@@ -31,6 +31,27 @@
 4. On 401, client calls `POST /auth/refresh` using the cookie — transparently rotates tokens
 5. `POST /auth/logout` → server adds `refresh_token` to Redis blocklist (TTL = remaining token lifetime)
 
+### API key authentication
+
+An alternative authentication path for MCP-capable AI clients (Claude Desktop, claude.ai) calling the API directly during a live interview, instead of a human operating the dashboard with a JWT.
+
+| Property | Value |
+|---|---|
+| Header | `X-API-Key: {key}` (deliberately not `Authorization`, so it can't collide with the JWT Bearer scheme) |
+| Raw key format | `aik_` + 43 base62 chars drawn from `SecureRandom` (~256 bits of entropy) |
+| Storage | SHA-256 hash + a 12-char plaintext prefix only — the raw key is shown once, at issuance, and never stored |
+| Granted authority | `ROLE_AI_AGENT` only — never the issuing supporter's own role |
+| Default / max expiry | 90 days / 180 days |
+| Issuance | `POST /api-keys`, self-service, by the owning supporter (or admin) — see [API reference](api-reference.md#api-keys) |
+
+**Why a distinct authority, not the owner's role:** a key is issued by and tied to an owning supporter, but the intent is a narrow, audit-friendly grant for one workflow (question capture) — not "give this AI client everything the supporter can do." `ROLE_AI_AGENT` is attached only to API-key-authenticated requests and is never present on a human's JWT-derived `Authentication`.
+
+**Chain wiring:** `ApiKeyAuthFilter` runs ahead of the JWT validator filter in the same `SecurityFilterChain`. When `X-API-Key` is present and valid, it sets the `Authentication` and the JWT filter's own `shouldNotFilter()` guard causes it to skip — so `X-API-Key` takes precedence if both headers are present on a request. Invalid, revoked, or expired keys are rejected with `401` before reaching any controller, using the same `ProblemDetail` error shape as JWT failures.
+
+**Rate limiting and audit:** not yet key-specific — API-key traffic currently falls under the standard per-user limit below, since it resolves to the owning supporter. A dedicated per-key Redis limit and `createdByApiKeyId` write attribution are planned but not yet implemented.
+
+---
+
 **Spring Security filter chain:**
 ```java
 @Bean
@@ -56,19 +77,21 @@ Role is embedded in the JWT and extracted on every request. `@PreAuthorize` anno
 
 ### Role permission matrix
 
-| Resource | `candidate` | `marketer` | `supporter` | `admin` |
-|---|---|---|---|---|
-| Own user profile | read | read | read | full |
-| All users | — | — | — | full |
-| End clients | — | create/read/update | read | full |
-| Interview processes | own read | full | assigned read | full |
-| Interview sessions | own read | full | assigned read | full |
-| Session status transition | — | pre-interview states | post-interview outcomes | any |
-| Questions (bank) | — | — | read/create | full |
-| Session questions | own read | — | read/create/update/delete | full |
-| Feedback | — | read (submitted) | own read/create/update | read all submitted |
-| Status history | — | read | — | full |
-| Process timeline | — | read | — | full |
+| Resource | `candidate` | `marketer` | `supporter` | `admin` | `ai_agent` |
+|---|---|---|---|---|---|
+| Own user profile | read | read | read | full | — |
+| All users | — | — | — | full | — |
+| End clients | — | create/read/update | read | full | read (unscoped) |
+| Interview processes | own read | full | assigned read | full | — |
+| Interview sessions | own read | full | assigned read | full | read (unscoped) |
+| Session status transition | — | pre-interview states | post-interview outcomes | any | — |
+| Questions (bank) | — | — | read/create | full | read (unscoped) |
+| Session questions | own read | — | read/create/update/delete | full | read/create (unscoped — no update/delete) |
+| Feedback | — | read (submitted) | own read/create/update | read all submitted | — |
+| Status history | — | read | — | full | — |
+| Process timeline | — | read | — | full | — |
+
+`ai_agent` reads are deliberately *not* scoped to the issuing supporter's own assignments (unlike `supporter`), but its write surface is narrower than any human role: only question creation and session-question linking, via `X-API-Key` — see [API key authentication](#api-key-authentication).
 
 ### Service-layer enforcement example
 
@@ -195,7 +218,7 @@ Auth failure rate monitored via CloudWatch alarm (`auth.failures > 50/min` → h
 | Risk | Mitigation |
 |---|---|
 | A01 Broken Access Control | `@PreAuthorize` on all service methods; data scoping in all queries; role extracted from JWT not request |
-| A02 Cryptographic Failures | BCrypt for passwords; HS256 JWT; TLS on all connections; secrets in Secrets Manager |
+| A02 Cryptographic Failures | BCrypt for passwords; SHA-256 for API keys (256-bit `SecureRandom` key material, so slow salted hashing buys nothing); HS256 JWT; TLS on all connections; secrets in Secrets Manager |
 | A03 Injection | JPA parameterised queries; Bean Validation on all inputs; no dynamic SQL |
 | A04 Insecure Design | Separate DTOs from entities; immutable status history; feedback locked on submission |
 | A05 Security Misconfiguration | CORS locked to frontend domain; HTTPS-only; security headers on all responses |

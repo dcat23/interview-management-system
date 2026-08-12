@@ -128,7 +128,7 @@ public class InterviewSessionService {
                 .toList();
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','MARKETER','SUPPORTER')")
+    @PreAuthorize("hasAnyRole('ADMIN','MARKETER','SUPPORTER','AI_AGENT')")
     public Page<InterviewSessionResponse> list(String search, SessionStatus status, UUID processId,
                                                 UUID supporterId, LocalDate scheduledFrom, LocalDate scheduledTo,
                                                 Pageable pageable) {
@@ -208,7 +208,7 @@ public class InterviewSessionService {
         return pageable;
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','MARKETER','SUPPORTER') " +
+    @PreAuthorize("hasAnyRole('ADMIN','MARKETER','SUPPORTER','AI_AGENT') " +
             "or (hasRole('CANDIDATE') and @interviewSessionService.isCandidateOwnerOfSession(#id, authentication.name))")
     public InterviewSessionResponse getById(UUID id) {
         InterviewSession session = sessionRepository.findById(id)

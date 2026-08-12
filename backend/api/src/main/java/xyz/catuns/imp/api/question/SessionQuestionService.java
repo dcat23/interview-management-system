@@ -32,6 +32,10 @@ public class SessionQuestionService {
     private final QuestionRepository questionRepository;
     private final UserRepository userRepository;
 
+    // No @PreAuthorize before: unrestricted to any authenticated principal via the global
+    // anyRequest().authenticated() rule, which already includes ROLE_AI_AGENT. Made explicit here
+    // so that intent isn't lost if this method is ever tightened later.
+    @PreAuthorize("isAuthenticated()")
     @Cacheable(value = CacheConfig.QUESTIONS_BY_SESSION, key = "#sessionId")
     public List<SessionQuestionResponse> listBySession(UUID sessionId) {
         sessionRepository.findById(sessionId)
@@ -40,7 +44,10 @@ public class SessionQuestionService {
                 .stream().map(this::toResponse).toList();
     }
 
-    @PreAuthorize("hasRole('ADMIN') or (hasRole('SUPPORTER') and @sessionQuestionService.isAssignedSupporter(#sessionId, authentication.name))")
+    // ROLE_AI_AGENT is unscoped here, unlike SUPPORTER — deliberately not inheriting the
+    // isAssignedSupporter restriction, per the agent-writes design decision.
+    @PreAuthorize("hasRole('ADMIN') or hasRole('AI_AGENT') " +
+            "or (hasRole('SUPPORTER') and @sessionQuestionService.isAssignedSupporter(#sessionId, authentication.name))")
     @Transactional
     @CacheEvict(value = CacheConfig.QUESTIONS_BY_SESSION, key = "#sessionId")
     public SessionQuestionResponse link(UUID sessionId, LinkQuestionRequest request) {

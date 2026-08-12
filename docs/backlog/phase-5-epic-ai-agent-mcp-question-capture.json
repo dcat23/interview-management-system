@@ -1,0 +1,300 @@
+{
+  "summary": "AI Agent Question Capture — API Key Auth + Spring AI MCP Tool Integration",
+  "description": "Supporters currently compile interview questions in an external AI chat (e.g. claude.ai, perplexity.ai) and re-enter each one manually via <backend/api/src/main/java/xyz/catuns/imp/api/question/QuestionController.java>. This epic lets an MCP-capable AI client (Claude.ai remote connector, Claude Desktop) call the backend directly during a live interview to look up context (clients, candidates, sessions, existing questions) and create + link new questions to the active session in one turn, authenticated via a supporter-issued API key rather than a JWT.\n\nDesign decisions this epic implements:\n- New `ROLE_AI_AGENT` Spring Security authority, distinct from the human `UserRole` enum — attached only to API-key authenticated requests, never to a user's own JWT.\n- The key is issued by and tied to an owning supporter, but ROLE_AI_AGENT reads are global (any client/session/candidate), not scoped to the issuing supporter's own assignments — resolved explicitly in this conversation's planning after considering a narrower `questions:read/write`-only scope.\n- ROLE_AI_AGENT write access is limited to question creation and session-question linking — no feedback, status transitions, or user/client mutation, regardless of what the issuing supporter's own JWT role could do.\n- Bulk question creation is reframed as a session operation, not a standalone question-bank operation: `POST /sessions/{sessionId}/questions/bulk` creates and links a list of questions to a session in one call, using the same per-item partial-success pattern already established in <backend/api/src/main/java/xyz/catuns/imp/api/scheduleimport/ScheduleImportService.java> (`ImportRowResult`/`ImportSummaryResponse`) — one bad item does not roll back the rest of the batch.\n- MCP tools are thin in-process adapters over the existing service layer (no internal HTTP hop), so `@PreAuthorize` enforcement is identical whether the caller reached the operation via REST or via an MCP tool call.\n- Destructive/out-of-scope operations (delete, unlink, status transitions, feedback, user/client writes) are deliberately excluded from both the agent's REST grants and its MCP tool surface.",
+  "labels": ["backend", "question-bank", "spring-ai", "mcp", "api-key", "security"],
+  "priority": "High",
+  "userType": "Interview supporter using an external AI chat (Claude.ai / MCP-capable client) during a live interview",
+  "functionality": "let their AI assistant look up client, candidate, and session context and create + link interview questions directly to the active session from within the chat, without manually re-entering each question through the dashboard afterward",
+  "benefit": "questions surfaced conversationally during the interview are captured immediately and accurately at the source, eliminating manual post-interview transcription and reducing the chance a question is forgotten or mis-recorded",
+  "stories": [
+    {
+      "summary": "Add ApiKey entity and self-service issuance endpoints",
+      "description": "New `apikey` module (<backend/api/src/main/java/xyz/catuns/imp/api/apikey>) mirroring the existing module layout (entity/, dto/, repository/, service + controller at package root, matching <backend/api/src/main/java/xyz/catuns/imp/api/question>). Adds an `ApiKey` entity, Flyway migration, repository, issuance service, and controller exposing `POST /api-keys`, `GET /api-keys`, `DELETE /api-keys/{id}`.\n\nRaw key format: `aik_` + base62(32 random bytes). Only a `keyPrefix` (first 12 chars, plaintext, for identification in the UI) and a SHA-256 `keyHash` (unique indexed, used for O(1) lookup on every request) are persisted — chosen over BCrypt because the raw key already carries 256 bits of entropy, so slow salted hashing buys nothing and would prevent an indexed lookup. The full raw key is returned exactly once, in the create response, and is never stored or retrievable again. Default `expiresAt` is now + 90 days, capped at a 180-day maximum enforced by request validation.\n\nEntity shape:\n```\nApiKey\n  id            UUID\n  ownerId       UUID        -- FK users.id, indexed\n  name          String      -- supporter-chosen label\n  keyPrefix     String(12)  -- plaintext, shown in UI\n  keyHash       String(64)  -- SHA-256 hex, unique indexed\n  scope         enum        -- AI_AGENT (single value for now)\n  revoked       boolean     -- default false\n  revokedAt     Instant     -- nullable\n  expiresAt     Instant\n  lastUsedAt    Instant     -- nullable\n  createdAt     Instant\n```",
+      "labels": ["backend", "api-key", "security"],
+      "priority": "High",
+      "storyPoints": 8,
+      "acceptanceCriteria": [
+        {
+          "scenario": "Issue a new key",
+          "given": "an authenticated SUPPORTER",
+          "when": "they POST /api-keys with {name, expiresInDays}",
+          "then": "a 201 response is returned containing the raw key exactly once, plus id/name/keyPrefix/expiresAt; the persisted ApiKey row contains only keyHash and keyPrefix, never the raw key"
+        },
+        {
+          "scenario": "List own keys",
+          "given": "a supporter with 2 previously issued keys",
+          "when": "they GET /api-keys",
+          "then": "both keys are returned with keyPrefix, lastUsedAt, expiresAt, and revoked status — no hash or raw key field is present in the response"
+        },
+        {
+          "scenario": "Revoke a key",
+          "given": "an active key owned by the caller",
+          "when": "they DELETE /api-keys/{id}",
+          "then": "the key is soft-revoked (revoked=true, revokedAt set), the endpoint returns 204, and subsequent authentication attempts with that key are rejected"
+        },
+        {
+          "scenario": "Admin revokes another supporter's key",
+          "given": "an ADMIN caller and a key owned by a different supporter",
+          "when": "they DELETE /api-keys/{id}",
+          "then": "the revoke succeeds — owner-or-admin authorization, so a leaked key can be killed even if the owning supporter is unavailable"
+        }
+      ],
+      "tasks": [
+        {
+          "summary": "Create api_keys Flyway migration",
+          "description": "Add <backend/api/src/main/resources/db/migration/V15__create_api_keys.sql> — id, owner_id FK to users, name, key_prefix, key_hash (unique indexed), scope, revoked, revoked_at, expires_at, last_used_at, created_at."
+        },
+        {
+          "summary": "Implement ApiKey entity and repository",
+          "description": "<apikey/entity/ApiKey.java>, <apikey/repository/ApiKeyRepository.java> with a findByKeyHash lookup method."
+        },
+        {
+          "summary": "Implement key generation and hashing utility",
+          "description": "Generate the aik_ prefixed base62 raw key, compute its SHA-256 hex keyHash, and extract the 12-char keyPrefix."
+        },
+        {
+          "summary": "Implement ApiKeyService issuance, listing, and revocation",
+          "description": "<apikey/ApiKeyService.java> — create (with expiresInDays validation/cap), list-by-owner, revoke with an owner-or-admin authorization check."
+        },
+        {
+          "summary": "Implement ApiKeyController",
+          "description": "<apikey/ApiKeyController.java> — POST/GET/DELETE /api-keys, following the existing controller conventions (springdoc annotations, SecurityRequirement) seen in <backend/api/src/main/java/xyz/catuns/imp/api/client/ClientController.java>."
+        },
+        {
+          "summary": "Add ApiKeyCreatedResponse and ApiKeyResponse DTOs",
+          "description": "Separate DTO for the one-time raw-key response versus the list/get response; camelCase fields, no snake_case @JsonProperty annotations."
+        }
+      ]
+    },
+    {
+      "summary": "Authenticate API-key requests and introduce ROLE_AI_AGENT",
+      "description": "Add an `ApiKeyAuthFilter` that validates the `X-API-Key` header (deliberately not `Authorization`, so it can't collide with the JWT Bearer scheme already handled by the `jwt-spring-boot-starter`) against `ApiKeyRepository.findByKeyHash`, and populates a Spring Security `Authentication` — principal resolves to the key's owning supporter, single granted authority `ROLE_AI_AGENT` — for valid, non-revoked, non-expired keys.\n\n<backend/api/src/main/java/xyz/catuns/imp/api/config/SecurityConfig.java> does not currently define a `SecurityFilterChain` bean — it is supplied entirely by the external `jwt-spring-boot-starter` autoconfiguration, whose source isn't visible from this repo. The first task is a short spike to determine the correct extension point before the filter is wired in.\n\nOnce authentication works, widen `@PreAuthorize` on the specific existing service methods the agent needs: unrestricted reads on clients/sessions/questions (not scoped to the issuing supporter, per the decision that agent lookups are global), and write access on question creation/linking — explicitly not inheriting the `isAssignedSupporter` restriction that applies to the human SUPPORTER role on <backend/api/src/main/java/xyz/catuns/imp/api/question/SessionQuestionService.java>.",
+      "labels": ["backend", "security", "api-key"],
+      "priority": "High",
+      "storyPoints": 8,
+      "acceptanceCriteria": [
+        {
+          "scenario": "Valid key authenticates",
+          "given": "a valid, unexpired, unrevoked ApiKey",
+          "when": "a request includes header X-API-Key: <raw key>",
+          "then": "the request proceeds with an Authentication whose sole authority is ROLE_AI_AGENT and whose principal resolves to the key's owner; ApiKey.lastUsedAt is updated"
+        },
+        {
+          "scenario": "Revoked or expired key rejected",
+          "given": "a revoked or expired ApiKey",
+          "when": "a request includes that key",
+          "then": "the request is rejected with 401 before reaching any controller"
+        },
+        {
+          "scenario": "Agent reads are not scoped to the issuing supporter",
+          "given": "a key issued by Supporter A",
+          "when": "the caller requests a session assigned to Supporter B via the sessions read endpoints",
+          "then": "the session is returned — agent reads are global, per the decision that lookups aren't row-scoped to the issuing supporter"
+        },
+        {
+          "scenario": "Agent cannot access out-of-scope operations",
+          "given": "a valid ApiKey",
+          "when": "the caller attempts a feedback, status-transition, or user/client mutation endpoint",
+          "then": "the request is rejected with 403 — ROLE_AI_AGENT was never granted on those methods"
+        }
+      ],
+      "tasks": [
+        {
+          "summary": "Spike: jwt-spring-boot-starter filter chain extension points",
+          "description": "Determine whether the starter's SecurityFilterChain bean is @ConditionalOnMissingBean (this app can compose its own chain including both filters) or fixed (requires a second @Order-ed chain scoped via .securityMatcher(...) to agent-facing paths). Decides the shape of the next task."
+        },
+        {
+          "summary": "Implement ApiKeyAuthFilter",
+          "description": "<apikey/ApiKeyAuthFilter.java> — extends OncePerRequestFilter, reads X-API-Key, hashes and looks up the key, builds an Authentication with ROLE_AI_AGENT, updates lastUsedAt."
+        },
+        {
+          "summary": "Wire the filter into the security chain",
+          "description": "Per the spike's outcome, register ApiKeyAuthFilter alongside the existing JWT filter in <SecurityConfig.java>."
+        },
+        {
+          "summary": "Widen @PreAuthorize for ROLE_AI_AGENT reads",
+          "description": "Add hasRole('AI_AGENT') to ClientService.list, InterviewSessionService.list/getById, QuestionService.list/getById, QuestionSearchService.search, SessionQuestionService.listBySession."
+        },
+        {
+          "summary": "Widen @PreAuthorize for ROLE_AI_AGENT writes",
+          "description": "Add hasRole('AI_AGENT') to SessionQuestionService.link and the new bulk create-and-link method, without inheriting the isAssignedSupporter restriction that applies to hasRole('SUPPORTER')."
+        },
+        {
+          "summary": "Add unit tests for ApiKeyAuthFilter",
+          "description": "Cover valid, expired, revoked, and missing-key request paths."
+        }
+      ]
+    },
+    {
+      "summary": "Extend session-question linking to accept a batch, applied directly to the session",
+      "description": "Add `POST /sessions/{sessionId}/questions/bulk` accepting a `CreateSessionQuestionRequest { List<CreateSessionQuestionItem> questions }`, where each item carries the <backend/api/src/main/java/xyz/catuns/imp/api/question/dto/CreateQuestionRequest.java> fields plus the optional displayOrder/notes fields from <backend/api/src/main/java/xyz/catuns/imp/api/question/dto/LinkQuestionRequest.java>.\n\nEach item creates a Question and links it via SessionQuestion in its own `@Transactional(propagation = REQUIRES_NEW)` unit of work, following the exact per-row partial-success pattern already used in <backend/api/src/main/java/xyz/catuns/imp/api/scheduleimport/ScheduleImportService.java> (ImportRowResult / ImportSummaryResponse) — one bad item (invalid clientId, failed validation) does not roll back the rest of the batch. This replaces the current two-step create-then-link flow for the bulk case, and is the endpoint both the REST/API-key path and the MCP `add_questions_to_session` tool call into.",
+      "labels": ["backend", "question-bank", "bulk-import"],
+      "priority": "High",
+      "storyPoints": 8,
+      "acceptanceCriteria": [
+        {
+          "scenario": "All items valid",
+          "given": "a session and 5 well-formed question items",
+          "when": "POST /sessions/{sessionId}/questions/bulk is called",
+          "then": "201 is returned with 5 CREATED outcomes, each including the new questionId and sessionQuestionId"
+        },
+        {
+          "scenario": "One item invalid",
+          "given": "a batch of 5 items where item 3 has an unknown clientId",
+          "when": "the endpoint is called",
+          "then": "items 1, 2, 4, and 5 are created and linked; item 3's result reports FAILED with an error reason; the response still reflects the successful items rather than aborting the whole batch"
+        },
+        {
+          "scenario": "Human supporter role remains assignment-scoped",
+          "given": "a human SUPPORTER (JWT) calling this endpoint for a session not assigned to them",
+          "when": "they call POST /sessions/{sessionId}/questions/bulk",
+          "then": "403 is returned, per the existing isAssignedSupporter restriction on SessionQuestionService — this endpoint does not loosen human-caller authorization, only the new ROLE_AI_AGENT path is unscoped"
+        }
+      ],
+      "tasks": [
+        {
+          "summary": "Add CreateSessionQuestionRequest / CreateSessionQuestionItem DTOs",
+          "description": "<question/dto/CreateSessionQuestionRequest.java> wrapping a list of items, each holding the CreateQuestionRequest fields plus displayOrder/notes."
+        },
+        {
+          "summary": "Add per-item result and bulk summary response DTOs",
+          "description": "Per-item outcome (CREATED/FAILED) plus reason, rolled into a summary response — modeled directly on ImportRowResult/ImportSummaryResponse in the scheduleimport module."
+        },
+        {
+          "summary": "Implement SessionQuestionService.bulkCreateAndLink",
+          "description": "Per-item REQUIRES_NEW transaction reusing QuestionService.create and SessionQuestionService.link internals; catches and records per-item failures without aborting the batch."
+        },
+        {
+          "summary": "Add POST /sessions/{sessionId}/questions/bulk controller endpoint",
+          "description": "<question/QuestionController.java> — @PreAuthorize consistent with the existing link endpoint, plus hasRole('AI_AGENT')."
+        },
+        {
+          "summary": "Add controller and service tests",
+          "description": "Cover all-success, partial-failure, and role-authorization cases (human SUPPORTER scoped vs ROLE_AI_AGENT unscoped)."
+        }
+      ]
+    },
+    {
+      "summary": "Add name-searchable user lookup endpoint for candidate/supporter resolution",
+      "description": "<backend/api/src/main/java/xyz/catuns/imp/api/user/UserController.java>'s existing GET /users is admin-only and has no free-text name filter, so it can't back a \"find the candidate named Sarah\" tool call from a non-admin agent key. Add `GET /users/lookup?query=&role=` returning a minimal `UserLookupResponse { id, name, role }` — deliberately excluding email/active/other fields to keep the agent-facing surface low-exposure. Open to ADMIN, SUPPORTER, MARKETER, and the new AI_AGENT authority.",
+      "labels": ["backend", "user", "api-key"],
+      "priority": "Medium",
+      "storyPoints": 3,
+      "acceptanceCriteria": [
+        {
+          "scenario": "Lookup by partial name",
+          "given": "a candidate named \"Sarah Connor\"",
+          "when": "GET /users/lookup?query=sarah&role=CANDIDATE is called with a valid ApiKey",
+          "then": "200 is returned with a result containing id, name \"Sarah Connor\", and role CANDIDATE — no email or other fields present"
+        },
+        {
+          "scenario": "Role filter is optional",
+          "given": "no role query parameter",
+          "when": "the endpoint is called with just a query string",
+          "then": "results span all roles matching the name query"
+        }
+      ],
+      "tasks": [
+        {
+          "summary": "Add UserLookupResponse DTO",
+          "description": "id/name/role only, per the least-exposure design decided for the agent-facing surface."
+        },
+        {
+          "summary": "Add UserService.search(query, role)",
+          "description": "Case-insensitive partial name match."
+        },
+        {
+          "summary": "Add GET /users/lookup endpoint",
+          "description": "@PreAuthorize hasAnyRole('ADMIN','MARKETER','SUPPORTER','AI_AGENT')."
+        }
+      ]
+    },
+    {
+      "summary": "Expose question-capture operations as MCP tools via Spring AI MCP Server",
+      "description": "Add the Spring AI MCP Server starter and mount an MCP server (SSE endpoint, e.g. /mcp/sse) secured by the same ApiKeyAuthFilter/ROLE_AI_AGENT path established in the authentication story. Implement 8 @Tool-annotated methods across two beans:\n\n- LookupTools (read-only): search_clients, search_candidates, search_sessions, get_session, search_questions, list_session_questions\n- QuestionWriteTools (write): add_questions_to_session, link_existing_question\n\nEach tool is a thin adapter calling the existing service layer in-process (no internal HTTP hop), so @PreAuthorize enforcement is identical to the REST path. This is the mechanism a Claude.ai remote MCP connector or Claude Desktop uses to call the backend live from a chat. Delete/unlink, question update, status transitions, feedback, and user/client mutation are deliberately excluded from the tool surface.",
+      "labels": ["backend", "spring-ai", "mcp"],
+      "priority": "High",
+      "storyPoints": 13,
+      "acceptanceCriteria": [
+        {
+          "scenario": "MCP client connects with a valid API key",
+          "given": "a Claude Desktop/claude.ai MCP connector configured with an X-API-Key header",
+          "when": "it opens the SSE connection and lists tools",
+          "then": "all 8 tools are returned with their descriptions and parameter schemas"
+        },
+        {
+          "scenario": "Tool call creates and links questions",
+          "given": "an active MCP session",
+          "when": "add_questions_to_session is invoked with a sessionId and 3 question items",
+          "then": "the same per-item outcome behavior as the REST bulk endpoint is observed, since the tool delegates to the same service method"
+        },
+        {
+          "scenario": "Unauthenticated MCP connection rejected",
+          "given": "no or an invalid X-API-Key header",
+          "when": "a client attempts to open the SSE endpoint",
+          "then": "401 is returned, consistent with the REST API-key path"
+        }
+      ],
+      "tasks": [
+        {
+          "summary": "Add spring-ai-starter-mcp-server-webmvc dependency",
+          "description": "<backend/api/pom.xml>"
+        },
+        {
+          "summary": "Configure MCP server endpoint and security matcher",
+          "description": "Mount at /mcp/**, ensure ApiKeyAuthFilter covers this path per the security chain wiring decided in the authentication story."
+        },
+        {
+          "summary": "Implement LookupTools bean",
+          "description": "6 read @Tool methods delegating to ClientService, UserService, InterviewSessionService, QuestionSearchService/QuestionService, and SessionQuestionService."
+        },
+        {
+          "summary": "Implement QuestionWriteTools bean",
+          "description": "add_questions_to_session and link_existing_question, delegating to SessionQuestionService."
+        },
+        {
+          "summary": "Write tool descriptions and schemas for LLM consumption",
+          "description": "Clear per-tool description and parameter documentation so tool selection is unambiguous during a live chat."
+        },
+        {
+          "summary": "Manual verification with a Claude Desktop/claude.ai connector",
+          "description": "End-to-end smoke test against a real MCP client, covering the full lookup-then-create flow."
+        }
+      ]
+    },
+    {
+      "summary": "Add audit trail and rate limiting for API-key/agent traffic",
+      "description": "Per <docs/security.md>'s existing rate-limit table and OWASP mitigations, add a rate limit for ROLE_AI_AGENT traffic (Redis-backed, per-key, consistent with the existing per-user rate limit pattern) and record which ApiKey performed each write, since these are LLM-initiated writes that should be traceable back to a specific key even though the acting principal resolves to the owning supporter.",
+      "labels": ["backend", "observability", "security"],
+      "priority": "Medium",
+      "storyPoints": 5,
+      "acceptanceCriteria": [
+        {
+          "scenario": "Rate limit enforced per key",
+          "given": "an ApiKey exceeding the configured requests-per-minute limit",
+          "when": "further requests are made with that key",
+          "then": "429 is returned with a Retry-After header, consistent with the existing rate-limit patterns in docs/security.md"
+        },
+        {
+          "scenario": "Write attributable to the issuing key",
+          "given": "a question created via add_questions_to_session or the bulk REST endpoint",
+          "then": "the resulting Question/SessionQuestion record is traceable to the ApiKey that created it, not just the owning supporter"
+        }
+      ],
+      "tasks": [
+        {
+          "summary": "Add Redis-backed rate limit for ROLE_AI_AGENT-authenticated requests",
+          "description": "Per-key limit, mirroring the existing per-user 300 req/min pattern."
+        },
+        {
+          "summary": "Add createdByApiKeyId (nullable) to questions and session_questions",
+          "description": "Migration plus entity field; null for human-created rows."
+        },
+        {
+          "summary": "Update docs/security.md rate-limit table",
+          "description": "Document the new ROLE_AI_AGENT rate-limit row."
+        }
+      ]
+    }
+  ]
+}

@@ -21,7 +21,7 @@ public class QuestionSearchService {
     private final QuestionRepository questionRepository;
     private final QuestionMapper questionMapper;
 
-    @PreAuthorize("hasAnyRole('ADMIN','MARKETER','SUPPORTER')")
+    @PreAuthorize("hasAnyRole('ADMIN','MARKETER','SUPPORTER','AI_AGENT')")
     public Page<QuestionResponse> search(String q, UUID clientId, Pageable pageable) {
         // Ranking (ts_rank) replaces whatever ordering the caller asked for,
         // so drop any incoming Sort before it's appended to the native query.

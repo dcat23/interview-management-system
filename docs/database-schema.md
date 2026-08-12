@@ -29,6 +29,8 @@ CREATE TYPE session_status AS ENUM (
 );
 
 CREATE TYPE change_source AS ENUM ('manual', 'background_job');
+
+CREATE TYPE api_key_scope AS ENUM ('ai_agent');
 ```
 
 ---
@@ -57,6 +59,39 @@ CREATE INDEX idx_users_active   ON users(is_active);
 **Notes:**
 - `password_hash` stores BCrypt hash only. Plain text never persisted.
 - `is_active = false` disables login without deleting the record. All historical session/feedback references remain intact.
+
+---
+
+### `api_keys`
+
+Supporter-issued keys used by MCP-capable AI clients to authenticate as `ROLE_AI_AGENT` instead of a JWT (see [security.md](security.md#api-key-authentication)).
+
+```sql
+CREATE TABLE api_keys (
+  id           uuid          PRIMARY KEY DEFAULT gen_random_uuid(),
+  owner_id     uuid          NOT NULL REFERENCES users(id),
+  name         varchar(255)  NOT NULL,
+  key_prefix   varchar(12)   NOT NULL,
+  key_hash     varchar(64)   NOT NULL UNIQUE,
+  scope        api_key_scope NOT NULL DEFAULT 'ai_agent',
+  revoked      boolean       NOT NULL DEFAULT false,
+  revoked_at   timestamptz,
+  expires_at   timestamptz   NOT NULL,
+  last_used_at timestamptz,
+  created_at   timestamptz   NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_api_keys_owner    ON api_keys(owner_id);
+CREATE INDEX idx_api_keys_key_hash ON api_keys(key_hash);
+CREATE INDEX idx_api_keys_revoked  ON api_keys(revoked);
+```
+
+**Notes:**
+- Only `key_prefix` (first 12 chars, plaintext, shown in the UI) and `key_hash` (SHA-256 of the full raw key) are persisted — never the raw key itself, which is returned to the caller exactly once at creation and cannot be retrieved again.
+- SHA-256 rather than BCrypt: the raw key already carries ~256 bits of entropy from `SecureRandom`, so slow salted hashing buys nothing and would prevent the indexed `key_hash` lookup every request needs.
+- `expires_at` defaults to 90 days out at creation, capped at a 180-day maximum enforced by request validation.
+- `revoked = true` is a soft revoke (`revoked_at` set); revoked/expired keys are rejected at authentication time, before reaching any controller.
+- `scope` has a single value today (`ai_agent`); the enum leaves room for narrower scopes later without a schema change.
 
 ---
 
@@ -322,6 +357,9 @@ V9__create_status_history.sql
 V10__add_search_vector_trigger.sql
 V11__create_question_versions.sql
 V12__add_job_id_to_interview_processes.sql
+V13__backfill_started_at_from_sessions.sql
+V14__add_rescheduled_to_session_status.sql
+V15__create_api_keys.sql
 ```
 
 ---

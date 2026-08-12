@@ -24,7 +24,9 @@
     { "key": "clientId",     "value": "",                            "type": "string" },
     { "key": "questionId",   "value": "",                            "type": "string" },
     { "key": "processId",    "value": "",                            "type": "string" },
-    { "key": "sessionId",    "value": "",                            "type": "string" }
+    { "key": "sessionId",    "value": "",                            "type": "string" },
+    { "key": "apiKeyId",     "value": "",                            "type": "string" },
+    { "key": "apiKey",       "value": "",                            "type": "string" }
   ],
   "item": [
     {
@@ -156,6 +158,89 @@
               "path": ["auth", "me"]
             },
             "description": "Partially updates the authenticated user's own name/email. All fields optional. Role and active status can only be changed by an admin via `PATCH /users/:id`.\n\nReturns `409` if the email is already in use.\n\n**Roles:** all\n\n**Response:** `200` — returns updated profile."
+          }
+        }
+      ]
+    },
+    {
+      "name": "API Keys",
+      "item": [
+        {
+          "name": "Create API Key",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const body = pm.response.json();",
+                  "  pm.collectionVariables.set('apiKeyId', body.id);",
+                  "  pm.collectionVariables.set('apiKey', body.key);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Claude Desktop\",\n  \"expiresInDays\": 90\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api-keys",
+              "host": ["{{baseUrl}}"],
+              "path": ["api-keys"]
+            },
+            "description": "Issues a new AI_AGENT-scoped API key owned by the caller. `expiresInDays` optional — defaults to 90, capped at 180.\n\n**Roles:** admin, supporter\n\n**Response:** `201` — the raw key is returned exactly once, in the `key` field, and can never be retrieved again. Test script stores `id` → `apiKeyId` and `key` → `apiKey`."
+          }
+        },
+        {
+          "name": "List API Keys",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api-keys",
+              "host": ["{{baseUrl}}"],
+              "path": ["api-keys"]
+            },
+            "description": "Lists the caller's own API keys — prefix, scope, and status only, never the hash or raw key.\n\n**Roles:** admin, supporter"
+          }
+        },
+        {
+          "name": "Revoke API Key",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api-keys/{{apiKeyId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api-keys", "{{apiKeyId}}"]
+            },
+            "description": "Soft-revokes a key so it can no longer authenticate.\n\n**Roles:** owner or admin\n\n**Response:** `204` No content."
+          }
+        },
+        {
+          "name": "Example: List Clients (as AI Agent)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [{ "key": "X-API-Key", "value": "{{apiKey}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/clients?isActive=true&page=0&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["clients"],
+              "query": [
+                { "key": "isActive", "value": "true" },
+                { "key": "page", "value": "0" },
+                { "key": "limit", "value": "20" }
+              ]
+            },
+            "description": "Demonstrates agent-style authentication: the `X-API-Key` header (not `Authorization`) resolves to the issuing supporter with a single `ai_agent` role, in place of the collection's default Bearer JWT. Run **Create API Key** first so `{{apiKey}}` is populated.\n\nAny endpoint marked `ai_agent` in the API reference accepts this same header instead of `Authorization: Bearer`."
           }
         }
       ]
