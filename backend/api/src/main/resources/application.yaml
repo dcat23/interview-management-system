@@ -15,6 +15,19 @@ spring:
   threads:
     virtual:
       enabled: true
+  ai:
+    mcp:
+      server:
+        name: imp-question-capture-mcp-server
+        version: "1.0.0"
+        type: sync
+        instructions: >
+          Tools for looking up interview clients, candidates, sessions, and existing questions,
+          and for capturing new interview questions directly onto the active session. Search
+          before creating: use search_questions/list_session_questions to check for an existing
+          match, and link_existing_question instead of add_questions_to_session when one is found.
+        sse-endpoint: /mcp/sse
+        sse-message-endpoint: /mcp/message
   cache:
     type: redis
     redis:
