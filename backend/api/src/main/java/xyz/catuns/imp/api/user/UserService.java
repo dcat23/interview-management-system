@@ -4,7 +4,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -16,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import xyz.catuns.imp.api.config.CacheConfig;
 import xyz.catuns.imp.api.user.dto.CreateUserRequest;
 import xyz.catuns.imp.api.user.dto.UpdateUserRequest;
+import xyz.catuns.imp.api.user.dto.UserLookupResponse;
 import xyz.catuns.imp.api.user.dto.UserResponse;
 import xyz.catuns.imp.api.user.entity.User;
 import xyz.catuns.imp.api.user.entity.UserRole;
@@ -24,12 +27,16 @@ import xyz.catuns.imp.api.user.repository.UserRepository;
 import xyz.catuns.spring.base.exception.controller.ConflictException;
 import xyz.catuns.spring.base.exception.controller.NotFoundException;
 
+import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class UserService implements UserDetailsService {
+
+    private static final int LOOKUP_RESULT_LIMIT = 20;
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -50,6 +57,21 @@ public class UserService implements UserDetailsService {
         Boolean activeFilter = isActive != null ? isActive : true;
         spec = spec.and((root, query, cb) -> cb.equal(root.get("active"), activeFilter));
         return userRepository.findAll(spec, pageable).map(userMapper::toResponse);
+    }
+
+    // Low-exposure name lookup for candidate/supporter resolution — open to AI_AGENT (and the
+    // other human roles that already had broader read access) unlike the admin-only list() above.
+    @PreAuthorize("hasAnyRole('ADMIN','MARKETER','SUPPORTER','AI_AGENT')")
+    public List<UserLookupResponse> search(String query, UserRole role) {
+        String pattern = "%" + query.trim().toLowerCase(Locale.ROOT) + "%";
+        Specification<User> spec = (root, cq, cb) -> cb.like(cb.lower(root.get("name")), pattern);
+        if (role != null) {
+            spec = spec.and((root, cq, cb) -> cb.equal(root.get("role"), role));
+        }
+        Pageable pageable = PageRequest.of(0, LOOKUP_RESULT_LIMIT, Sort.by("name").ascending());
+        return userRepository.findAll(spec, pageable)
+                .map(userMapper::toLookupResponse)
+                .getContent();
     }
 
     @PreAuthorize("hasRole('ADMIN')")

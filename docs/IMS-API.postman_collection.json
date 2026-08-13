@@ -299,6 +299,23 @@
           }
         },
         {
+          "name": "Lookup Users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/lookup?query=sarah&role=",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "lookup"],
+              "query": [
+                { "key": "query", "value": "sarah", "description": "Required. Partial, case-insensitive match on name." },
+                { "key": "role",  "value": "",       "description": "Filter by role (ADMIN | MARKETER | SUPPORTER | CANDIDATE)", "disabled": true }
+              ]
+            },
+            "description": "Case-insensitive partial name search for candidate/supporter resolution (e.g. resolving \"the candidate named Sarah\" to an id from an AI agent chat). Returns a minimal id/name/role projection only — no email or other fields. Capped at 20 results, sorted by name; not paginated.\n\n**Roles:** admin, marketer, supporter, ai_agent (accepts `X-API-Key` in place of the Bearer header — see **Example: List Clients (as AI Agent)** under API Keys)"
+          }
+        },
+        {
           "name": "Get User",
           "request": {
             "method": "GET",

@@ -13,10 +13,12 @@ import org.springframework.web.bind.annotation.*;
 import xyz.catuns.imp.api.common.dto.PageResponse;
 import xyz.catuns.imp.api.user.dto.CreateUserRequest;
 import xyz.catuns.imp.api.user.dto.UpdateUserRequest;
+import xyz.catuns.imp.api.user.dto.UserLookupResponse;
 import xyz.catuns.imp.api.user.dto.UserResponse;
 import xyz.catuns.imp.api.user.entity.UserRole;
 
 import java.net.URI;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -58,6 +60,24 @@ public class UserController {
         return ResponseEntity
                 .created(URI.create("/users/" + created.id()))
                 .body(created);
+    }
+
+    @GetMapping("/lookup")
+    @Operation(
+            summary = "Look up users by name",
+            description = "Case-insensitive partial name search, optionally filtered by role. Returns a "
+                    + "minimal id/name/role projection — no email or other fields — for candidate/supporter "
+                    + "resolution by admin, marketer, supporter, or an AI_AGENT-scoped API key."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Matching users"),
+            @ApiResponse(responseCode = "403", description = "Insufficient role")
+    })
+    public ResponseEntity<List<UserLookupResponse>> lookup(
+            @RequestParam String query,
+            @RequestParam(required = false) UserRole role
+    ) {
+        return ResponseEntity.ok(userService.search(query, role));
     }
 
     @GetMapping("/{id}")

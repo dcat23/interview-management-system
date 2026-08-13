@@ -6,6 +6,7 @@ import org.mapstruct.MappingTarget;
 import org.mapstruct.NullValuePropertyMappingStrategy;
 import xyz.catuns.imp.api.user.dto.CreateUserRequest;
 import xyz.catuns.imp.api.user.dto.UpdateUserRequest;
+import xyz.catuns.imp.api.user.dto.UserLookupResponse;
 import xyz.catuns.imp.api.user.dto.UserResponse;
 import xyz.catuns.imp.api.user.entity.User;
 
@@ -17,6 +18,8 @@ public interface UserMapper {
 
     @Mapping(target = "active", source = "active")
     UserResponse toResponse(User user);
+
+    UserLookupResponse toLookupResponse(User user);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "createdAt", ignore = true)

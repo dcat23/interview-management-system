@@ -288,6 +288,28 @@ Update user fields.
 
 ---
 
+### `GET /users/lookup` · `admin` `marketer` `supporter` `ai_agent`
+
+Case-insensitive partial name search, e.g. resolving "the candidate named Sarah" to an id from an AI agent chat. Returns a minimal `id`/`name`/`role` projection — deliberately excludes email, active status, and every other field to keep this agent-facing surface low-exposure. Unlike `GET /users`, this is not admin-only.
+
+**Query params**
+
+| Param   | Type   | Description                                              |
+|---------|--------|------------------------------------------------------------|
+| `query` | string | Required. Partial, case-insensitive match on name.          |
+| `role`  | string | Optional filter (`ADMIN`, `MARKETER`, `SUPPORTER`, `CANDIDATE`). Omit to search all roles. |
+
+Results are capped at 20, sorted by name — not paginated.
+
+**Response `200`**
+```json
+[
+  { "id": "uuid", "name": "Sarah Connor", "role": "CANDIDATE" }
+]
+```
+
+---
+
 ## Candidates
 
 Minimal, name-only candidate lookups for display purposes (e.g. rendering a candidate's name on a process/session card). Deliberately separate from `GET /users/:id`, which is admin/self-only — marketer and supporter need candidate names but must not gain general user-lookup access.
