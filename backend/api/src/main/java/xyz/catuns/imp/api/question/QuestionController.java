@@ -20,8 +20,10 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import xyz.catuns.imp.api.common.dto.PageResponse;
 import xyz.catuns.imp.api.question.dto.CreateQuestionRequest;
+import xyz.catuns.imp.api.question.dto.CreateSessionQuestionRequest;
 import xyz.catuns.imp.api.question.dto.LinkQuestionRequest;
 import xyz.catuns.imp.api.question.dto.QuestionResponse;
+import xyz.catuns.imp.api.question.dto.SessionQuestionBulkSummaryResponse;
 import xyz.catuns.imp.api.question.dto.SessionQuestionResponse;
 import xyz.catuns.imp.api.question.dto.UpdateQuestionRequest;
 
@@ -75,6 +77,14 @@ public class QuestionController {
     public SessionQuestionResponse link(@PathVariable UUID sessionId,
                                         @Valid @RequestBody LinkQuestionRequest request) {
         return sessionQuestionService.link(sessionId, request);
+    }
+
+    @PostMapping("/sessions/{sessionId}/questions/bulk")
+    @ResponseStatus(HttpStatus.CREATED)
+    public SessionQuestionBulkSummaryResponse bulkLink(@PathVariable UUID sessionId,
+                                                        @Valid @RequestBody CreateSessionQuestionRequest request,
+                                                        Authentication authentication) {
+        return sessionQuestionService.bulkCreateAndLink(sessionId, request, authentication);
     }
 
     @GetMapping("/sessions/{sessionId}/questions")

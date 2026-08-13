@@ -865,6 +865,59 @@ Returns `404` if the question is inactive or does not exist.
 
 ---
 
+### `POST /sessions/:id/questions/bulk` · `admin` `supporter` `ai_agent`
+
+Create and link a batch of new questions to this session in one call — the endpoint an AI agent's `add_questions_to_session` tool call and the REST bulk-import path both use. Each item is created and linked as its own unit of work: one bad item (unknown `clientId`, missing required field) does **not** roll back the rest of the batch.
+
+**Role constraint:** Supporter must be the assigned supporter for this session — this endpoint does not loosen human-caller authorization. AI agent writes are **not** scoped to an assignment, same as `POST /sessions/:id/questions`.
+
+**Request**
+```json
+{
+  "questions": [
+    {
+      "clientId": "uuid",
+      "topic": "string",
+      "round": "string",
+      "body": "string",
+      "displayOrder": 1,
+      "notes": "string (optional)"
+    }
+  ]
+}
+```
+
+`questions` must be non-empty.
+
+**Response `201`**
+```json
+{
+  "totalItems": 5,
+  "created": 4,
+  "failed": 1,
+  "results": [
+    {
+      "itemIndex": 0,
+      "outcome": "CREATED",
+      "questionId": "uuid",
+      "sessionQuestionId": "uuid",
+      "error": null
+    },
+    {
+      "itemIndex": 2,
+      "outcome": "FAILED",
+      "questionId": null,
+      "sessionQuestionId": null,
+      "error": "Client not found: uuid"
+    }
+  ]
+}
+```
+
+`201` is returned even when some items fail — check `results[].outcome` for per-item status.
+
+---
+
 ### `DELETE /sessions/:id/questions/:question_id` · `admin` `supporter`
 
 Unlink a question from a session. The question remains in the bank.

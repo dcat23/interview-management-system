@@ -814,6 +814,41 @@
           }
         },
         {
+          "name": "Bulk Create & Link Questions to Session",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const body = pm.response.json();",
+                  "  const created = body.results.find(r => r.outcome === 'CREATED');",
+                  "  if (created) {",
+                  "    pm.collectionVariables.set('questionId', created.questionId);",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"questions\": [\n    {\n      \"clientId\": \"{{clientId}}\",\n      \"topic\": \"Spring Boot\",\n      \"round\": \"Technical Screen\",\n      \"body\": \"Explain the difference between @Component and @Bean.\",\n      \"displayOrder\": 1,\n      \"notes\": \"Focus on the lifecycle aspect\"\n    },\n    {\n      \"clientId\": \"{{clientId}}\",\n      \"topic\": \"Concurrency\",\n      \"round\": \"Technical Screen\",\n      \"body\": \"Explain the Java memory model and how volatile works.\",\n      \"displayOrder\": 2\n    }\n  ]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/sessions/{{sessionId}}/questions/bulk",
+              "host": ["{{baseUrl}}"],
+              "path": ["sessions", "{{sessionId}}", "questions", "bulk"]
+            },
+            "description": "Create and link a batch of new questions to this session in one call — the endpoint an AI agent's `add_questions_to_session` tool call and this REST path both use. Each item is created and linked as its own unit of work: one bad item (unknown `clientId`, missing required field) does not fail the whole batch.\n\nSupporter must be the assigned supporter for this session — this endpoint does not loosen human-caller authorization. AI agent writes are not scoped to an assignment.\n\n**Roles:** admin, supporter, ai_agent\n\n**Response:** `201` — per-item `created` / `failed` summary; check `results[].outcome` for per-item status. Test script stores the first created item's `questionId`."
+          }
+        },
+        {
           "name": "Unlink Question from Session",
           "request": {
             "method": "DELETE",
