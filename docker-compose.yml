@@ -32,7 +32,30 @@ services:
       timeout: 5s
       retries: 10
       start_period: 30s
-#
+
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: "tunnel --no-autoupdate run --token ${CLOUDFLARED_TOKEN}"
+    networks:
+      - microservice
+
+  ngrok:
+    image: ngrok/ngrok
+    restart: unless-stopped
+    environment:
+      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN}
+    command:
+      - "http"
+      - "api:8080"
+    networks:
+      - microservice
+    ports:
+      - "4040:4040"
+    depends_on:
+      api:
+        condition: service_healthy
 #  web:
 #    image: web:latest
 #    ports:
