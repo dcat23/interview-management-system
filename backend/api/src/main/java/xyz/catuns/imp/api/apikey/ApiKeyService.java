@@ -29,6 +29,7 @@ public class ApiKeyService {
 
     private final ApiKeyRepository apiKeyRepository;
     private final UserRepository userRepository;
+    private final ApiKeyTokenProvider apiKeyTokenProvider;
 
     @PreAuthorize("hasAnyRole('ADMIN','SUPPORTER')")
     @Transactional
@@ -47,8 +48,11 @@ public class ApiKeyService {
         apiKey.setExpiresAt(Instant.now().plus(expiresInDays, ChronoUnit.DAYS));
         apiKey = apiKeyRepository.save(apiKey);
 
+        // Bearer-token twin of the raw key, for MCP hosted connectors — see ApiKeyTokenProvider.
+        String bearerToken = apiKeyTokenProvider.generate(apiKey).value();
+
         return new ApiKeyCreatedResponse(apiKey.getId(), apiKey.getName(), apiKey.getKeyPrefix(),
-                rawKey, apiKey.getExpiresAt(), apiKey.getCreatedAt());
+                rawKey, bearerToken, apiKey.getExpiresAt(), apiKey.getCreatedAt());
     }
 
     @PreAuthorize("hasAnyRole('ADMIN','SUPPORTER')")

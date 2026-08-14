@@ -17,25 +17,38 @@ import xyz.catuns.imp.api.apikey.entity.ApiKey;
 import xyz.catuns.imp.api.apikey.repository.ApiKeyRepository;
 import xyz.catuns.imp.api.user.entity.User;
 import xyz.catuns.imp.api.user.repository.UserRepository;
+import xyz.catuns.spring.jwt.core.exception.TokenValidationException;
 
 import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
 
 /**
- * Authenticates requests carrying an {@code X-API-Key} header (deliberately not {@code Authorization},
- * so it can't collide with the JWT Bearer scheme). On a valid, non-revoked, non-expired key, sets an
- * Authentication whose principal is the key owner's email and whose sole granted authority is
- * {@code ROLE_AI_AGENT} — never the owning supporter's own role.
+ * Authenticates AI-agent requests over two transports, both resolving to the same {@link ApiKey}
+ * row and granting the same single authority, {@code ROLE_AI_AGENT} — never the owning supporter's
+ * own role:
+ * <ul>
+ *   <li>{@code X-API-Key: <raw key>} — the original self-service credential, an opaque
+ *       {@code aik_}-prefixed random string, hashed and looked up via {@link ApiKeyRepository}.
+ *       For direct REST/programmatic callers.</li>
+ *   <li>{@code Authorization: Bearer <jwt>} — a JWT wrapping the same key's id, issued alongside
+ *       the raw key at creation time (see {@link ApiKeyService#create}) and validated via
+ *       {@link ApiKeyTokenProvider}. Added for MCP hosted connectors (Claude, Perplexity), whose
+ *       "add connector" UI only exposes a bearer-token-shaped auth field, not a custom header.</li>
+ * </ul>
+ * The two transports never collide: {@code X-API-Key} is unambiguous by name and always validated
+ * strictly, while a bearer token that fails API-key validation (wrong signature, no matching row)
+ * is treated as "not one of ours" and passed through untouched rather than rejected —
+ * {@code JwtTokenValidatorFilter} gets the next look, so a genuine human JWT on that same header
+ * still authenticates normally.
  * <p>
  * Positioned before {@code JwtTokenValidatorFilter} in the security chain: once this filter sets an
- * Authentication, the JWT filter's own {@code shouldNotFilter} check causes it to skip, so X-API-Key
- * takes precedence when both headers are present.
+ * Authentication, the JWT filter's own {@code shouldNotFilter} check causes it to skip.
  * <p>
- * Invalid, revoked, or expired keys throw {@link BadCredentialsException} (an
+ * An invalid, revoked, or expired {@code X-API-Key} throws {@link BadCredentialsException} (an
  * {@link org.springframework.security.core.AuthenticationException}), which the JWT starter's
- * {@code JwtExceptionHandlerFilter} catches and resolves to the same 401 ProblemDetail shape used for
- * JWT authentication failures.
+ * {@code JwtExceptionHandlerFilter} catches and resolves to the same 401 ProblemDetail shape used
+ * for JWT authentication failures.
  */
 @RequiredArgsConstructor
 public class ApiKeyAuthFilter extends OncePerRequestFilter {
@@ -43,7 +56,11 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
     public static final String API_KEY_HEADER = "X-API-Key";
     public static final String AI_AGENT_AUTHORITY = "ROLE_AI_AGENT";
 
+    private static final String AUTHORIZATION_HEADER = "Authorization";
+    private static final String BEARER_PREFIX = "Bearer ";
+
     private final ApiKeyRepository apiKeyRepository;
+    private final ApiKeyTokenProvider apiKeyTokenProvider;
     private final UserRepository userRepository;
 
     @Override
@@ -53,12 +70,46 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
             @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
 
-        String rawKey = request.getHeader(API_KEY_HEADER);
-        if (!StringUtils.hasText(rawKey)) {
+        ApiKey apiKey = resolveApiKey(request);
+        if (apiKey == null) {
             filterChain.doFilter(request, response);
             return;
         }
 
+        User owner = userRepository.findById(apiKey.getOwnerId())
+                .orElseThrow(() -> new BadCredentialsException("API key owner not found"));
+
+        Authentication authentication = new UsernamePasswordAuthenticationToken(
+                owner.getEmail(), null, List.of(new SimpleGrantedAuthority(AI_AGENT_AUTHORITY)));
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+
+        filterChain.doFilter(request, response);
+    }
+
+    /**
+     * {@code X-API-Key}, if present, is authoritative and validated strictly. Otherwise, an
+     * {@code Authorization: Bearer} token is tried as an API-key JWT — but only a {@code null}
+     * return (not an exception) signals "not ours," so the request falls through to the JWT
+     * filter instead of being rejected outright.
+     */
+    private ApiKey resolveApiKey(HttpServletRequest request) {
+        String rawKey = request.getHeader(API_KEY_HEADER);
+        if (StringUtils.hasText(rawKey)) {
+            return resolveRawKey(rawKey);
+        }
+
+        String authorization = request.getHeader(AUTHORIZATION_HEADER);
+        if (StringUtils.hasText(authorization) && authorization.startsWith(BEARER_PREFIX)) {
+            try {
+                return apiKeyTokenProvider.validate(authorization.substring(BEARER_PREFIX.length()));
+            } catch (TokenValidationException e) {
+                return null;
+            }
+        }
+        return null;
+    }
+
+    private ApiKey resolveRawKey(String rawKey) {
         ApiKey apiKey = apiKeyRepository.findByKeyHash(ApiKeyGenerator.hash(rawKey))
                 .orElseThrow(() -> new BadCredentialsException("Invalid API key"));
 
@@ -69,17 +120,8 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
             throw new BadCredentialsException("API key has expired");
         }
 
-        User owner = userRepository.findById(apiKey.getOwnerId())
-                .orElseThrow(() -> new BadCredentialsException("API key owner not found"));
-
         apiKey.setLastUsedAt(Instant.now());
-        apiKeyRepository.save(apiKey);
-
-        Authentication authentication = new UsernamePasswordAuthenticationToken(
-                owner.getEmail(), null, List.of(new SimpleGrantedAuthority(AI_AGENT_AUTHORITY)));
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-
-        filterChain.doFilter(request, response);
+        return apiKeyRepository.save(apiKey);
     }
 
     /**

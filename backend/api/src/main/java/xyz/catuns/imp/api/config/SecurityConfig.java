@@ -15,6 +15,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfigurationSource;
 import xyz.catuns.imp.api.apikey.ApiKeyAuthFilter;
+import xyz.catuns.imp.api.apikey.ApiKeyTokenProvider;
 import xyz.catuns.imp.api.apikey.repository.ApiKeyRepository;
 import xyz.catuns.imp.api.auth.BlocklistAwareTokenProvider;
 import xyz.catuns.imp.api.user.repository.UserRepository;
@@ -43,8 +44,14 @@ class SecurityConfig {
     }
 
     @Bean
-    ApiKeyAuthFilter apiKeyAuthFilter(ApiKeyRepository apiKeyRepository, UserRepository userRepository) {
-        return new ApiKeyAuthFilter(apiKeyRepository, userRepository);
+    ApiKeyTokenProvider apiKeyTokenProvider(JwtProperties jwtProperties, ApiKeyRepository apiKeyRepository) {
+        return new ApiKeyTokenProvider(jwtProperties, apiKeyRepository);
+    }
+
+    @Bean
+    ApiKeyAuthFilter apiKeyAuthFilter(ApiKeyRepository apiKeyRepository, ApiKeyTokenProvider apiKeyTokenProvider,
+                                       UserRepository userRepository) {
+        return new ApiKeyAuthFilter(apiKeyRepository, apiKeyTokenProvider, userRepository);
     }
 
     /**
