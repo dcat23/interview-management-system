@@ -33,20 +33,26 @@
 
 ### API key authentication
 
-An alternative authentication path for MCP-capable AI clients (Claude Desktop, claude.ai) calling the API directly during a live interview, instead of a human operating the dashboard with a JWT.
+An alternative authentication path for MCP-capable AI clients (Claude Desktop, claude.ai, Perplexity) calling the API directly during a live interview, instead of a human operating the dashboard with a JWT. One issued key is presented over either of two transports, chosen by what the calling client supports:
 
-| Property | Value |
-|---|---|
-| Header | `X-API-Key: {key}` (deliberately not `Authorization`, so it can't collide with the JWT Bearer scheme) |
-| Raw key format | `aik_` + 43 base62 chars drawn from `SecureRandom` (~256 bits of entropy) |
-| Storage | SHA-256 hash + a 12-char plaintext prefix only — the raw key is shown once, at issuance, and never stored |
-| Granted authority | `ROLE_AI_AGENT` only — never the issuing supporter's own role |
-| Default / max expiry | 90 days / 180 days |
-| Issuance | `POST /api-keys`, self-service, by the owning supporter (or admin) — see [API reference](api-reference.md#api-keys) |
+| Property           | `X-API-Key` (REST/programmatic)                                                                               | `Authorization: Bearer` (MCP hosted connectors)                                                                                                                       |
+|--------------------|---------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Format             | `aik_` + 43 base62 chars drawn from `SecureRandom` (~256 bits of entropy)                                     | A JWT wrapping the same key's id (`sub`), signed with the app's existing JWT secret                                                                                   |
+| Validation         | SHA-256 hash lookup against the stored `key_hash`                                                             | Signature + claims parsing via `ApiKeyTokenProvider` (extends jwt-core's `SimpleTokenProvider`); the key row is still re-resolved on every call to enforce revocation |
+| Why this transport | Deliberately not `Authorization`, so it can't collide with the JWT Bearer scheme, for direct/scripted callers | Hosted connector "add connector" UIs (Claude, Perplexity) only expose a bearer-token-shaped auth field, not a custom header                                           |
+
+Both resolve to the same `ApiKey` row, the same owning supporter, and the same granted authority. Only the raw key (`X-API-Key` use) is hashed and stored; the bearer JWT is never persisted — it's self-verifying and stateless, re-derivable only by revoking the key and issuing a new one.
+
+| Property             | Value                                                                                                                                              |
+|----------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|
+| Storage              | SHA-256 hash of the raw key + a 12-char plaintext prefix only — both credentials are shown once, at issuance, and never stored in recoverable form |
+| Granted authority    | `ROLE_AI_AGENT` only — never the issuing supporter's own role                                                                                      |
+| Default / max expiry | 90 days / 180 days — mirrored onto the bearer JWT's own `exp` claim at issuance                                                                    |
+| Issuance             | `POST /api-keys`, self-service, by the owning supporter (or admin) — see [API reference](api-reference.md#api-keys)                                |
 
 **Why a distinct authority, not the owner's role:** a key is issued by and tied to an owning supporter, but the intent is a narrow, audit-friendly grant for one workflow (question capture) — not "give this AI client everything the supporter can do." `ROLE_AI_AGENT` is attached only to API-key-authenticated requests and is never present on a human's JWT-derived `Authentication`.
 
-**Chain wiring:** `ApiKeyAuthFilter` runs ahead of the JWT validator filter in the same `SecurityFilterChain`. When `X-API-Key` is present and valid, it sets the `Authentication` and the JWT filter's own `shouldNotFilter()` guard causes it to skip — so `X-API-Key` takes precedence if both headers are present on a request. Invalid, revoked, or expired keys are rejected with `401` before reaching any controller, using the same `ProblemDetail` error shape as JWT failures.
+**Chain wiring:** `ApiKeyAuthFilter` runs ahead of the JWT validator filter in the same `SecurityFilterChain`. `X-API-Key`, if present, is authoritative and validated strictly — invalid, revoked, or expired keys are rejected with `401` before reaching any controller, using the same `ProblemDetail` error shape as JWT failures. Otherwise, an `Authorization: Bearer` token is tried as an API-key JWT; if that fails (wrong signature, no matching row — i.e. it's not one of ours), the filter does *not* reject the request, it passes through untouched so `JwtTokenValidatorFilter` gets the next look, keeping human JWT logins on that same header unaffected.
 
 **Rate limiting and audit:** not yet key-specific — API-key traffic currently falls under the standard per-user limit below, since it resolves to the owning supporter. A dedicated per-key Redis limit and `createdByApiKeyId` write attribution are planned but not yet implemented.
 

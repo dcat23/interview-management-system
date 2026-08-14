@@ -26,7 +26,8 @@
     { "key": "processId",    "value": "",                            "type": "string" },
     { "key": "sessionId",    "value": "",                            "type": "string" },
     { "key": "apiKeyId",     "value": "",                            "type": "string" },
-    { "key": "apiKey",       "value": "",                            "type": "string" }
+    { "key": "apiKey",       "value": "",                            "type": "string" },
+    { "key": "apiKeyBearerToken", "value": "",                       "type": "string" }
   ],
   "item": [
     {
@@ -177,6 +178,7 @@
                   "  const body = pm.response.json();",
                   "  pm.collectionVariables.set('apiKeyId', body.id);",
                   "  pm.collectionVariables.set('apiKey', body.key);",
+                  "  pm.collectionVariables.set('apiKeyBearerToken', body.bearerToken);",
                   "}"
                 ]
               }
@@ -195,7 +197,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["api-keys"]
             },
-            "description": "Issues a new AI_AGENT-scoped API key owned by the caller. `expiresInDays` optional — defaults to 90, capped at 180.\n\n**Roles:** admin, supporter\n\n**Response:** `201` — the raw key is returned exactly once, in the `key` field, and can never be retrieved again. Test script stores `id` → `apiKeyId` and `key` → `apiKey`."
+            "description": "Issues a new AI_AGENT-scoped API key owned by the caller. `expiresInDays` optional — defaults to 90, capped at 180.\n\n**Roles:** admin, supporter\n\n**Response:** `201` — two forms of the same credential, each returned exactly once and never retrievable again: `key` (raw, for `X-API-Key`) and `bearerToken` (a JWT wrapping the same key's id, for `Authorization: Bearer` — the transport MCP hosted connectors like Perplexity expect). Test script stores `id` → `apiKeyId`, `key` → `apiKey`, `bearerToken` → `apiKeyBearerToken`."
           }
         },
         {
@@ -241,6 +243,68 @@
               ]
             },
             "description": "Demonstrates agent-style authentication: the `X-API-Key` header (not `Authorization`) resolves to the issuing supporter with a single `ai_agent` role, in place of the collection's default Bearer JWT. Run **Create API Key** first so `{{apiKey}}` is populated.\n\nAny endpoint marked `ai_agent` in the API reference accepts this same header instead of `Authorization: Bearer`."
+          }
+        },
+        {
+          "name": "Example: List Clients (as AI Agent, Bearer)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{apiKeyBearerToken}}", "type": "string" }]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/clients?isActive=true&page=0&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["clients"],
+              "query": [
+                { "key": "isActive", "value": "true" },
+                { "key": "page", "value": "0" },
+                { "key": "limit", "value": "20" }
+              ]
+            },
+            "description": "Demonstrates the other agent-style transport: the API key's `bearerToken` on the standard `Authorization: Bearer` header, in place of the collection's default human JWT. Same `ai_agent` role and identity as the `X-API-Key` example — pick whichever transport the calling client supports (MCP hosted connectors like Perplexity only expose a bearer-token-shaped auth field, not a custom header). Run **Create API Key** first so `{{apiKeyBearerToken}}` is populated."
+          }
+        }
+      ]
+    },
+    {
+      "name": "MCP Server",
+      "description": "An MCP server (Spring AI, SSE transport) mounted alongside the REST API, for hosted connectors (Claude Desktop, claude.ai, Perplexity) to call the backend live from a chat. Authenticated the same way as any `ai_agent` REST call — `X-API-Key` or an API key's `bearerToken` (see the **API Keys** folder). Requests here are for reference/manual inspection; Postman does not drive an MCP tool-call session — point an actual MCP client (Claude Desktop, mcp-remote, etc.) at these URLs instead.\n\n**Tools exposed:**\n- Lookup (read-only): `search_clients`, `search_candidates`, `search_sessions`, `get_session`, `search_questions`, `list_session_questions`\n- Write: `add_questions_to_session`, `link_existing_question`\n\nSee the API reference's MCP server section for full tool parameter docs.",
+      "item": [
+        {
+          "name": "Open SSE Connection",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{apiKeyBearerToken}}", "type": "string" }]
+            },
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "text/event-stream" }],
+            "url": {
+              "raw": "{{baseUrl}}/mcp/sse",
+              "host": ["{{baseUrl}}"],
+              "path": ["mcp", "sse"]
+            },
+            "description": "Opens the long-lived SSE connection an MCP client lists tools and issues calls over. Run **Create API Key** first so `{{apiKeyBearerToken}}` is populated, or swap this request's auth for an `X-API-Key` header the same way the REST examples do. Postman will show a hung/streaming response rather than a normal JSON body — this entry is mainly to confirm auth succeeds (no `401`) and the connection opens."
+          }
+        },
+        {
+          "name": "Tool Call Message",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{apiKeyBearerToken}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/mcp/message",
+              "host": ["{{baseUrl}}"],
+              "path": ["mcp", "message"]
+            },
+            "description": "The JSON-RPC request/response channel paired with an SSE session (see **Open SSE Connection**) — a real MCP client sends `tools/list` and `tools/call` messages here, keyed to its SSE session id. Not independently callable from a plain request like this one; included for reference only."
           }
         }
       ]
