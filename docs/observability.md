@@ -1,17 +1,25 @@
 # Observability
 
-All observability tooling is AWS native. No third-party agents or SaaS monitoring tools.
+Prod storage is AWS native — no third-party agents or SaaS monitoring tools reach prod. That's
+ADR-004 (`docs/decisions.md`), unchanged by the phase-6 observability epic. What the epic changed
+is the *mechanism* reaching that storage: instrumentation is OpenTelemetry (Micrometer Tracing +
+`micrometer-registry-otlp`) everywhere, with only the OTLP destination swapping per Spring
+profile — an ADOT collector sidecar forwarding to CloudWatch + X-Ray in prod (see
+`docs/deployment.md`), versus a docker-compose-only Prometheus/Grafana/Zipkin stack for
+`docker`/`local` (see ADR-004's addendum). The docker/local stack never runs against AWS and
+carries none of the ECS-maintenance cost ADR-004 rejected Prometheus/Grafana over — it's local
+dev tooling, not a second production backend.
 
 ---
 
 ## Three pillars
 
-| Pillar | AWS service | Coverage |
-|---|---|---|
-| Logs | CloudWatch Logs | API, background job, Kafka consumer — structured JSON |
-| Metrics | CloudWatch Metrics (Micrometer + EMF) | JVM, HTTP, Kafka, cache, custom business metrics |
-| Traces | AWS X-Ray | API → RDS, Redis, Kafka — distributed trace per request |
-| Frontend | CloudWatch RUM | Page load, JS errors, Core Web Vitals, API call failures |
+| Pillar | Prod backend | docker/local backend | Coverage |
+|---|---|---|---|
+| Logs | CloudWatch Logs | console (same JSON) | API, background job, Kafka consumer — structured JSON |
+| Metrics | CloudWatch (via ADOT) | Prometheus + Grafana | JVM, HTTP, Kafka, cache, custom business metrics |
+| Traces | AWS X-Ray (via ADOT) | Zipkin | API → RDS, Redis, Kafka — distributed trace per request |
+| Frontend | CloudWatch RUM | — | Page load, JS errors, Core Web Vitals, API call failures |
 
 ---
 
@@ -101,11 +109,18 @@ fields @timestamp, method, path, durationMs, userId
 
 ### Setup (Spring Boot)
 
+Implemented in `backend/api/pom.xml` / `application-*.yaml` (phase-6 observability epic). No
+CloudWatch-specific registry (`micrometer-registry-cloudwatch2`) on the classpath — metrics push
+over OTLP everywhere via `micrometer-registry-otlp`, and only the destination differs per profile:
+the ADOT collector sidecar in prod (which itself exports to CloudWatch as EMF, see
+`docs/deployment.md`), the `otel-collector` docker-compose service in `docker`/`local` (which
+exports to Prometheus).
+
 **`pom.xml` dependencies:**
 ```xml
 <dependency>
   <groupId>io.micrometer</groupId>
-  <artifactId>micrometer-registry-cloudwatch2</artifactId>
+  <artifactId>micrometer-registry-otlp</artifactId>
 </dependency>
 <dependency>
   <groupId>org.springframework.boot</groupId>
@@ -113,19 +128,18 @@ fields @timestamp, method, path, durationMs, userId
 </dependency>
 ```
 
-**`application.yml`:**
+**`application-prod.yaml`:**
 ```yaml
 management:
-  metrics:
-    export:
-      cloudwatch:
-        namespace: InterviewPlatform
-        batch-size: 20
-        step: 1m
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,prometheus
+        include: health,info,metrics   # no prometheus/env in prod
+  otlp:
+    metrics:
+      export:
+        url: ${OTEL_EXPORTER_OTLP_METRICS_ENDPOINT:http://localhost:4318/v1/metrics}
+        step: 1m
 ```
 
 ### Auto-published metrics (Micrometer)
@@ -193,42 +207,45 @@ public class SessionStatusService {
 
 ---
 
-## Distributed tracing (X-Ray)
+## Distributed tracing (X-Ray via OpenTelemetry)
+
+**Superseded design note:** this section originally specified `aws-xray-recorder-sdk-spring`
+called directly, with manual `X-Amzn-Trace-Id` Kafka header propagation code. The phase-6
+observability epic replaced that with Micrometer Tracing's OTel bridge instead — same X-Ray
+backend, no AWS SDK on the classpath, no manual propagation code. Kept below for anyone who
+still has the old approach in mind.
 
 ### Setup (Spring Boot)
 
 **`pom.xml`:**
 ```xml
 <dependency>
-  <groupId>com.amazonaws</groupId>
-  <artifactId>aws-xray-recorder-sdk-spring</artifactId>
+  <groupId>io.micrometer</groupId>
+  <artifactId>micrometer-tracing-bridge-otel</artifactId>
 </dependency>
 <dependency>
-  <groupId>com.amazonaws</groupId>
-  <artifactId>aws-xray-recorder-sdk-sql-postgres</artifactId>
+  <groupId>io.opentelemetry</groupId>
+  <artifactId>opentelemetry-exporter-otlp</artifactId>
 </dependency>
 ```
 
-**`@EnableXRay` on main application class.** X-Ray auto-instruments:
-- Inbound HTTP requests (creates root segment)
-- JDBC calls (RDS subsegments with query metadata)
-- Redis calls via Lettuce interceptor
-- Kafka producer/consumer via manual instrumentation
+No `@EnableXRay`, no X-Ray SDK. Spring Boot's Observation API auto-instruments the same surface
+X-Ray SDK did:
+- Inbound HTTP requests (root span)
+- JDBC calls (span per query, via HikariCP + Postgres driver observation)
+- Redis calls (Lettuce is Observation-aware out of the box)
+- Kafka producer/consumer (Spring Kafka's `ObservationAwareKafkaTemplate`/listener container)
+
+Spans go out over OTLP to whichever collector the active profile points at (`application-*.yaml`
+— `management.otlp.tracing.endpoint`); in prod, that's the ADOT sidecar, which exports to X-Ray
+(`docs/deployment.md`).
 
 ### Trace propagation to Kafka
 
-The API publishes the X-Ray trace header as a Kafka message header. The background job consumer extracts it and creates a linked subsegment, maintaining a complete trace across the async boundary.
-
-```java
-// Producer (API)
-producer.headers().add("X-Amzn-Trace-Id",
-    AWSXRay.getCurrentSegment().getTraceId().toString().getBytes());
-
-// Consumer (background job)
-String traceId = new String(record.headers().lastHeader("X-Amzn-Trace-Id").value());
-TraceHeader traceHeader = TraceHeader.fromString(traceId);
-AWSXRay.beginSegment("background-job-consumer", traceHeader.getRootTraceId(), null);
-```
+No manual header code, unlike the superseded X-Ray-SDK approach above. Spring Kafka's
+observation instrumentation propagates the OTel trace context via standard Kafka record headers
+automatically — the background job's consumer picks up the same trace the API's producer started,
+maintaining one trace across the async boundary with zero code in either module.
 
 ### X-Ray service map
 

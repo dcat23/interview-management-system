@@ -9,17 +9,30 @@ spring:
         format_sql: false
         show_sql: false
 management:
+  endpoints:
+    web:
+      exposure:
+        # No prometheus scrape surface (CloudWatch/X-Ray is prod's backend, reached via
+        # the ADOT sidecar below, not a pull-based scrape) and no env (avoids leaking
+        # configuration) — narrower than dev/docker's exposure.
+        include: health,info,metrics
   tracing:
     sampling:
-      # Lower default than dev/docker's 1.0 to control X-Ray cost/volume at prod
-      # traffic levels. Per-route sampling rules (docs/observability.md) are a
-      # phase-6 story-4 follow-up, not implemented here.
+      # Uniform default, lower than dev/docker's 1.0 to control X-Ray cost/volume at
+      # prod traffic levels. docs/observability.md's per-route sampling-rule table
+      # (5%/100%/50%/10% by endpoint) needs a custom Sampler keyed on request path,
+      # which is a follow-up, not implemented here.
       probability: 0.1
   otlp:
     tracing:
-      # ADOT collector runs as an ECS task sidecar sharing the network namespace,
-      # so localhost is the correct default; finalized in phase-6 story 4.
+      # ADOT collector runs as an ECS task sidecar sharing the network namespace, so
+      # localhost is the correct default — see docs/deployment.md for the task
+      # definition addition.
       endpoint: ${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:http://localhost:4318/v1/traces}
+    metrics:
+      export:
+        url: ${OTEL_EXPORTER_OTLP_METRICS_ENDPOINT:http://localhost:4318/v1/metrics}
+        step: 1m
 server:
   port: 8080
 logging:

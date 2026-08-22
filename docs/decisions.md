@@ -144,3 +144,25 @@ Use **AWS native observability exclusively:**
 - CloudWatch RUM lacks Sentry's error grouping and source map support
 
 These trade-offs are acceptable for the platform's current scale and team size. The observability stack can be supplemented with Datadog or Grafana later if the team's needs outgrow CloudWatch.
+
+## Addendum (2026-08 — phase-6 observability epic)
+
+Two changes, neither reopening the core decision above:
+
+**Mechanism, not backend, changed for prod tracing/metrics.** `micrometer-registry-cloudwatch2`
+and `aws-xray-recorder-sdk-spring` (the original Decision's stated implementation) were never
+actually added to `backend/api/pom.xml` — this ADR described an unimplemented design. When it
+came time to implement, the platform standardized on OpenTelemetry as the single instrumentation
+layer across every environment (Micrometer Tracing's OTel bridge + `micrometer-registry-otlp`),
+with an AWS Distro for OpenTelemetry (ADOT) collector sidecar as the thing that actually talks to
+CloudWatch and X-Ray in prod (`docs/deployment.md`). CloudWatch Logs/Metrics and X-Ray remain the
+prod storage backend exactly as decided; only the library reaching them changed, and one
+instrumentation path across dev/docker/prod became possible as a result instead of AWS-specific
+code living only in the prod path. See `docs/observability.md`.
+
+**Grafana + Prometheus, `docker`/`local` profiles only, not prod.** The alternatives-considered
+rejection above was specifically about the cost of running and maintaining Prometheus
+infrastructure *on ECS*. A `docker-compose`-only stack (`otel-collector` + `prometheus` +
+`zipkin` + `grafana`, `infra/otel/`, `infra/prometheus/`, `infra/grafana/`) that only ever runs on
+a developer's machine, is never deployed to AWS, and costs nothing carries none of that rejected
+cost. Prod stays on CloudWatch/X-Ray exclusively, unchanged.
