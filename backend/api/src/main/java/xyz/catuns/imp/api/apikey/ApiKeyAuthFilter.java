@@ -8,7 +8,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.StringUtils;
@@ -79,8 +78,11 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
         User owner = userRepository.findById(apiKey.getOwnerId())
                 .orElseThrow(() -> new BadCredentialsException("API key owner not found"));
 
-        Authentication authentication = new UsernamePasswordAuthenticationToken(
+        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                 owner.getEmail(), null, List.of(new SimpleGrantedAuthority(AI_AGENT_AUTHORITY)));
+        // Carries the specific ApiKey id (not just the owning user) for RequestLoggingFilter's
+        // access log — traceable back to the key that made the call, per docs/observability.md.
+        authentication.setDetails(apiKey.getId());
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
         filterChain.doFilter(request, response);

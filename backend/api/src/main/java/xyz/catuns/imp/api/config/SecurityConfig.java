@@ -54,6 +54,11 @@ class SecurityConfig {
         return new ApiKeyAuthFilter(apiKeyRepository, apiKeyTokenProvider, userRepository);
     }
 
+    @Bean
+    RequestLoggingFilter requestLoggingFilter() {
+        return new RequestLoggingFilter();
+    }
+
     /**
      * jwt-spring-boot-starter's own SecurityFilterChain bean (JwtSecurityAutoConfiguration) is
      * {@code @ConditionalOnMissingBean(name = "jwtSecurityFilterChain")} — its documented extension
@@ -67,6 +72,7 @@ class SecurityConfig {
     SecurityFilterChain jwtSecurityFilterChain(
             HttpSecurity http,
             ApiKeyAuthFilter apiKeyAuthFilter,
+            RequestLoggingFilter requestLoggingFilter,
             JwtFilterConfigurer filterConfigurer,
             JwtExceptionHandlingConfigurer exceptionConfigurer,
             JwtSecurityConfigurer jwtSecurityConfigurer,
@@ -106,7 +112,14 @@ class SecurityConfig {
             auth.anyRequest().authenticated();
         });
 
+        // ApiKeyAuthFilter must be registered (and so have a known position in Spring
+        // Security's FilterComparator) before requestLoggingFilter can be positioned
+        // relative to it below — addFilterBefore(x, ApiKeyAuthFilter.class) throws if
+        // ApiKeyAuthFilter isn't already registered.
         http.addFilterBefore(apiKeyAuthFilter, UsernamePasswordAuthenticationFilter.class);
+        // Logs every request, including ones rejected before authentication — must run
+        // earlier in the chain than ApiKeyAuthFilter, not just before UsernamePasswordAuthenticationFilter.
+        http.addFilterBefore(requestLoggingFilter, ApiKeyAuthFilter.class);
 
         DefaultSecurityFilterChain chain = http.build();
         int order = properties.getFilter().getOrder();
