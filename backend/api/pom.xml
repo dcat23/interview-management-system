@@ -31,11 +31,33 @@
         <base.starter.version>1.0.4-SNAPSHOT</base.starter.version>
         <jwt.starter.version>1.0.4-SNAPSHOT</jwt.starter.version>
         <spring-ai.version>1.1.8</spring-ai.version>
+        <logstash-logback-encoder.version>8.0</logstash-logback-encoder.version>
     </properties>
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+        <!-- Observability: OTel tracing bridge + exporters, structured JSON logging.
+             Versions come from the spring-boot-dependencies BOM (micrometer-bom /
+             opentelemetry-bom imports) via spring-boot-starter-parent; only
+             logstash-logback-encoder needs an explicit version. -->
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-tracing-bridge-otel</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-exporter-otlp</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-exporter-logging</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>net.logstash.logback</groupId>
+            <artifactId>logstash-logback-encoder</artifactId>
+            <version>${logstash-logback-encoder.version}</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>

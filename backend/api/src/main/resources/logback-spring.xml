@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+
+    <springProperty scope="context" name="activeProfile" source="spring.profiles.active" defaultValue="default"/>
+
+    <!--
+        Structured JSON logging (docs/observability.md). LogstashEncoder writes the
+        entire MDC map as top-level JSON fields by default, so traceId/spanId show up
+        automatically once micrometer-tracing-bridge-otel is on the classpath — Spring
+        Boot's log correlation support (logging.pattern.correlation) puts them in MDC
+        for every log statement made inside a traced span, no extra wiring needed here.
+    -->
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <includeCallerData>false</includeCallerData>
+            <customFields>{"service":"interview-api","env":"${activeProfile}"}</customFields>
+        </encoder>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="STDOUT"/>
+    </root>
+</configuration>

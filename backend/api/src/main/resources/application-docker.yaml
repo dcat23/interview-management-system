@@ -13,6 +13,12 @@ spring:
       hibernate:
         format_sql: false
         show_sql: false
+management:
+  otlp:
+    tracing:
+      # otel-collector service added in phase-6 story 3; harmless (logged, non-fatal)
+      # export failures until that container exists.
+      endpoint: http://otel-collector:4318/v1/traces
 server:
   port: 8080
 logging:

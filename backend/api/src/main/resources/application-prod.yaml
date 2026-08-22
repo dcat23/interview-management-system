@@ -8,6 +8,18 @@ spring:
       hibernate:
         format_sql: false
         show_sql: false
+management:
+  tracing:
+    sampling:
+      # Lower default than dev/docker's 1.0 to control X-Ray cost/volume at prod
+      # traffic levels. Per-route sampling rules (docs/observability.md) are a
+      # phase-6 story-4 follow-up, not implemented here.
+      probability: 0.1
+  otlp:
+    tracing:
+      # ADOT collector runs as an ECS task sidecar sharing the network namespace,
+      # so localhost is the correct default; finalized in phase-6 story 4.
+      endpoint: ${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:http://localhost:4318/v1/traces}
 server:
   port: 8080
 logging:

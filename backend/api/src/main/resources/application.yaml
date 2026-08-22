@@ -94,6 +94,9 @@ management:
       enabled: true
     readiness-state:
       enabled: true
+  tracing:
+    sampling:
+      probability: 1.0
 jwt:
   secret: ${JWT_SECRET}
   issuer: ${spring.application.name}
