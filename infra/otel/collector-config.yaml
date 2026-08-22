@@ -1,0 +1,30 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch: {}
+
+exporters:
+  # Prometheus scrapes this collector (infra/prometheus/prometheus.yml), rather than the
+  # api service exposing its own /actuator/prometheus — one OTLP pipeline out of the app,
+  # the collector fans out to whichever backend each profile uses.
+  prometheus:
+    endpoint: 0.0.0.0:8889
+  zipkin:
+    endpoint: http://zipkin:9411/api/v2/spans
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [zipkin]
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [prometheus]

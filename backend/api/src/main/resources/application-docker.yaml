@@ -14,11 +14,17 @@ spring:
         format_sql: false
         show_sql: false
 management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,env
   otlp:
     tracing:
-      # otel-collector service added in phase-6 story 3; harmless (logged, non-fatal)
-      # export failures until that container exists.
       endpoint: http://otel-collector:4318/v1/traces
+    metrics:
+      export:
+        url: http://otel-collector:4318/v1/metrics
+        step: 1m
 server:
   port: 8080
 logging:
