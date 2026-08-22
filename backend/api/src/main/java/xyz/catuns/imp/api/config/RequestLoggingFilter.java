@@ -31,6 +31,18 @@ import static net.logstash.logback.argument.StructuredArguments.kv;
 @Slf4j
 public class RequestLoggingFilter extends OncePerRequestFilter {
 
+    /**
+     * The Docker healthcheck hits this every 10s (see docker-compose.yml), forever, for
+     * the life of the container — logged like any other request, it dwarfs real traffic
+     * in volume for no diagnostic value (a failing healthcheck already surfaces via
+     * `docker ps`/`docker inspect`). Tracing/metrics sampling is separate instrumentation
+     * and unaffected by this — see the sampling.probability override for docker/local.
+     */
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        return request.getRequestURI().startsWith("/actuator/health");
+    }
+
     @Override
     protected void doFilterInternal(
             @NonNull HttpServletRequest request,

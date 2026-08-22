@@ -7,6 +7,15 @@ receivers:
         endpoint: 0.0.0.0:4318
 
 processors:
+  # First in every pipeline, per the collector's own recommendation: without it there's
+  # no backpressure on incoming OTLP data, so a burst (or the app exporting more than
+  # this collector can drain) grows the collector's memory unbounded instead of shedding
+  # load. limit_mib is deliberately well under the container's mem_limit in
+  # docker-compose.yml so the GC has room to actually reclaim before the limit is hit.
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 300
+    spike_limit_mib: 100
   batch: {}
 
 exporters:
@@ -22,9 +31,9 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [batch]
+      processors: [memory_limiter, batch]
       exporters: [zipkin]
     metrics:
       receivers: [otlp]
-      processors: [batch]
+      processors: [memory_limiter, batch]
       exporters: [prometheus]

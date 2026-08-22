@@ -18,7 +18,23 @@
         </encoder>
     </appender>
 
-    <root level="INFO">
+    <!--
+        JSON encoding + the console write happen on this appender's own thread, not the
+        request-handling thread — otherwise RequestLoggingFilter's one-line-per-request
+        logging (including every 10s Docker healthcheck hit) serializes and blocks on I/O
+        inline with the request, which is a direct path to thread-pool growth (CPU/memory
+        pressure) if the console sink is ever slow. Bounded queue: if logging can't keep up,
+        we drop rather than pile up unbounded memory.
+    -->
+    <appender name="ASYNC_STDOUT" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>1024</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <includeCallerData>false</includeCallerData>
+        <neverBlock>true</neverBlock>
         <appender-ref ref="STDOUT"/>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="ASYNC_STDOUT"/>
     </root>
 </configuration>
