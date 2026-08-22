@@ -1,9 +1,12 @@
 package xyz.catuns.imp.api.job;
 
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import xyz.catuns.imp.api.session.SessionStatusTransitionService;
 import xyz.catuns.imp.api.session.entity.InterviewSession;
@@ -27,6 +30,10 @@ class SessionAutoTransitionJobFailureIsolationTest {
 
     @Mock InterviewSessionRepository sessionRepository;
     @Mock SessionStatusTransitionService transitionService;
+    // Real (spied) registry, not a mock — SessionAutoTransitionJob.run() unconditionally
+    // records counters/timer in its finally block, and a plain @Mock would return null
+    // from .counter()/.timer(), NPE-ing on .increment()/.record().
+    @Spy MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
     @InjectMocks SessionAutoTransitionJob job;
 

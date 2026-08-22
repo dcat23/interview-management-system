@@ -1,5 +1,6 @@
 package xyz.catuns.imp.api.feedback;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -31,6 +32,7 @@ public class FeedbackService {
     private final InterviewSessionRepository sessionRepository;
     private final FeedbackMapper feedbackMapper;
     private final UserRepository userRepository;
+    private final MeterRegistry meterRegistry;
 
     @PreAuthorize("hasAnyRole('ADMIN','MARKETER','SUPPORTER')")
     public FeedbackResponse getBySessionId(UUID sessionId) {
@@ -80,6 +82,7 @@ public class FeedbackService {
         if (Boolean.TRUE.equals(request.isSubmitted())) {
             feedback.setSubmitted(true);
             feedback.setSubmittedAt(Instant.now());
+            meterRegistry.counter("feedback.submissions").increment();
         }
 
         return feedbackMapper.toResponse(feedbackRepository.save(feedback));

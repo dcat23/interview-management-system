@@ -1,5 +1,6 @@
 package xyz.catuns.imp.api.session;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -63,6 +64,7 @@ public class SessionStatusTransitionService {
     private final SessionStatusEventPublisher eventPublisher;
     private final InterviewProcessRepository processRepository;
     private final ClientRepository clientRepository;
+    private final MeterRegistry meterRegistry;
 
     @PreAuthorize("isAuthenticated()")
     @Transactional
@@ -85,6 +87,7 @@ public class SessionStatusTransitionService {
         SessionStatus fromStatus = session.getStatus();
         Map<SessionStatus, Set<UserRole>> targets = ALLOWED_TRANSITIONS.get(fromStatus);
         if (targets == null || !targets.containsKey(targetStatus)) {
+            recordTransitionError(fromStatus, targetStatus);
             throw new InvalidTransitionException(fromStatus, targetStatus);
         }
 
@@ -94,13 +97,21 @@ public class SessionStatusTransitionService {
     private void validateTransition(SessionStatus from, SessionStatus to, UserRole role) {
         Map<SessionStatus, Set<UserRole>> targets = ALLOWED_TRANSITIONS.get(from);
         if (targets == null || !targets.containsKey(to)) {
+            recordTransitionError(from, to);
             throw new InvalidTransitionException(from, to);
         }
         Set<UserRole> allowedRoles = targets.get(to);
         if (!allowedRoles.contains(role)) {
+            recordTransitionError(from, to);
             throw new AccessDeniedException(
                     "Role " + role + " is not permitted to transition from " + from + " to " + to);
         }
+    }
+
+    private void recordTransitionError(SessionStatus from, SessionStatus to) {
+        meterRegistry.counter("session.status.transition.errors",
+                "from", from.name(), "to", to.name()
+        ).increment();
     }
 
     private InterviewSessionResponse applyTransition(InterviewSession session, SessionStatus toStatus,
@@ -119,6 +130,10 @@ public class SessionStatusTransitionService {
         history.setChangedBy(actorId);
         history.setChangeSource(changeSource);
         statusHistoryRepository.save(history);
+
+        meterRegistry.counter("session.status.transitions",
+                "from", fromStatus.name(), "to", toStatus.name(), "source", changeSource.name()
+        ).increment();
 
         cascadeProcessStatus(session.getProcessId(), toStatus);
 
