@@ -4,7 +4,7 @@
   "id": null,
   "uid": "ims-api-overview",
   "title": "IMS API Overview",
-  "description": "Starter dashboard (phase-6 observability epic, story 3). Panel queries assume Micrometer's OTLP metric names as forwarded through the otel-collector's Prometheus exporter (infra/otel/collector-config.yaml) — verify exact metric names against http://localhost:9090/graph once traffic is flowing and adjust queries if the collector's OTLP-to-Prometheus name mapping differs.",
+  "description": "Starter dashboard (phase-6 observability epic, story 3). Panel queries verified against a running stack via Prometheus's /api/v1/label/__name__/values — notably Micrometer's OTLP registry reports http.server.requests in milliseconds, not seconds, despite 'seconds' being the more common Micrometer-native convention.",
   "tags": ["ims", "observability"],
   "timezone": "browser",
   "schemaVersion": 39,
@@ -19,11 +19,11 @@
       "type": "timeseries",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
-      "fieldConfig": { "defaults": { "unit": "reqpm" }, "overrides": [] },
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "sum(rate(http_server_requests_seconds_count[1m])) * 60",
+          "expr": "sum(rate(http_server_requests_milliseconds_count[1m])) * 60",
           "legendFormat": "requests/min",
           "refId": "A"
         }
@@ -52,7 +52,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "100 * sum(rate(http_server_requests_seconds_count{status=~\"5..\"}[5m])) / sum(rate(http_server_requests_seconds_count[5m]))",
+          "expr": "100 * sum(rate(http_server_requests_milliseconds_count{status=~\"5..\"}[5m])) / sum(rate(http_server_requests_milliseconds_count[5m]))",
           "legendFormat": "5xx %",
           "refId": "A"
         }
@@ -65,23 +65,23 @@
       "type": "timeseries",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "gridPos": { "h": 8, "w": 24, "x": 0, "y": 8 },
-      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "fieldConfig": { "defaults": { "unit": "ms" }, "overrides": [] },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "histogram_quantile(0.50, sum(rate(http_server_requests_seconds_bucket[5m])) by (le))",
+          "expr": "histogram_quantile(0.50, sum(rate(http_server_requests_milliseconds_bucket[5m])) by (le))",
           "legendFormat": "P50",
           "refId": "A"
         },
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket[5m])) by (le))",
+          "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_milliseconds_bucket[5m])) by (le))",
           "legendFormat": "P95",
           "refId": "B"
         },
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "histogram_quantile(0.99, sum(rate(http_server_requests_seconds_bucket[5m])) by (le))",
+          "expr": "histogram_quantile(0.99, sum(rate(http_server_requests_milliseconds_bucket[5m])) by (le))",
           "legendFormat": "P99",
           "refId": "C"
         }

@@ -94,6 +94,22 @@ management:
       enabled: true
     readiness-state:
       enabled: true
+  metrics:
+    distribution:
+      # Without this, http.server.requests publishes only a count/sum and a single
+      # le="+Inf" bucket — no real distribution, so histogram_quantile() over it always
+      # returns NaN. Confirmed against a live stack (phase-6 story 3's Grafana P95/P99
+      # panel) before this was found and fixed.
+      percentiles-histogram:
+        http.server.requests: true
+  otlp:
+    metrics:
+      export:
+        # Micrometer's OTLP registry defaults to BASE2_EXPONENTIAL_BUCKET_HISTOGRAM, which
+        # the otel-collector's Prometheus exporter cannot render as classic le-bucket
+        # series — histogram_quantile() sees only a single le="+Inf" bucket and returns
+        # NaN regardless of percentiles-histogram above. Confirmed against a live stack.
+        histogram-flavor: explicit_bucket_histogram
   tracing:
     sampling:
       probability: 1.0
