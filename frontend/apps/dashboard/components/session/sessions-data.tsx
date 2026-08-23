@@ -2,7 +2,7 @@
 
 import moment from 'moment';
 
-import { useSessions } from '@app/dashboard/hooks/session/use-sessions';
+import { useSessions } from '@feature/backend/hooks/session/use-sessions';
 import { useDebouncedValue } from '@app/dashboard/hooks/ui/use-debounced-value';
 import { useSessionsFilterStore } from '@app/dashboard/stores/sessions-filter-store';
 import { cn } from '@feature/ui/lib/ui/utils';

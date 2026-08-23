@@ -2,8 +2,8 @@
 
 import moment from 'moment';
 
-import { useProcesses } from '@app/dashboard/hooks/process/use-processes';
-import { useClients } from '@app/dashboard/hooks/client/use-clients';
+import { useProcesses } from '@feature/backend/hooks/process/use-processes';
+import { useClients } from '@feature/backend/hooks/client/use-clients';
 import { useDebouncedValue } from '@app/dashboard/hooks/ui/use-debounced-value';
 import { useProcessesFilterStore } from '@app/dashboard/stores/processes-filter-store';
 import { cn } from '@feature/ui/lib/ui/utils';
@@ -83,6 +83,13 @@ const columns: DataTableColumn<InterviewProcess>[] = [
     sortable: true,
   },
 
+  {
+    id: 'round',
+    header: 'Round (total)',
+    cell: (process) => process.currentRound + ` (${process.sessionCount})`,
+    sortValue: (process) => process.currentRound,
+    sortable: false,
+  },
   {
     id: 'startedAt',
     header: 'Started at',

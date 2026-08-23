@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import moment from 'moment';
 
-import { useSessions } from '@app/dashboard/hooks/session/use-sessions';
+import { useSessions } from '@feature/backend/hooks/session/use-sessions';
 import {
   Card,
   CardAction,
