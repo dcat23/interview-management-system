@@ -20,5 +20,8 @@
   "iconLibrary": "lucide",
   "menuColor": "default-translucent",
   "menuAccent": "subtle",
-  "rtl": false
+  "rtl": false,
+  "registries": {
+    "@gooseui": "https://gooseui.pro/r/{name}.json"
+  }
 }
