@@ -5,7 +5,13 @@ import { ReactNode } from 'react';
 import './global.css';
 import Providers from './providers';
 import { Layout } from '../components/layout';
+import { JetBrains_Mono, Oxanium } from "next/font/google";
+import { cn } from "@app/ops/lib/ui/utils";
+import OpsLayout from '@app/ops/components/ops-layout';
 
+const oxaniumHeading = Oxanium({subsets:['latin'],variable:'--font-heading'});
+
+const jetbrainsMono = JetBrains_Mono({subsets:['latin'],variable:'--font-mono'});
 
 export const metadata: Metadata = {
   metadataBase: new URL(NEXT_PUBLIC_ROOT_DOMAIN),
@@ -52,12 +58,12 @@ export default function RootLayout({
   children: ReactNode
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className={cn("font-mono", jetbrainsMono.variable, oxaniumHeading.variable)}>
       <body>
         <Providers>
-          <Layout>
+          <OpsLayout>
             {children}
-          </Layout>
+          </OpsLayout>
         </Providers>
       </body>
     </html>
