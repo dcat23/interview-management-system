@@ -6,6 +6,7 @@ import { SidebarTrigger } from '@feature/ui/components/ui/common/sidebar';
 // import { Fragment, useMemo } from 'react';
 // import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@feature/ui/components/ui/common/breadcrumb';
 import CommandButton from './command-button';
+import { ThemeTogglerButton } from '@feature/ui/components/animate-ui/components/buttons/theme-toggler';
 
 
 // interface Crumb {
@@ -47,7 +48,7 @@ export function AppHeader({}: Props) {
           {/* Notification Menu */}
           {/* Account Menu? */}
           {/* theme toggle */}
-          hello
+          <ThemeTogglerButton />
         </div>
       </div>
     </header>
