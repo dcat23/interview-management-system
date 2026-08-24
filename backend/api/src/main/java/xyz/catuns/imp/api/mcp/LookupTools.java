@@ -63,8 +63,8 @@ public class LookupTools {
     }
 
     @Tool(name = "search_sessions", description = "Search interview sessions by candidate name, round, mode, or "
-            + "description, optionally filtered by status and a scheduled-date range. Returns up to "
-            + RESULT_LIMIT + " sessions with their id, status, schedule, and candidate/client/technology "
+            + "description, optionally filtered by status, client, round, and a scheduled-date range. Returns up "
+            + "to " + RESULT_LIMIT + " sessions with their id, status, schedule, and candidate/client/technology "
             + "context. Use this to find the active session a live interview corresponds to before adding or "
             + "linking questions to it.")
     public List<InterviewSessionResponse> searchSessions(
@@ -72,13 +72,18 @@ public class LookupTools {
                     required = false) String query,
             @ToolParam(description = "Optional status filter: SCHEDULED, IN_REVIEW, PASSED, REJECTED, NO_SHOW, "
                     + "CANCELLED, or RESCHEDULED.", required = false) String status,
+            @ToolParam(description = "Optional clientId to restrict results to sessions whose process belongs to "
+                    + "that end client — resolve a client mentioned by name with search_clients first.",
+                    required = false) UUID clientId,
+            @ToolParam(description = "Optional case-insensitive substring match on round (e.g. \"technical\").",
+                    required = false) String round,
             @ToolParam(description = "Optional inclusive lower bound (ISO-8601 date, e.g. 2026-08-01) on "
                     + "scheduledAt.", required = false) LocalDate scheduledFrom,
             @ToolParam(description = "Optional inclusive upper bound (ISO-8601 date) on scheduledAt.",
                     required = false) LocalDate scheduledTo) {
         Pageable pageable = PageRequest.of(0, RESULT_LIMIT, Sort.by("scheduledAt").descending());
-        return interviewSessionService.list(query, parseStatus(status), null, null, scheduledFrom, scheduledTo,
-                pageable).getContent();
+        return interviewSessionService.list(query, parseStatus(status), null, null, clientId, round, scheduledFrom,
+                scheduledTo, pageable).getContent();
     }
 
     @Tool(name = "get_session", description = "Fetch a single interview session by id, including its status, "

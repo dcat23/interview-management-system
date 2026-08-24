@@ -230,7 +230,7 @@ Each tool is a thin adapter straight onto the existing service layer, in-process
 |--------------------------|---------------------------------------------|------------------------------------------------------------------------|
 | `search_clients`         | `GET /clients`                             | Free-text on name/industry, or omit for most-recently-active. Capped at 20. |
 | `search_candidates`      | `GET /users/lookup?role=CANDIDATE`         | Name search. Capped at 20.                                             |
-| `search_sessions`        | `GET /sessions`                            | Free-text + optional `status`/`scheduledFrom`/`scheduledTo`. Capped at 20. |
+| `search_sessions`        | `GET /sessions`                            | Free-text + optional `status`/`clientId`/`round`/`scheduledFrom`/`scheduledTo`. Capped at 20. |
 | `get_session`            | `GET /sessions/:id`                        | Fetch one session by id.                                               |
 | `search_questions`       | `GET /questions?q=`                        | Full-text, optionally scoped to a `clientId`. Capped at 20.            |
 | `list_session_questions` | `GET /sessions/:id/questions`              | All questions already linked to a session, in display order.           |
@@ -699,8 +699,10 @@ List sessions across all processes, paginated.
 | Param                                  | Notes                                                                                                                                                                                    |
 |----------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `status` / `processId` / `supporterId` | Optional exact-match filters.                                                                                                                                                            |
+| `clientId`                             | Exact match on the client of the session's process.                                                                                                                                     |
+| `round`                                | Free text, matched (case-insensitive, substring) against `round` only. Narrower than `search` below.                                                                                    |
 | `page` / `limit`                       | Default `0` / `20`.                                                                                                                                                                      |
-| `search`                               | Free text, matched (case-insensitive, substring) against round, mode, and description.                                                                                                   |
+| `search`                               | Free text, matched (case-insensitive, substring) against candidate name, round, mode, and description.                                                                                   |
 | `scheduledFrom` / `scheduledTo`        | `yyyy-MM-dd` (plain date, no time/zone). Filters on `scheduledAt`, inclusive on both ends - `scheduledTo` covers the entire day (interpreted as UTC day boundaries). `400` if `scheduledFrom` is after `scheduledTo`. |
 | `sort`                                 | `field,asc\|desc`, repeatable. Sortable fields: `round`, `mode`, `durationMinutes`, `status`, `scheduledAt`, `statusChangedAt`, `createdAt`, `updatedAt`. Any other field returns `400`. |
 

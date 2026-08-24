@@ -130,7 +130,8 @@ public class InterviewSessionService {
 
     @PreAuthorize("hasAnyRole('ADMIN','MARKETER','SUPPORTER','AI_AGENT')")
     public Page<InterviewSessionResponse> list(String search, SessionStatus status, UUID processId,
-                                                UUID supporterId, LocalDate scheduledFrom, LocalDate scheduledTo,
+                                                UUID supporterId, UUID clientId, String round,
+                                                LocalDate scheduledFrom, LocalDate scheduledTo,
                                                 Pageable pageable) {
         if (scheduledFrom != null && scheduledTo != null && scheduledFrom.isAfter(scheduledTo)) {
             throw new BadRequestException("scheduledFrom must not be after scheduledTo");
@@ -145,6 +146,16 @@ public class InterviewSessionService {
         }
         if (supporterId != null) {
             spec = spec.and((root, query, cb) -> cb.equal(root.get("supporterId"), supporterId));
+        }
+        if (clientId != null) {
+            spec = spec.and((root, query, cb) -> {
+                Join<InterviewSession, InterviewProcess> processJoin = root.join("process", JoinType.LEFT);
+                return cb.equal(processJoin.get("clientId"), clientId);
+            });
+        }
+        if (round != null && !round.isBlank()) {
+            String pattern = "%" + round.trim().toLowerCase(Locale.ROOT) + "%";
+            spec = spec.and((root, query, cb) -> cb.like(cb.lower(root.get("round")), pattern));
         }
         if (scheduledFrom != null) {
             Instant from = DateRangeUtil.startOfDayUtc(scheduledFrom);

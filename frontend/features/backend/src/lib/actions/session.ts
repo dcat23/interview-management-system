@@ -16,6 +16,10 @@ export type GetInterviewSessionsRequest = Pageable & {
   status?: SessionStatus;
   processId?: string;
   supporterId?: string;
+  /** Matches sessions whose process belongs to this client. */
+  clientId?: string;
+  /** Case-insensitive contains match. */
+  round?: string;
   search?: string;
   /** yyyy-MM-dd, inclusive - filters on scheduledAt. */
   scheduledFrom?: string;

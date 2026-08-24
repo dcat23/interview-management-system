@@ -1,14 +1,17 @@
 'use client';
 
+import { useMemo } from 'react';
 import moment from 'moment';
 
 import { useSessions } from '@feature/backend/hooks/session/use-sessions';
+import { useClients } from '@feature/backend/hooks/client/use-clients';
 import { useDebouncedValue } from '@app/dashboard/hooks/ui/use-debounced-value';
 import { useSessionsFilterStore } from '@app/dashboard/stores/sessions-filter-store';
 import { cn } from '@feature/ui/lib/ui/utils';
 import { InterviewSession, SessionStatus } from '@feature/base/server';
 import { Badge } from '@feature/ui/components/ui/common/badge';
 import { Button } from '@feature/ui/components/ui/common/button';
+import { Combobox } from '../combobox';
 import {
   Select,
   SelectContent,
@@ -22,6 +25,7 @@ import { AnimatedCalendar } from '@feature/ui/components/ui/common/calender';
 import { RefreshCw } from 'lucide-react';
 
 const ALL_STATUSES = 'all';
+const ALL_CLIENTS = 'all';
 
 const statusConfig: Record<
   SessionStatus,
@@ -119,6 +123,8 @@ export function SessionsData() {
   const search = useSessionsFilterStore((state) => state.search);
   const setSearch = useSessionsFilterStore((state) => state.setSearch);
   const status = useSessionsFilterStore((state) => state.filters.status);
+  const clientId = useSessionsFilterStore((state) => state.filters.clientId);
+  const round = useSessionsFilterStore((state) => state.filters.round);
   const setFilters = useSessionsFilterStore((state) => state.setFilters);
   const sortState = useSessionsFilterStore((state) => state.sortState);
   const setSortState = useSessionsFilterStore((state) => state.setSortState);
@@ -128,11 +134,15 @@ export function SessionsData() {
   const debouncedSearch = useDebouncedValue(search, 400);
   const router = useRouter();
 
+  const { data: clientsPage } = useClients();
+
   const { data: pageResponse, isLoading } = useSessions({
     page,
     limit,
     search: debouncedSearch.trim() || undefined,
     status,
+    clientId,
+    round,
     scheduledFrom: dateRange?.from
       ? moment(dateRange.from).format('YYYY-MM-DD')
       : undefined,
@@ -141,8 +151,16 @@ export function SessionsData() {
       : undefined,
     sort: sortState
       ? `${sortState.columnId},${sortState.direction}`
-      : undefined,
+      : 'scheduledAt,desc',
   });
+
+  const roundOptions = useMemo(() => {
+    const rounds = new Set<string>();
+    pageResponse?.data.forEach((session) => rounds.add(session.round));
+    return Array.from(rounds)
+      .sort()
+      .map((round) => ({ value: round, label: round }));
+  }, [pageResponse]);
 
   return (
     <section className="min-h-svh w-full bg-background px-4 py-6 text-foreground">
@@ -154,7 +172,7 @@ export function SessionsData() {
           onPageSizeChange={setLimit}
           columns={columns}
           getRowId={(row) => row.id}
-          enableRowSelection
+          // enableRowSelection
           enableSorting
           sortState={sortState}
           onSortStateChange={setSortState}
@@ -168,7 +186,7 @@ export function SessionsData() {
                 className="h-8 w-44"
                 value={dateRange}
                 onChange={setDateRange}
-                placeholder="Select date range"
+                placeholder="Date range"
               />
               <Select
                 value={status ?? ALL_STATUSES}
@@ -193,6 +211,35 @@ export function SessionsData() {
                   ))}
                 </SelectContent>
               </Select>
+              <Select
+                value={clientId ?? ALL_CLIENTS}
+                onValueChange={(value) => {
+                  setFilters({
+                    clientId: value === ALL_CLIENTS ? undefined : value,
+                  });
+                }}
+              >
+                <SelectTrigger className="h-9 w-44">
+                  <SelectValue placeholder="Client" />
+                </SelectTrigger>
+                <SelectContent position={'item-aligned'}>
+                  <SelectItem value={ALL_CLIENTS}>All clients</SelectItem>
+                  {clientsPage?.data.map((client) => (
+                    <SelectItem key={client.id} value={client.id}>
+                      {client.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Combobox
+                className="w-40"
+                options={roundOptions}
+                value={round}
+                onSelect={(value) => setFilters({ round: value })}
+                placeholder="Round"
+                searchPlaceholder="Search round..."
+                emptyMessage="No rounds found."
+              />
               <Button
                 variant="outline"
                 size="icon"
