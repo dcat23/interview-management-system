@@ -1,0 +1,59 @@
+{
+  "name": "ops",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/ops",
+  "projectType": "application",
+  "tags": [],
+  "targets": {
+    "build": {
+      "executor": "@nx/next:build",
+      "outputs": [
+        "{options.outputPath}"
+      ],
+      "defaultConfiguration": "production",
+      "options": {
+        "outputPath": "dist/apps/ops"
+      },
+      "configurations": {
+        "development": {
+          "outputPath": "apps/ops"
+        },
+        "production": {}
+      }
+    },
+    "serve": {
+      "executor": "@nx/next:server",
+      "defaultConfiguration": "development",
+      "options": {
+        "buildTarget": "ops:build",
+        "dev": true
+      },
+      "configurations": {
+        "development": {
+          "buildTarget": "ops:build:development",
+          "dev": true
+        },
+        "production": {
+          "buildTarget": "ops:build:production",
+          "dev": false
+        }
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": [
+        "{workspaceRoot}/coverage/{projectRoot}"
+      ],
+      "options": {
+        "jestConfig": "apps/ops/jest.config.cts"
+      }
+    },
+    "shadcn": {
+      "executor": "next-feature:shadcn",
+      "options": {}
+    }
+  }
+}
