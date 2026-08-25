@@ -1,23 +1,20 @@
 'use client';
 
-import * as React from 'react';
-import { Check, ChevronsUpDown } from 'lucide-react';
+import { useMemo } from 'react';
+import { ChevronsUpDownIcon, SearchIcon, XIcon } from 'lucide-react';
 
 import { cn } from '@feature/ui/lib/ui/utils';
 import { Button } from '@feature/ui/components/ui/common/button';
 import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@feature/ui/components/ui/common/command';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@feature/ui/components/ui/common/popover';
+  Combobox as ComboboxPrimitive,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+  ComboboxPopup,
+  ComboboxTrigger,
+  ComboboxValue,
+} from '@feature/ui/components/ui/common/combobox';
 
 export interface ComboboxOption {
   value: string;
@@ -43,51 +40,60 @@ export function Combobox({
   emptyMessage = 'No results found.',
   className,
 }: Props) {
-  const [open, setOpen] = React.useState(false);
-  const selected = options.find((option) => option.value === value);
+  const selected = useMemo(
+    () => options.find((option) => option.value === value) ?? null,
+    [options, value],
+  );
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className={cn('h-9 justify-between font-normal', className)}
+    <div className={cn('flex gap-1', className)}>
+      <ComboboxPrimitive
+        items={options}
+        value={selected}
+        onValueChange={(next) => onSelect((next as ComboboxOption | null)?.value)}
+      >
+        <ComboboxTrigger
+          render={
+            <Button
+              className="h-9 flex-1 justify-between font-normal"
+              variant="outline"
+            />
+          }
         >
-          {selected ? selected.label : placeholder}
-          <ChevronsUpDown className="opacity-50" />
+          <ComboboxValue placeholder={placeholder} />
+          <ChevronsUpDownIcon className="-me-1!" />
+        </ComboboxTrigger>
+        <ComboboxPopup aria-label={placeholder}>
+          <div className="border-b p-2">
+            <ComboboxInput
+              className="rounded-md before:rounded-[calc(var(--radius-md)-1px)]"
+              placeholder={searchPlaceholder}
+              showTrigger={false}
+              startAddon={<SearchIcon />}
+            />
+          </div>
+          <ComboboxEmpty>{emptyMessage}</ComboboxEmpty>
+          <ComboboxList>
+            {(option: ComboboxOption) => (
+              <ComboboxItem key={option.value} value={option}>
+                {option.label}
+              </ComboboxItem>
+            )}
+          </ComboboxList>
+        </ComboboxPopup>
+      </ComboboxPrimitive>
+      {value && (
+        <Button
+          aria-label={`Clear ${placeholder}`}
+          className="h-9"
+          onClick={() => onSelect(undefined)}
+          size="icon"
+          variant="ghost"
+        >
+          <XIcon />
         </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-        <Command>
-          <CommandInput placeholder={searchPlaceholder} className="h-9" />
-          <CommandList>
-            <CommandEmpty>{emptyMessage}</CommandEmpty>
-            <CommandGroup>
-              {options.map((option) => (
-                <CommandItem
-                  key={option.value}
-                  value={option.label}
-                  onSelect={() => {
-                    onSelect(option.value === value ? undefined : option.value);
-                    setOpen(false);
-                  }}
-                >
-                  {option.label}
-                  <Check
-                    className={cn(
-                      'ml-auto',
-                      value === option.value ? 'opacity-100' : 'opacity-0',
-                    )}
-                  />
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
+      )}
+    </div>
   );
 }
 

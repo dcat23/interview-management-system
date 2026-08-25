@@ -133,7 +133,7 @@ export function ProcessesData() {
       : undefined,
     sort: sortState
       ? `${sortState.columnId},${sortState.direction}`
-      : undefined,
+      : 'startedAt,desc',
   });
 
   return (
@@ -146,7 +146,7 @@ export function ProcessesData() {
           onPageSizeChange={setLimit}
           columns={columns}
           getRowId={(row) => row.id}
-          enableRowSelection
+          // enableRowSelection
           enableSorting
           sortState={sortState}
           onSortStateChange={setSortState}

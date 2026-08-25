@@ -10,7 +10,11 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRATION: 10h
       FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://web:4200}
-      JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=75.0
+      # Nested Docker-in-Docker here doesn't expose per-container cgroup memory
+      # files, so container-aware ergonomics (-XX:MaxRAMPercentage) reads host
+      # RAM instead of the mem_limit below and sizes heap way past it. Pinning
+      # an absolute -Xmx sidesteps that detection entirely.
+      JAVA_TOOL_OPTIONS: -Xmx512m -Xms256m
     mem_limit: 1g
     depends_on:
       postgres:
