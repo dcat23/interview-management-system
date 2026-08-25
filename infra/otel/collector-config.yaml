@@ -1,0 +1,39 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  # First in every pipeline, per the collector's own recommendation: without it there's
+  # no backpressure on incoming OTLP data, so a burst (or the app exporting more than
+  # this collector can drain) grows the collector's memory unbounded instead of shedding
+  # load. limit_mib is deliberately well under the container's mem_limit in
+  # docker-compose.yml so the GC has room to actually reclaim before the limit is hit.
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 300
+    spike_limit_mib: 100
+  batch: {}
+
+exporters:
+  # Prometheus scrapes this collector (infra/prometheus/prometheus.yml), rather than the
+  # api service exposing its own /actuator/prometheus — one OTLP pipeline out of the app,
+  # the collector fans out to whichever backend each profile uses.
+  prometheus:
+    endpoint: 0.0.0.0:8889
+  zipkin:
+    endpoint: http://zipkin:9411/api/v2/spans
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [zipkin]
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [prometheus]

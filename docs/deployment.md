@@ -51,11 +51,17 @@ us-east-1 (primary)
 
 ### API (`apps/api`)
 
+Runs as a two-container task: the `api` container and an `adot-collector` sidecar (phase-6
+observability epic) sharing its network namespace (`awsvpc` — both containers see each other on
+`localhost`), matching `application-prod.yaml`'s `management.otlp.tracing.endpoint` /
+`management.otlp.metrics.export.url` defaults of `http://localhost:4318`. Task `memory` bumped
+from `1024` to `1280` to give the sidecar headroom without shrinking the api container's share.
+
 ```json
 {
   "family": "interview-api",
   "cpu": "512",
-  "memory": "1024",
+  "memory": "1280",
   "networkMode": "awsvpc",
   "containerDefinitions": [
     {
@@ -72,6 +78,9 @@ us-east-1 (primary)
         { "name": "KAFKA_BROKERS",    "valueFrom": "arn:aws:secretsmanager:...::kafka-brokers" },
         { "name": "JWT_SECRET",       "valueFrom": "arn:aws:secretsmanager:...::jwt-secret" }
       ],
+      "dependsOn": [
+        { "containerName": "adot-collector", "condition": "START" }
+      ],
       "logConfiguration": {
         "logDriver": "awslogs",
         "options": {
@@ -87,14 +96,40 @@ us-east-1 (primary)
         "retries": 3,
         "startPeriod": 60
       }
+    },
+    {
+      "name": "adot-collector",
+      "image": "public.ecr.aws/aws-observability/aws-otel-collector:latest",
+      "command": ["--config=/etc/ecs/ecs-cloudwatch-xray.yaml"],
+      "memoryReservation": 256,
+      "environment": [
+        { "name": "AWS_REGION", "value": "us-east-1" }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/app/api-adot-collector",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
     }
   ]
 }
 ```
 
+`ecs-cloudwatch-xray.yaml` is one of ADOT's built-in named configs (bundled in the image, no
+config file to author or mount) — it wires an OTLP receiver on `4317`/`4318` straight to a
+CloudWatch EMF metrics exporter and an X-Ray traces exporter, i.e. exactly the two prod backends
+ADR-004 (`docs/decisions.md`) already commits to. The task's IAM role needs
+`cloudwatch:PutMetricData`, `xray:PutTraceSegments`, and `xray:PutTelemetryRecords` added — the
+collector calls these APIs directly, api itself never touches AWS credentials for this.
+
 ### Background job (`services/background-job`)
 
-Same structure as API. `cpu: 256`, `memory: 512`. No port mapping. No ALB target group. Desired count locked at `1`.
+Same structure as API, including the `adot-collector` sidecar. `cpu: 256`, task `memory: 768`
+(`512` + the same `256` sidecar reservation). No port mapping. No ALB target group. Desired count
+locked at `1`.
 
 ---
 

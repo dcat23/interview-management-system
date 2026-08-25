@@ -11,16 +11,18 @@ interface UseSessionsParams {
   status?: SessionStatus
   processId?: string
   supporterId?: string
+  clientId?: string
+  round?: string
   scheduledFrom?: string
   scheduledTo?: string
   sort?: string
 }
 
-export function useSessions({ page, limit, search, status, processId, supporterId, scheduledFrom, scheduledTo, sort }: UseSessionsParams) {
+export function useSessions({ page, limit, search, status, processId, supporterId, clientId, round, scheduledFrom, scheduledTo, sort }: UseSessionsParams) {
   return useQuery({
-    queryKey: ["sessions", { page, limit, search, status, processId, supporterId, scheduledFrom, scheduledTo, sort }],
+    queryKey: ["sessions", { page, limit, search, status, processId, supporterId, clientId, round, scheduledFrom, scheduledTo, sort }],
     queryFn: async () => {
-      const { data } = await getInterviewSessions({ page, limit, search, status, processId, supporterId, scheduledFrom, scheduledTo, sort })
+      const { data } = await getInterviewSessions({ page, limit, search, status, processId, supporterId, clientId, round, scheduledFrom, scheduledTo, sort })
       return data
     },
     placeholderData: keepPreviousData,

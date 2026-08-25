@@ -1,4 +1,5 @@
 import AppPageHeader from '@app/dashboard/components/app/app-page-header';
+import { DailySessionsTimeline } from '@app/dashboard/components/session/daily-sessions-timeline';
 import { ChartAreaInteractive } from '@app/dashboard/components/ui/chart-area-interactive';
 import { SectionCards } from '@app/dashboard/components/ui/section-cards';
 
@@ -13,9 +14,12 @@ export default function AppDashboardPage() {
           },
         ]}
       />
-      <SectionCards />
+      {/*<SectionCards />*/}
+      {/*<div className="px-4 lg:px-6">*/}
+      {/*  <ChartAreaInteractive />*/}
+      {/*</div>*/}
       <div className="px-4 lg:px-6">
-        <ChartAreaInteractive />
+        <DailySessionsTimeline />
       </div>
       {/* <DataTable data={{}} /> */}
     </div>

@@ -37,7 +37,7 @@ public class QuestionService {
     private final UserRepository userRepository;
     private final QuestionMapper questionMapper;
 
-    @PreAuthorize("hasAnyRole('ADMIN','MARKETER','SUPPORTER')")
+    @PreAuthorize("hasAnyRole('ADMIN','MARKETER','SUPPORTER','AI_AGENT')")
     public Page<QuestionResponse> list(UUID clientId, String topic, Pageable pageable) {
         Specification<Question> spec = (root, query, cb) -> cb.isTrue(root.get("active"));
         if (clientId != null) {
@@ -50,7 +50,7 @@ public class QuestionService {
         return questionRepository.findAll(spec, pageable).map(questionMapper::toResponse);
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','MARKETER','SUPPORTER')")
+    @PreAuthorize("hasAnyRole('ADMIN','MARKETER','SUPPORTER','AI_AGENT')")
     public QuestionResponse getById(UUID id) {
         return questionRepository.findById(id)
                 .map(questionMapper::toResponse)

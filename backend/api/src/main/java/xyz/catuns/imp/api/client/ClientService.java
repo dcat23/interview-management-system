@@ -34,7 +34,7 @@ public class ClientService {
     private final ClientRepository clientRepository;
     private final ClientMapper clientMapper;
 
-    @PreAuthorize("hasAnyRole('ADMIN','MARKETER','SUPPORTER')")
+    @PreAuthorize("hasAnyRole('ADMIN','MARKETER','SUPPORTER','AI_AGENT')")
     @Cacheable(value = CacheConfig.CLIENTS,
             key = "{#isActive, #search, #pageable.pageNumber, #pageable.pageSize, #pageable.sort.toString()}")
     public Page<ClientResponse> list(Boolean isActive, String search, Pageable pageable) {

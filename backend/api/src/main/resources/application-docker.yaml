@@ -13,6 +13,24 @@ spring:
       hibernate:
         format_sql: false
         show_sql: false
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,env
+  otlp:
+    tracing:
+      endpoint: http://otel-collector:4318/v1/traces
+    metrics:
+      export:
+        url: http://otel-collector:4318/v1/metrics
+        step: 1m
+  tracing:
+    sampling:
+      # application.yaml's 1.0 is meant for prod's low real traffic volume, not a dev
+      # box also fielding a 10s healthcheck loop plus whatever local/ngrok traffic —
+      # trace every 10th request here instead of every single one.
+      probability: 0.1
 server:
   port: 8080
 logging:

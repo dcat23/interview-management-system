@@ -6,7 +6,7 @@
   "tailwind": {
     "config": "",
     "css": "app/global.css",
-    "baseColor": "stone",
+    "baseColor": "mist",
     "cssVariables": true,
     "prefix": ""
   },
@@ -23,6 +23,9 @@
   "menuAccent": "subtle",
   "registries": {
     "@7ovr": "https://7ovr.com/r/{name}.json",
-    "@blocks-so": "https://blocks.so/r/{name}.json"
+    "@blocks-so": "https://blocks.so/r/{name}.json",
+    "@gooseui": "https://gooseui.pro/r/{name}.json",
+    "@animate-ui": "https://animate-ui.com/r/{name}.json",
+    "@cnippet": "https://ui.cnippet.dev/r/{name}.json"
   }
 }

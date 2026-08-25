@@ -1,12 +1,12 @@
 {
   "$schema": "https://ui.shadcn.com/schema.json",
-  "style": "new-york",
+  "style": "radix-lyra",
   "rsc": true,
   "tsx": true,
   "tailwind": {
     "config": "",
     "css": "src/styles/theme.css",
-    "baseColor": "neutral",
+    "baseColor": "mist",
     "cssVariables": true,
     "prefix": ""
   },
@@ -20,5 +20,8 @@
   "iconLibrary": "lucide",
   "menuColor": "default-translucent",
   "menuAccent": "subtle",
-  "rtl": false
+  "rtl": false,
+  "registries": {
+    "@gooseui": "https://gooseui.pro/r/{name}.json"
+  }
 }

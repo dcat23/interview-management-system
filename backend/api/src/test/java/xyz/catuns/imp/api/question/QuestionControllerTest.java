@@ -14,12 +14,15 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import xyz.catuns.imp.api.TestcontainersConfiguration;
+import xyz.catuns.imp.api.apikey.dto.CreateApiKeyRequest;
 import xyz.catuns.imp.api.auth.dto.LoginRequest;
 import xyz.catuns.imp.api.client.entity.Client;
 import xyz.catuns.imp.api.client.repository.ClientRepository;
 import xyz.catuns.imp.api.process.entity.InterviewProcess;
 import xyz.catuns.imp.api.process.repository.InterviewProcessRepository;
 import xyz.catuns.imp.api.question.dto.CreateQuestionRequest;
+import xyz.catuns.imp.api.question.dto.CreateSessionQuestionItem;
+import xyz.catuns.imp.api.question.dto.CreateSessionQuestionRequest;
 import xyz.catuns.imp.api.question.dto.LinkQuestionRequest;
 import xyz.catuns.imp.api.question.dto.UpdateQuestionRequest;
 import xyz.catuns.imp.api.question.entity.Question;
@@ -32,6 +35,7 @@ import xyz.catuns.imp.api.user.repository.UserRepository;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.*;
@@ -451,6 +455,119 @@ class QuestionControllerTest {
     }
 
     @Nested
+    @DisplayName("POST /sessions/{sessionId}/questions/bulk")
+    class BulkLinkQuestions {
+
+        @Test
+        @DisplayName("all items valid → 201 with 5 CREATED outcomes")
+        void allItemsValid() throws Exception {
+            var req = new CreateSessionQuestionRequest(List.of(
+                    new CreateSessionQuestionItem(clientId, "Topic A", "Round 1", "Body A", 1, null),
+                    new CreateSessionQuestionItem(clientId, "Topic B", "Round 1", "Body B", 2, null),
+                    new CreateSessionQuestionItem(clientId, "Topic C", "Round 1", "Body C", 3, null),
+                    new CreateSessionQuestionItem(clientId, "Topic D", "Round 1", "Body D", 4, null),
+                    new CreateSessionQuestionItem(clientId, "Topic E", "Round 1", "Body E", 5, null)
+            ));
+
+            mockMvc.perform(post("/sessions/" + sessionId + "/questions/bulk")
+                            .header("Authorization", "Bearer " + adminToken)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(req)))
+                    .andExpect(status().isCreated())
+                    .andExpect(jsonPath("$.totalItems").value(5))
+                    .andExpect(jsonPath("$.created").value(5))
+                    .andExpect(jsonPath("$.failed").value(0))
+                    .andExpect(jsonPath("$.results[*].outcome", everyItem(is("CREATED"))))
+                    .andExpect(jsonPath("$.results[0].questionId", notNullValue()))
+                    .andExpect(jsonPath("$.results[0].sessionQuestionId", notNullValue()));
+        }
+
+        @Test
+        @DisplayName("one item has an unknown clientId → partial success, rest still created")
+        void oneItemInvalidClient() throws Exception {
+            var req = new CreateSessionQuestionRequest(List.of(
+                    new CreateSessionQuestionItem(clientId, "Topic A", "Round 1", "Body A", 1, null),
+                    new CreateSessionQuestionItem(clientId, "Topic B", "Round 1", "Body B", 2, null),
+                    new CreateSessionQuestionItem(UUID.randomUUID(), "Topic C", "Round 1", "Body C", 3, null),
+                    new CreateSessionQuestionItem(clientId, "Topic D", "Round 1", "Body D", 4, null),
+                    new CreateSessionQuestionItem(clientId, "Topic E", "Round 1", "Body E", 5, null)
+            ));
+
+            mockMvc.perform(post("/sessions/" + sessionId + "/questions/bulk")
+                            .header("Authorization", "Bearer " + adminToken)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(req)))
+                    .andExpect(status().isCreated())
+                    .andExpect(jsonPath("$.totalItems").value(5))
+                    .andExpect(jsonPath("$.created").value(4))
+                    .andExpect(jsonPath("$.failed").value(1))
+                    .andExpect(jsonPath("$.results[2].outcome").value("FAILED"))
+                    .andExpect(jsonPath("$.results[2].error", notNullValue()))
+                    .andExpect(jsonPath("$.results[2].questionId").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("assigned supporter can bulk-link → 201")
+        void assignedSupporterAllowed() throws Exception {
+            var req = new CreateSessionQuestionRequest(List.of(
+                    new CreateSessionQuestionItem(clientId, "Topic F", "Round 1", "Body F", 1, null)
+            ));
+
+            mockMvc.perform(post("/sessions/" + sessionId + "/questions/bulk")
+                            .header("Authorization", "Bearer " + supporter1Token)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(req)))
+                    .andExpect(status().isCreated())
+                    .andExpect(jsonPath("$.created").value(1));
+        }
+
+        @Test
+        @DisplayName("unassigned supporter cannot bulk-link → 403, per existing isAssignedSupporter restriction")
+        void unassignedSupporterForbidden() throws Exception {
+            var req = new CreateSessionQuestionRequest(List.of(
+                    new CreateSessionQuestionItem(clientId, "Topic G", "Round 1", "Body G", 1, null)
+            ));
+
+            mockMvc.perform(post("/sessions/" + sessionId + "/questions/bulk")
+                            .header("Authorization", "Bearer " + supporter2Token)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(req)))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AI_AGENT key is unscoped — bulk-links to a session not assigned to the issuing supporter → 201")
+        void aiAgentUnscoped() throws Exception {
+            // supporter2 issues the key, but sessionId is assigned to supporter1 — ROLE_AI_AGENT
+            // isn't scoped to the issuing supporter's own assignments, unlike the human SUPPORTER role.
+            String rawKey = issueApiKey(supporter2Token, "agent-key");
+
+            var req = new CreateSessionQuestionRequest(List.of(
+                    new CreateSessionQuestionItem(clientId, "Topic H", "Round 1", "Body H", 1, null)
+            ));
+
+            mockMvc.perform(post("/sessions/" + sessionId + "/questions/bulk")
+                            .header("X-API-Key", rawKey)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(req)))
+                    .andExpect(status().isCreated())
+                    .andExpect(jsonPath("$.created").value(1));
+        }
+
+        @Test
+        @DisplayName("empty batch → 400")
+        void emptyBatchRejected() throws Exception {
+            var req = new CreateSessionQuestionRequest(List.of());
+
+            mockMvc.perform(post("/sessions/" + sessionId + "/questions/bulk")
+                            .header("Authorization", "Bearer " + adminToken)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(req)))
+                    .andExpect(status().isBadRequest());
+        }
+    }
+
+    @Nested
     @DisplayName("GET /sessions/{sessionId}/questions")
     class ListSessionQuestions {
 
@@ -585,5 +702,14 @@ class QuestionControllerTest {
                         .content(objectMapper.writeValueAsString(new LoginRequest(email, password))))
                 .andReturn().getResponse().getContentAsString();
         return objectMapper.readTree(response).get("accessToken").asText();
+    }
+
+    private String issueApiKey(String bearerToken, String name) throws Exception {
+        String response = mockMvc.perform(post("/api-keys")
+                        .header("Authorization", "Bearer " + bearerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new CreateApiKeyRequest(name, 30))))
+                .andReturn().getResponse().getContentAsString();
+        return objectMapper.readTree(response).get("key").asText();
     }
 }

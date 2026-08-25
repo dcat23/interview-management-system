@@ -11,14 +11,11 @@ import { Layout } from '../components/layout';
 import { Geist, JetBrains_Mono, Oxanium } from 'next/font/google';
 import { cn } from '@feature/ui/lib/ui/utils';
 
-const geistHeading = Geist({ subsets: ['latin'], variable: '--font-heading' });
+const oxaniumHeading = Oxanium({subsets:['latin'],variable:'--font-heading'});
 
 const oxanium = Oxanium({ subsets: ['latin'], variable: '--font-sans' });
 
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ['latin'],
-  variable: '--font-mono',
-});
+const jetbrainsMono = JetBrains_Mono({subsets:['latin'],variable:'--font-mono'});
 
 export const metadata: Metadata = {
   metadataBase: new URL(NEXT_PUBLIC_ROOT_DOMAIN),
@@ -65,11 +62,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       lang="en"
       suppressHydrationWarning
       className={cn(
-        jetbrainsMono.variable,
-        'font-sans',
-        oxanium.variable,
-        geistHeading.variable,
-      )}
+              'font-sans',
+              oxanium.variable,
+              "font-mono", jetbrainsMono.variable, oxaniumHeading.variable)}
     >
       <body>
         <Providers>

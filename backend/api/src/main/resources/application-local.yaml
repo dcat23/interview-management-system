@@ -2,6 +2,10 @@ spring:
   jpa:
     hibernate:
       ddl-auto: none
+  # No collector running locally — spans go to the console via LoggingSpanExporter
+  # (config/DevTracingConfig.java) instead of being pushed over OTLP.
+  autoconfigure:
+    exclude: org.springframework.boot.actuate.autoconfigure.tracing.otlp.OtlpAutoConfiguration
 logging:
   level:
     root: info

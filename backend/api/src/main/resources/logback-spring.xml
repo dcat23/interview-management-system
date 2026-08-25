@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+
+    <springProperty scope="context" name="activeProfile" source="spring.profiles.active" defaultValue="default"/>
+
+    <!--
+        Structured JSON logging (docs/observability.md). LogstashEncoder writes the
+        entire MDC map as top-level JSON fields by default, so traceId/spanId show up
+        automatically once micrometer-tracing-bridge-otel is on the classpath — Spring
+        Boot's log correlation support (logging.pattern.correlation) puts them in MDC
+        for every log statement made inside a traced span, no extra wiring needed here.
+    -->
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <includeCallerData>false</includeCallerData>
+            <customFields>{"service":"interview-api","env":"${activeProfile}"}</customFields>
+        </encoder>
+    </appender>
+
+    <!--
+        JSON encoding + the console write happen on this appender's own thread, not the
+        request-handling thread — otherwise RequestLoggingFilter's one-line-per-request
+        logging (including every 10s Docker healthcheck hit) serializes and blocks on I/O
+        inline with the request, which is a direct path to thread-pool growth (CPU/memory
+        pressure) if the console sink is ever slow. Bounded queue: if logging can't keep up,
+        we drop rather than pile up unbounded memory.
+    -->
+    <appender name="ASYNC_STDOUT" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>1024</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <includeCallerData>false</includeCallerData>
+        <neverBlock>true</neverBlock>
+        <appender-ref ref="STDOUT"/>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="ASYNC_STDOUT"/>
+    </root>
+</configuration>

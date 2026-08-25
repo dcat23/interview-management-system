@@ -69,9 +69,10 @@ public class SessionController {
             summary = "List sessions",
             description = "Paginated, filterable session listing across all processes. Admin, marketer, and "
                     + "supporter roles only. Supports free-text search (candidate name, round, mode, description), a "
-                    + "scheduledAt date-range filter (scheduledFrom/scheduledTo as yyyy-MM-dd, inclusive), "
-                    + "and sorting (?sort=field,asc|desc - round, mode, durationMinutes, status, scheduledAt, "
-                    + "statusChangedAt, createdAt, updatedAt)."
+                    + "clientId filter (matches sessions whose process belongs to that client), a round filter "
+                    + "(case-insensitive contains match), a scheduledAt date-range filter (scheduledFrom/scheduledTo "
+                    + "as yyyy-MM-dd, inclusive), and sorting (?sort=field,asc|desc - round, mode, durationMinutes, "
+                    + "status, scheduledAt, statusChangedAt, createdAt, updatedAt)."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Paginated session list"),
@@ -83,12 +84,14 @@ public class SessionController {
             @RequestParam(required = false) SessionStatus status,
             @RequestParam(required = false) UUID processId,
             @RequestParam(required = false) UUID supporterId,
+            @RequestParam(required = false) UUID clientId,
+            @RequestParam(required = false) String round,
             @RequestParam(required = false) LocalDate scheduledFrom,
             @RequestParam(required = false) LocalDate scheduledTo,
             Pageable pageable
     ) {
         return ResponseEntity.ok(
-                PageResponse.from(sessionService.list(search, status, processId, supporterId,
+                PageResponse.from(sessionService.list(search, status, processId, supporterId, clientId, round,
                         scheduledFrom, scheduledTo, pageable))
         );
     }

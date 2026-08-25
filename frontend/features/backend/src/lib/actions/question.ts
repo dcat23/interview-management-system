@@ -3,7 +3,14 @@
 import { withApi, withForm } from '@next-feature/client/server';
 import { z } from 'zod';
 import api from '../config/client';
-import { Page, Pageable, Question, SessionQuestion, toRecord } from '@feature/base/server';
+import {
+  Page,
+  Pageable,
+  Question,
+  SessionQuestion,
+  SessionQuestionBulkSummary,
+  toRecord,
+} from '@feature/base/server';
 
 /**
  * [get-questions]
@@ -67,6 +74,45 @@ export const linkQuestion = withApi(async (
 
   const endpoint = `/sessions/${sessionId}/questions`;
   const response = await api.post<SessionQuestion>(endpoint, parsed.data);
+  return response;
+}, {});
+
+/**
+ * [bulk-create-session-questions]
+ *
+ * Creates and links a batch of new questions to a session in one call — the endpoint an AI
+ * agent's `add_questions_to_session` tool call and this bulk-import path both use. One bad item
+ * doesn't fail the whole batch; check `results[].outcome` on the response rather than assuming
+ * every item succeeded.
+ */
+const createSessionQuestionItemSchema = z.object({
+  clientId: z.string().uuid(),
+  topic: z.string().min(1),
+  round: z.string().min(1),
+  body: z.string().min(1),
+  displayOrder: z.number().int().optional(),
+  notes: z.string().optional(),
+});
+export type CreateSessionQuestionItem = z.infer<typeof createSessionQuestionItemSchema>;
+
+const bulkCreateSessionQuestionsSchema = z.object({
+  questions: z.array(createSessionQuestionItemSchema).min(1),
+});
+export type BulkCreateSessionQuestionsRequest = z.infer<typeof bulkCreateSessionQuestionsSchema>;
+export type BulkCreateSessionQuestionsResponse = SessionQuestionBulkSummary;
+
+export const bulkCreateSessionQuestions = withApi(async (
+  sessionId: string,
+  options: BulkCreateSessionQuestionsRequest
+) => {
+  const parsed = bulkCreateSessionQuestionsSchema.safeParse(options);
+
+  if (!parsed.success) {
+    throw parsed.error;
+  }
+
+  const endpoint = `/sessions/${sessionId}/questions/bulk`;
+  const response = await api.post<SessionQuestionBulkSummary>(endpoint, parsed.data);
   return response;
 }, {});
 

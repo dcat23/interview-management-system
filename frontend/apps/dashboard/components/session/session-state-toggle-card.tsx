@@ -9,7 +9,7 @@ import {
   AnimatedToggleCard,
   type AnimatedToggleCardItem,
 } from '@feature/ui/components/ui/animated-toggle-card';
-import { useTransitionSessionStatus } from '@app/dashboard/hooks/session/use-transition-session-status';
+import { useTransitionSessionStatus } from '@feature/backend/hooks/session/use-transition-session-status';
 
 interface Props {
   session: InterviewSession;

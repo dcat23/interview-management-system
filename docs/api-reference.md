@@ -4,6 +4,8 @@ Base URL: `https://api.{domain}/v1`
 
 All endpoints require `Authorization: Bearer {accessToken}` unless marked **public**.
 
+Endpoints marked `ai_agent` also accept `X-API-Key: {key}` in place of the Bearer header, or an API key's own JWT via `Authorization: Bearer {bearerToken}` — see [API keys](#api-keys).
+
 Responses are `application/json`. Errors follow the standard error envelope below.
 
 ---
@@ -23,28 +25,29 @@ Responses are `application/json`. Errors follow the standard error envelope belo
 
 ### Common HTTP status codes
 
-| Code | Meaning |
-|---|---|
-| `200` | Success |
-| `201` | Created |
-| `400` | Validation error — see `error.message` for field details |
-| `401` | Missing or invalid JWT |
-| `403` | Authenticated but insufficient role |
-| `404` | Resource not found |
+| Code  | Meaning                                                   |
+|-------|-----------------------------------------------------------|
+| `200` | Success                                                   |
+| `201` | Created                                                   |
+| `400` | Validation error — see `error.message` for field details  |
+| `401` | Missing or invalid JWT                                    |
+| `403` | Authenticated but insufficient role                       |
+| `404` | Resource not found                                        |
 | `409` | Conflict — duplicate resource or invalid state transition |
-| `429` | Rate limit exceeded |
-| `500` | Internal server error |
+| `429` | Rate limit exceeded                                       |
+| `500` | Internal server error                                     |
 
 ---
 
 ## Role reference
 
-| Badge | Role |
-|---|---|
-| `admin` | Admin |
-| `marketer` | Marketer |
-| `supporter` | Interview supporter |
-| `candidate` | Candidate |
+| Badge       | Role                                                                                                                                                     |
+|-------------|----------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `admin`     | Admin                                                                                                                                                    |
+| `marketer`  | Marketer                                                                                                                                                 |
+| `supporter` | Interview supporter                                                                                                                                      |
+| `candidate` | Candidate                                                                                                                                                |
+| `ai_agent`  | MCP-capable AI client authenticated via `X-API-Key` or an API key's bearer JWT, resolved to the issuing supporter's identity — see [API keys](#api-keys) |
 
 ---
 
@@ -138,6 +141,111 @@ Returns `409` if the email is already in use by another user.
 
 ---
 
+## API keys
+
+Lets a supporter issue a key an MCP-capable AI client (Claude Desktop, claude.ai, Perplexity) can use to call this API directly during a live interview, in place of a JWT. A key resolves to its issuing supporter's identity but carries only the `ai_agent` role — never the supporter's own role — so it can reach the `ai_agent`-marked endpoints above regardless of what the supporter could otherwise do, and nothing else.
+
+Issuance returns two forms of the same key: `key` (raw, for `X-API-Key`) and `bearerToken` (a JWT wrapping the same key's id, for `Authorization: Bearer` — the transport hosted MCP connector UIs that only expose a bearer-token field, like Perplexity's, expect). Use whichever your client supports; both authenticate identically.
+
+### `POST /api-keys` · `admin` `supporter`
+
+Issue a new key, owned by the caller.
+
+**Request**
+```json
+{
+  "name": "Claude Desktop",
+  "expiresInDays": 90
+}
+```
+
+`expiresInDays` optional — defaults to `90`, capped at `180`.
+
+**Response `201`**
+```json
+{
+  "id": "uuid",
+  "name": "Claude Desktop",
+  "keyPrefix": "aik_XXXXXXXX",
+  "key": "aik_...",
+  "bearerToken": "eyJhbGciOiJIUzI1NiJ9...",
+  "expiresAt": "2026-11-10T00:00:00Z",
+  "createdAt": "2026-08-12T00:00:00Z"
+}
+```
+
+`key` and `bearerToken` are two transports for the same credential — returned exactly once, in this response, and never retrievable again. `key` is the raw, plaintext key for the `X-API-Key` header; only its SHA-256 hash is persisted. `bearerToken` is a JWT wrapping this key's id for the `Authorization: Bearer` header; it isn't persisted at all — it's self-verifying and re-checked against this row (for revocation) on every request.
+
+---
+
+### `GET /api-keys` · `admin` `supporter`
+
+List the caller's own keys.
+
+**Response `200`**
+```json
+[
+  {
+    "id": "uuid",
+    "name": "Claude Desktop",
+    "keyPrefix": "aik_XXXXXXXX",
+    "scope": "AI_AGENT",
+    "revoked": false,
+    "revokedAt": null,
+    "expiresAt": "2026-11-10T00:00:00Z",
+    "lastUsedAt": "2026-08-12T09:30:00Z",
+    "createdAt": "2026-08-12T00:00:00Z"
+  }
+]
+```
+
+Never includes the hash or raw key.
+
+---
+
+### `DELETE /api-keys/:id` · `admin` `owner`
+
+Soft-revokes a key (`revoked = true`, `revokedAt` set) so it can no longer authenticate. Owner or admin — an admin can kill a leaked key even if the owning supporter is unavailable.
+
+**Response `204`** No content.
+
+---
+
+## MCP server
+
+An [MCP](https://modelcontextprotocol.io) server (Spring AI, SSE transport) mounted alongside the REST API, for hosted connectors (Claude Desktop, claude.ai, Perplexity) to call the backend live from a chat instead of a human clicking through the dashboard. Authenticated the same way as any `ai_agent` REST call — `X-API-Key` or an API key's `bearerToken` — see [API keys](#api-keys). No separate credential or setup.
+
+| Endpoint          | Purpose                                                          |
+|--------------------|-------------------------------------------------------------------|
+| `GET /mcp/sse`      | Opens the SSE connection; the client lists tools over it.       |
+| `POST /mcp/message` | Tool-call request/response channel paired with an SSE session.  |
+
+Both endpoints sit behind the same security chain as the rest of the API — an unauthenticated or invalid-credential connection attempt gets `401`, before any tool is listed.
+
+Each tool is a thin adapter straight onto the existing service layer, in-process — no internal HTTP hop — so `@PreAuthorize` enforcement and per-item partial-success behavior are identical to the equivalent REST call. The surface is deliberately narrow: lookups plus question-capture only. Delete/unlink, question update, status transitions, feedback, and user/client mutation are not exposed as tools.
+
+### Lookup tools (read-only)
+
+| Tool                    | Equivalent REST call                       | Notes                                                                 |
+|--------------------------|---------------------------------------------|------------------------------------------------------------------------|
+| `search_clients`         | `GET /clients`                             | Free-text on name/industry, or omit for most-recently-active. Capped at 20. |
+| `search_candidates`      | `GET /users/lookup?role=CANDIDATE`         | Name search. Capped at 20.                                             |
+| `search_sessions`        | `GET /sessions`                            | Free-text + optional `status`/`clientId`/`round`/`scheduledFrom`/`scheduledTo`. Capped at 20. |
+| `get_session`            | `GET /sessions/:id`                        | Fetch one session by id.                                               |
+| `search_questions`       | `GET /questions?q=`                        | Full-text, optionally scoped to a `clientId`. Capped at 20.            |
+| `list_session_questions` | `GET /sessions/:id/questions`              | All questions already linked to a session, in display order.           |
+
+### Write tools
+
+| Tool                     | Equivalent REST call                        | Notes                                                                |
+|---------------------------|-----------------------------------------------|------------------------------------------------------------------------|
+| `add_questions_to_session` | `POST /sessions/:id/questions/bulk`         | Creates and links a batch in one call; per-item partial success, same as the REST endpoint. |
+| `link_existing_question`   | `POST /sessions/:id/questions`              | Links a question already in the bank — call `search_questions` first to avoid a duplicate. |
+
+Tool descriptions steer the agent to search before creating: `search_questions`/`list_session_questions` to check for an existing match, `link_existing_question` over `add_questions_to_session` when one is found.
+
+---
+
 ## Users
 
 ### `GET /users` · `admin`
@@ -218,6 +326,28 @@ Update user fields.
 
 ---
 
+### `GET /users/lookup` · `admin` `marketer` `supporter` `ai_agent`
+
+Case-insensitive partial name search, e.g. resolving "the candidate named Sarah" to an id from an AI agent chat. Returns a minimal `id`/`name`/`role` projection — deliberately excludes email, active status, and every other field to keep this agent-facing surface low-exposure. Unlike `GET /users`, this is not admin-only.
+
+**Query params**
+
+| Param   | Type   | Description                                              |
+|---------|--------|------------------------------------------------------------|
+| `query` | string | Required. Partial, case-insensitive match on name.          |
+| `role`  | string | Optional filter (`ADMIN`, `MARKETER`, `SUPPORTER`, `CANDIDATE`). Omit to search all roles. |
+
+Results are capped at 20, sorted by name — not paginated.
+
+**Response `200`**
+```json
+[
+  { "id": "uuid", "name": "Sarah Connor", "role": "CANDIDATE" }
+]
+```
+
+---
+
 ## Candidates
 
 Minimal, name-only candidate lookups for display purposes (e.g. rendering a candidate's name on a process/session card). Deliberately separate from `GET /users/:id`, which is admin/self-only — marketer and supporter need candidate names but must not gain general user-lookup access.
@@ -257,7 +387,7 @@ Returns `404` if the id does not exist or does not belong to a user with the `CA
 
 ## End clients
 
-### `GET /clients` · `admin` `marketer` `supporter`
+### `GET /clients` · `admin` `marketer` `supporter` `ai_agent`
 
 List end clients.
 
@@ -308,7 +438,7 @@ List end clients.
 
 ## Question bank
 
-### `GET /questions` · `admin` `marketer` `supporter`
+### `GET /questions` · `admin` `marketer` `supporter` `ai_agent`
 
 List active questions with optional filters.
 
@@ -366,7 +496,7 @@ Create a question in the bank. `createdBy` set from JWT. `version` defaults to `
 
 ---
 
-### `GET /questions/:id` · `admin` `marketer` `supporter`
+### `GET /questions/:id` · `admin` `marketer` `supporter` `ai_agent`
 
 Get a single question including version history metadata.
 
@@ -560,7 +690,7 @@ All submitted feedback across all rounds in a process, ordered by `scheduledAt` 
 
 ## Interview sessions
 
-### `GET /sessions` · `admin` `marketer` `supporter`
+### `GET /sessions` · `admin` `marketer` `supporter` `ai_agent`
 
 List sessions across all processes, paginated.
 
@@ -569,8 +699,10 @@ List sessions across all processes, paginated.
 | Param                                  | Notes                                                                                                                                                                                    |
 |----------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `status` / `processId` / `supporterId` | Optional exact-match filters.                                                                                                                                                            |
+| `clientId`                             | Exact match on the client of the session's process.                                                                                                                                     |
+| `round`                                | Free text, matched (case-insensitive, substring) against `round` only. Narrower than `search` below.                                                                                    |
 | `page` / `limit`                       | Default `0` / `20`.                                                                                                                                                                      |
-| `search`                               | Free text, matched (case-insensitive, substring) against round, mode, and description.                                                                                                   |
+| `search`                               | Free text, matched (case-insensitive, substring) against candidate name, round, mode, and description.                                                                                   |
 | `scheduledFrom` / `scheduledTo`        | `yyyy-MM-dd` (plain date, no time/zone). Filters on `scheduledAt`, inclusive on both ends - `scheduledTo` covers the entire day (interpreted as UTC day boundaries). `400` if `scheduledFrom` is after `scheduledTo`. |
 | `sort`                                 | `field,asc\|desc`, repeatable. Sortable fields: `round`, `mode`, `durationMinutes`, `status`, `scheduledAt`, `statusChangedAt`, `createdAt`, `updatedAt`. Any other field returns `400`. |
 
@@ -656,13 +788,13 @@ Schedule a new round within a process.
 
 ---
 
-### `GET /sessions/:id` · `admin` `marketer` `supporter` `candidate`
+### `GET /sessions/:id` · `admin` `marketer` `supporter` `candidate` `ai_agent`
 
 Get session by ID.
 
 **Role constraints:**
 - Candidate: sessions belonging to their own process only
-- Admin / marketer / supporter: any session, regardless of assignment
+- Admin / marketer / supporter / AI agent: any session, regardless of assignment — agent reads are intentionally not scoped to the issuing supporter
 
 **Response `200`** — returns session object.
 
@@ -752,7 +884,7 @@ Full audit trail of all status transitions for a session.
 
 ## Session questions
 
-### `GET /sessions/:id/questions` · `admin` `marketer` `supporter` `candidate`
+### `GET /sessions/:id/questions` · `admin` `marketer` `supporter` `candidate` `ai_agent`
 
 Get questions linked to a session, ordered by `displayOrder`.
 
@@ -773,11 +905,11 @@ Get questions linked to a session, ordered by `displayOrder`.
 
 ---
 
-### `POST /sessions/:id/questions` · `admin` `supporter`
+### `POST /sessions/:id/questions` · `admin` `supporter` `ai_agent`
 
 Link a question from the bank to this session.
 
-**Role constraint:** Supporter must be the assigned supporter for this session.
+**Role constraint:** Supporter must be the assigned supporter for this session. AI agent writes are **not** scoped to an assignment — an agent key can link a question to any session.
 
 **Request**
 ```json
@@ -792,6 +924,59 @@ Returns `409` if the question is already linked to this session.
 Returns `404` if the question is inactive or does not exist.
 
 **Response `201`** — returns session-question object.
+
+---
+
+### `POST /sessions/:id/questions/bulk` · `admin` `supporter` `ai_agent`
+
+Create and link a batch of new questions to this session in one call — the endpoint an AI agent's `add_questions_to_session` tool call and the REST bulk-import path both use. Each item is created and linked as its own unit of work: one bad item (unknown `clientId`, missing required field) does **not** roll back the rest of the batch.
+
+**Role constraint:** Supporter must be the assigned supporter for this session — this endpoint does not loosen human-caller authorization. AI agent writes are **not** scoped to an assignment, same as `POST /sessions/:id/questions`.
+
+**Request**
+```json
+{
+  "questions": [
+    {
+      "clientId": "uuid",
+      "topic": "string",
+      "round": "string",
+      "body": "string",
+      "displayOrder": 1,
+      "notes": "string (optional)"
+    }
+  ]
+}
+```
+
+`questions` must be non-empty.
+
+**Response `201`**
+```json
+{
+  "totalItems": 5,
+  "created": 4,
+  "failed": 1,
+  "results": [
+    {
+      "itemIndex": 0,
+      "outcome": "CREATED",
+      "questionId": "uuid",
+      "sessionQuestionId": "uuid",
+      "error": null
+    },
+    {
+      "itemIndex": 2,
+      "outcome": "FAILED",
+      "questionId": null,
+      "sessionQuestionId": null,
+      "error": "Client not found: uuid"
+    }
+  ]
+}
+```
+
+`201` is returned even when some items fail — check `results[].outcome` for per-item status.
 
 ---
 

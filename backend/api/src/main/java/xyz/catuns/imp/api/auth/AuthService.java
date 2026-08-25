@@ -1,8 +1,10 @@
 package xyz.catuns.imp.api.auth;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.AuthorityUtils;
@@ -34,14 +36,21 @@ public class AuthService {
     private final BlocklistAwareTokenProvider tokenProvider;
     private final StringRedisTemplate redis;
     private final UserRepository userRepository;
+    private final MeterRegistry meterRegistry;
 
     public LoginResponse login(LoginRequest request) {
-        Authentication authentication = authenticationManager.authenticate(
-                UsernamePasswordAuthenticationToken.unauthenticated(
-                        request.email(),
-                        request.password()
-                )
-        );
+        Authentication authentication;
+        try {
+            authentication = authenticationManager.authenticate(
+                    UsernamePasswordAuthenticationToken.unauthenticated(
+                            request.email(),
+                            request.password()
+                    )
+            );
+        } catch (AuthenticationException e) {
+            meterRegistry.counter("auth.failures").increment();
+            throw e;
+        }
 
         JwtToken accessToken = tokenProvider.generate(authentication);
         String refreshToken = UUID.randomUUID().toString();

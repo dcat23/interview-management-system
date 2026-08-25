@@ -24,7 +24,10 @@
     { "key": "clientId",     "value": "",                            "type": "string" },
     { "key": "questionId",   "value": "",                            "type": "string" },
     { "key": "processId",    "value": "",                            "type": "string" },
-    { "key": "sessionId",    "value": "",                            "type": "string" }
+    { "key": "sessionId",    "value": "",                            "type": "string" },
+    { "key": "apiKeyId",     "value": "",                            "type": "string" },
+    { "key": "apiKey",       "value": "",                            "type": "string" },
+    { "key": "apiKeyBearerToken", "value": "",                       "type": "string" }
   ],
   "item": [
     {
@@ -161,6 +164,152 @@
       ]
     },
     {
+      "name": "API Keys",
+      "item": [
+        {
+          "name": "Create API Key",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const body = pm.response.json();",
+                  "  pm.collectionVariables.set('apiKeyId', body.id);",
+                  "  pm.collectionVariables.set('apiKey', body.key);",
+                  "  pm.collectionVariables.set('apiKeyBearerToken', body.bearerToken);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Claude Desktop\",\n  \"expiresInDays\": 90\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api-keys",
+              "host": ["{{baseUrl}}"],
+              "path": ["api-keys"]
+            },
+            "description": "Issues a new AI_AGENT-scoped API key owned by the caller. `expiresInDays` optional — defaults to 90, capped at 180.\n\n**Roles:** admin, supporter\n\n**Response:** `201` — two forms of the same credential, each returned exactly once and never retrievable again: `key` (raw, for `X-API-Key`) and `bearerToken` (a JWT wrapping the same key's id, for `Authorization: Bearer` — the transport MCP hosted connectors like Perplexity expect). Test script stores `id` → `apiKeyId`, `key` → `apiKey`, `bearerToken` → `apiKeyBearerToken`."
+          }
+        },
+        {
+          "name": "List API Keys",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api-keys",
+              "host": ["{{baseUrl}}"],
+              "path": ["api-keys"]
+            },
+            "description": "Lists the caller's own API keys — prefix, scope, and status only, never the hash or raw key.\n\n**Roles:** admin, supporter"
+          }
+        },
+        {
+          "name": "Revoke API Key",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api-keys/{{apiKeyId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api-keys", "{{apiKeyId}}"]
+            },
+            "description": "Soft-revokes a key so it can no longer authenticate.\n\n**Roles:** owner or admin\n\n**Response:** `204` No content."
+          }
+        },
+        {
+          "name": "Example: List Clients (as AI Agent)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [{ "key": "X-API-Key", "value": "{{apiKey}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/clients?isActive=true&page=0&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["clients"],
+              "query": [
+                { "key": "isActive", "value": "true" },
+                { "key": "page", "value": "0" },
+                { "key": "limit", "value": "20" }
+              ]
+            },
+            "description": "Demonstrates agent-style authentication: the `X-API-Key` header (not `Authorization`) resolves to the issuing supporter with a single `ai_agent` role, in place of the collection's default Bearer JWT. Run **Create API Key** first so `{{apiKey}}` is populated.\n\nAny endpoint marked `ai_agent` in the API reference accepts this same header instead of `Authorization: Bearer`."
+          }
+        },
+        {
+          "name": "Example: List Clients (as AI Agent, Bearer)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{apiKeyBearerToken}}", "type": "string" }]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/clients?isActive=true&page=0&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["clients"],
+              "query": [
+                { "key": "isActive", "value": "true" },
+                { "key": "page", "value": "0" },
+                { "key": "limit", "value": "20" }
+              ]
+            },
+            "description": "Demonstrates the other agent-style transport: the API key's `bearerToken` on the standard `Authorization: Bearer` header, in place of the collection's default human JWT. Same `ai_agent` role and identity as the `X-API-Key` example — pick whichever transport the calling client supports (MCP hosted connectors like Perplexity only expose a bearer-token-shaped auth field, not a custom header). Run **Create API Key** first so `{{apiKeyBearerToken}}` is populated."
+          }
+        }
+      ]
+    },
+    {
+      "name": "MCP Server",
+      "description": "An MCP server (Spring AI, SSE transport) mounted alongside the REST API, for hosted connectors (Claude Desktop, claude.ai, Perplexity) to call the backend live from a chat. Authenticated the same way as any `ai_agent` REST call — `X-API-Key` or an API key's `bearerToken` (see the **API Keys** folder). Requests here are for reference/manual inspection; Postman does not drive an MCP tool-call session — point an actual MCP client (Claude Desktop, mcp-remote, etc.) at these URLs instead.\n\n**Tools exposed:**\n- Lookup (read-only): `search_clients`, `search_candidates`, `search_sessions`, `get_session`, `search_questions`, `list_session_questions`\n- Write: `add_questions_to_session`, `link_existing_question`\n\nSee the API reference's MCP server section for full tool parameter docs.",
+      "item": [
+        {
+          "name": "Open SSE Connection",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{apiKeyBearerToken}}", "type": "string" }]
+            },
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "text/event-stream" }],
+            "url": {
+              "raw": "{{baseUrl}}/mcp/sse",
+              "host": ["{{baseUrl}}"],
+              "path": ["mcp", "sse"]
+            },
+            "description": "Opens the long-lived SSE connection an MCP client lists tools and issues calls over. Run **Create API Key** first so `{{apiKeyBearerToken}}` is populated, or swap this request's auth for an `X-API-Key` header the same way the REST examples do. Postman will show a hung/streaming response rather than a normal JSON body — this entry is mainly to confirm auth succeeds (no `401`) and the connection opens."
+          }
+        },
+        {
+          "name": "Tool Call Message",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{apiKeyBearerToken}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/mcp/message",
+              "host": ["{{baseUrl}}"],
+              "path": ["mcp", "message"]
+            },
+            "description": "The JSON-RPC request/response channel paired with an SSE session (see **Open SSE Connection**) — a real MCP client sends `tools/list` and `tools/call` messages here, keyed to its SSE session id. Not independently callable from a plain request like this one; included for reference only."
+          }
+        }
+      ]
+    },
+    {
       "name": "Users",
       "item": [
         {
@@ -211,6 +360,23 @@
               "path": ["users"]
             },
             "description": "Create a new user.\n\n`role` values: `CANDIDATE | MARKETER | SUPPORTER | ADMIN`\n\n**Roles:** admin\n\n**Response:** `201` — returns created user object. Test script stores `id` → `userId`."
+          }
+        },
+        {
+          "name": "Lookup Users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/lookup?query=sarah&role=",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "lookup"],
+              "query": [
+                { "key": "query", "value": "sarah", "description": "Required. Partial, case-insensitive match on name." },
+                { "key": "role",  "value": "",       "description": "Filter by role (ADMIN | MARKETER | SUPPORTER | CANDIDATE)", "disabled": true }
+              ]
+            },
+            "description": "Case-insensitive partial name search for candidate/supporter resolution (e.g. resolving \"the candidate named Sarah\" to an id from an AI agent chat). Returns a minimal id/name/role projection only — no email or other fields. Capped at 20 results, sorted by name; not paginated.\n\n**Roles:** admin, marketer, supporter, ai_agent (accepts `X-API-Key` in place of the Bearer header — see **Example: List Clients (as AI Agent)** under API Keys)"
           }
         },
         {
@@ -726,6 +892,41 @@
               "path": ["sessions", "{{sessionId}}", "questions"]
             },
             "description": "Link a question from the bank to this session. Returns `409` if the question is already linked.\n\nSupporter must be the assigned supporter for this session.\n\n**Roles:** admin, supporter\n\n**Response:** `201` — returns session-question object."
+          }
+        },
+        {
+          "name": "Bulk Create & Link Questions to Session",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const body = pm.response.json();",
+                  "  const created = body.results.find(r => r.outcome === 'CREATED');",
+                  "  if (created) {",
+                  "    pm.collectionVariables.set('questionId', created.questionId);",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"questions\": [\n    {\n      \"clientId\": \"{{clientId}}\",\n      \"topic\": \"Spring Boot\",\n      \"round\": \"Technical Screen\",\n      \"body\": \"Explain the difference between @Component and @Bean.\",\n      \"displayOrder\": 1,\n      \"notes\": \"Focus on the lifecycle aspect\"\n    },\n    {\n      \"clientId\": \"{{clientId}}\",\n      \"topic\": \"Concurrency\",\n      \"round\": \"Technical Screen\",\n      \"body\": \"Explain the Java memory model and how volatile works.\",\n      \"displayOrder\": 2\n    }\n  ]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/sessions/{{sessionId}}/questions/bulk",
+              "host": ["{{baseUrl}}"],
+              "path": ["sessions", "{{sessionId}}", "questions", "bulk"]
+            },
+            "description": "Create and link a batch of new questions to this session in one call — the endpoint an AI agent's `add_questions_to_session` tool call and this REST path both use. Each item is created and linked as its own unit of work: one bad item (unknown `clientId`, missing required field) does not fail the whole batch.\n\nSupporter must be the assigned supporter for this session — this endpoint does not loosen human-caller authorization. AI agent writes are not scoped to an assignment.\n\n**Roles:** admin, supporter, ai_agent\n\n**Response:** `201` — per-item `created` / `failed` summary; check `results[].outcome` for per-item status. Test script stores the first created item's `questionId`."
           }
         },
         {

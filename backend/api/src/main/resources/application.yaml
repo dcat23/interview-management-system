@@ -15,6 +15,25 @@ spring:
   threads:
     virtual:
       enabled: true
+  ai:
+    mcp:
+      server:
+        name: imp-question-capture-mcp-server
+        version: "1.0.0"
+        type: sync
+        instructions: >
+          Tools for looking up interview clients, candidates, sessions, and existing questions,
+          and for capturing new interview questions directly onto the active session. Search
+          before creating: use search_questions/list_session_questions to check for an existing
+          match, and link_existing_question instead of add_questions_to_session when one is found.
+        sse-endpoint: /mcp/sse
+        sse-message-endpoint: /mcp/message
+        # Spring AI's default ToolCallbackConverterAutoConfiguration builds McpSchema.Tool
+        # objects with no ToolAnnotations (readOnlyHint/destructiveHint/etc. all null), which
+        # makes read-only and mutating tools indistinguishable to MCP clients that gate write
+        # confirmation on readOnlyHint. McpToolConfig.syncTools() replaces it with an equivalent
+        # bean that also stamps the correct annotations — see the Javadoc on that class.
+        tool-callback-converter: false
   cache:
     type: redis
     redis:
@@ -81,6 +100,25 @@ management:
       enabled: true
     readiness-state:
       enabled: true
+  metrics:
+    distribution:
+      # Without this, http.server.requests publishes only a count/sum and a single
+      # le="+Inf" bucket — no real distribution, so histogram_quantile() over it always
+      # returns NaN. Confirmed against a live stack (phase-6 story 3's Grafana P95/P99
+      # panel) before this was found and fixed.
+      percentiles-histogram:
+        http.server.requests: true
+  otlp:
+    metrics:
+      export:
+        # Micrometer's OTLP registry defaults to BASE2_EXPONENTIAL_BUCKET_HISTOGRAM, which
+        # the otel-collector's Prometheus exporter cannot render as classic le-bucket
+        # series — histogram_quantile() sees only a single le="+Inf" bucket and returns
+        # NaN regardless of percentiles-histogram above. Confirmed against a live stack.
+        histogram-flavor: explicit_bucket_histogram
+  tracing:
+    sampling:
+      probability: 1.0
 jwt:
   secret: ${JWT_SECRET}
   issuer: ${spring.application.name}

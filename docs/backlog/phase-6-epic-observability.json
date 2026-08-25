@@ -1,0 +1,212 @@
+{
+  "summary": "Observability — Unified OpenTelemetry Tracing, Metrics, and Profile-Based Backends",
+  "description": "The platform currently exposes only `management.endpoints.web.exposure.include: health` (<backend/api/src/main/resources/application.yaml>) — no request tracing, no correlation IDs in logs, no metrics export. `docs/observability.md` and ADR-004 (<docs/decisions.md>) already fully specify a prod design (CloudWatch Logs/Metrics + X-Ray via `micrometer-registry-cloudwatch2` and `aws-xray-recorder-sdk-spring`), but none of it is on the classpath yet (confirmed against <backend/api/pom.xml>) — it's a documented, unimplemented design, not existing behavior.\n\nThis epic was prompted by a concrete, unsolved symptom: an MCP client (Perplexity) can reach the backend through the `ngrok` tunnel and through the `cloudflared` tunnel is reachable normally for plain REST calls (e.g. Postman), but MCP connections through `cloudflared` fail. Because `cloudflared` runs with no local ingress config (<docker-compose.yml>: `tunnel --no-autoupdate run --token ${CLOUDFLARED_TOKEN}`), its routing and any Access/WAF policy live entirely in the Cloudflare dashboard, outside this repo — so today there is no way to tell, from application logs, whether a given request ever reached the container. That question — did the request arrive — is the first thing this epic makes answerable.\n\nDesign decisions this epic implements:\n- **Single instrumentation layer everywhere, via OpenTelemetry.** Adopt the Micrometer Observation API with `micrometer-tracing-bridge-otel` and OTLP export as the one tracing/metrics mechanism across all profiles — HTTP server requests, JDBC (HikariCP + Postgres), Redis (Lettuce), and Kafka producer/consumer are all auto-instrumented through Spring Boot 3's Observation API rather than hand-rolled per-integration code. This supersedes the raw `aws-xray-recorder-sdk-spring` + manual Kafka header propagation approach currently described in `docs/observability.md` — storage remains AWS-native in prod (CloudWatch + X-Ray), only the instrumentation library changes, from the AWS SDK directly to OTel-with-an-AWS-exporter. `docs/observability.md` and ADR-004 get an addendum recording this mechanism change; the prod backend choice (CloudWatch + X-Ray) itself is not being reopened.\n- **Only the OTLP destination changes per Spring profile — never the instrumentation code.**\n  - `dev`/`local`: logging-only span exporter (console), no collector required, keeps local `mvn spring-boot:run` friction-free.\n  - `docker`: OTLP → an `otel-collector` service added to <docker-compose.yml>, fanning out to `prometheus` (metrics, scraped) and `zipkin` (traces), with `grafana` provisioned with both as datasources plus a starter dashboard. This is scoped to the `docker`/`local` profiles only and does not reopen ADR-004's rejection of Prometheus/Grafana — that rejection was specifically about the maintenance cost of running Prometheus infrastructure on ECS in prod; a docker-compose-only stack that's never deployed to AWS carries none of that cost.\n  - `prod`: OTLP → an AWS Distro for OpenTelemetry (ADOT) Collector, exporting metrics to CloudWatch (EMF) and traces to X-Ray. Since the actual AWS infra (ECS/Terraform) described in `docs/deployment.md` isn't provisioned in this repo, this story's scope is the app-side OTLP exporter config plus documenting the ADOT collector addition to the ECS task definition — not standing up AWS infrastructure.\n- **Structured JSON logs with auto-injected trace correlation.** Add `logstash-logback-encoder` (as already specified in `docs/observability.md`) with a `logback-spring.xml` that includes `traceId`/`spanId` in every log line via Micrometer Tracing's MDC integration, plus `service`/`env` fields keyed off the active profile.\n- **A request/response access-log filter is the concrete deliverable that answers the cloudflared question.** Every inbound request logs method, path, status, durationMs, traceId, and (when present) the authenticated principal/API-key id, at the edge of the filter chain — before any auth or business logic runs. If a request sent through `cloudflared` never produces a log line, the failure is proven to be at the Cloudflare edge/dashboard (Access policy, WAF, ingress routing), not in this application; if it does log, the trace continues into the failure point. This directly replaces guesswork with a log query for exactly the symptom that motivated this epic.\n- **Actuator exposure narrows in prod.** `dev`/`docker` expose `health,info,metrics,prometheus,env`; `prod` exposes only `health,info,metrics` — no `/actuator/prometheus` scrape surface in prod, since CloudWatch/X-Ray, not Prometheus, is prod's backend, and no `/actuator/env` in prod to avoid leaking configuration.",
+  "labels": ["backend", "observability", "tracing", "opentelemetry", "docker", "aws"],
+  "priority": "High",
+  "userType": "Engineer operating and debugging the platform across local, docker, and AWS environments",
+  "functionality": "see structured, trace-correlated request logs, distributed traces, and service health/metrics for every request path — direct, ngrok tunnel, or Cloudflare tunnel — regardless of which Spring profile is active",
+  "benefit": "a request that fails or never arrives becomes a log/trace query instead of a guess, and the same instrumentation code runs unchanged from a laptop through docker-compose to AWS, with only the export destination swapping per profile",
+  "stories": [
+    {
+      "summary": "Add OpenTelemetry-based tracing, metrics, and structured JSON logging",
+      "description": "Add `micrometer-tracing-bridge-otel`, `opentelemetry-exporter-otlp`, and `logstash-logback-encoder` to <backend/api/pom.xml>. Configure Micrometer's Observation API defaults so HTTP server requests, JDBC, Redis (Lettuce), and Kafka producer/consumer are all auto-instrumented without per-integration code, per the Spring Boot 3 Observation API. Add `logback-spring.xml` with a JSON encoder that injects `traceId`/`spanId` (from Micrometer Tracing's MDC keys) plus `service`/`env` fields into every log line, matching the format already specified in `docs/observability.md`.",
+      "labels": ["backend", "observability", "opentelemetry"],
+      "priority": "High",
+      "storyPoints": 8,
+      "acceptanceCriteria": [
+        {
+          "scenario": "A request produces a trace",
+          "given": "the api service running in any profile",
+          "when": "a request is made to any endpoint",
+          "then": "a trace is exported via OTLP and the response/log lines for that request carry a consistent traceId"
+        },
+        {
+          "scenario": "Downstream calls are linked to the parent request",
+          "given": "an endpoint that hits Postgres and Redis",
+          "when": "the request is traced",
+          "then": "the JDBC and Redis spans appear as children of the HTTP server span under the same traceId"
+        },
+        {
+          "scenario": "Logs are structured and correlated",
+          "given": "any log line emitted during request handling",
+          "when": "stdout is inspected",
+          "then": "the line is JSON and includes traceId, spanId, service, env, and level fields"
+        }
+      ],
+      "tasks": [
+        {
+          "summary": "Add OTel and logging dependencies",
+          "description": "<backend/api/pom.xml> — micrometer-tracing-bridge-otel, opentelemetry-exporter-otlp, net.logstash.logback:logstash-logback-encoder."
+        },
+        {
+          "summary": "Add logback-spring.xml with JSON encoder and MDC trace fields",
+          "description": "<backend/api/src/main/resources/logback-spring.xml> — customFields for service/env keyed off SPRING_PROFILES_ACTIVE, includes Micrometer Tracing's traceId/spanId MDC keys."
+        },
+        {
+          "summary": "Configure management.tracing and management.otlp.tracing defaults",
+          "description": "<backend/api/src/main/resources/application.yaml> — management.tracing.sampling.probability and a per-profile management.otlp.tracing.endpoint (overridden in application-dev/docker/prod.yaml)."
+        },
+        {
+          "summary": "Verify Kafka and Redis spans propagate",
+          "description": "Manual check: publish a session-status-changed Kafka message and confirm the producer span and any downstream consumer span share the request's traceId."
+        }
+      ]
+    },
+    {
+      "summary": "Add request/response access-log filter with correlation IDs",
+      "description": "Add a servlet filter, ordered ahead of `ApiKeyAuthFilter` and the JWT filter, that logs one structured line per request: method, path, status, durationMs, traceId, and — once authentication has run — the resolved principal id or API-key id. This is the artifact that turns \"did Perplexity's request reach the container through the Cloudflare tunnel\" into a log query: a request that never appears in these logs failed at the Cloudflare edge/dashboard (Access policy, WAF, ingress config — none of which live in this repo), not in the application.",
+      "labels": ["backend", "observability", "security"],
+      "priority": "High",
+      "storyPoints": 5,
+      "acceptanceCriteria": [
+        {
+          "scenario": "Every request is logged exactly once",
+          "given": "any inbound HTTP request, successful or not",
+          "when": "the request completes",
+          "then": "exactly one access-log line is emitted with method, path, status, durationMs, and traceId"
+        },
+        {
+          "scenario": "Authenticated requests attribute the caller",
+          "given": "a request authenticated via X-API-Key",
+          "when": "the access-log line is emitted",
+          "then": "it includes the resolved API-key id, distinguishing agent traffic from human JWT traffic in the same log stream"
+        },
+        {
+          "scenario": "Diagnosing the cloudflared symptom",
+          "given": "a request sent to the Cloudflare tunnel hostname that fails to reach the backend",
+          "when": "the access log is searched for that time window",
+          "then": "no matching line is found, confirming the failure is at the Cloudflare edge rather than in the application"
+        }
+      ],
+      "tasks": [
+        {
+          "summary": "Implement RequestLoggingFilter",
+          "description": "<backend/api/src/main/java/xyz/catuns/imp/api/config/RequestLoggingFilter.java> — OncePerRequestFilter, logs method/path/status/durationMs/traceId/principal at completion via a try/finally around filterChain.doFilter."
+        },
+        {
+          "summary": "Register the filter ahead of auth filters",
+          "description": "<backend/api/src/main/java/xyz/catuns/imp/api/config/SecurityConfig.java> — order RequestLoggingFilter before ApiKeyAuthFilter so unauthenticated/rejected requests are still logged."
+        },
+        {
+          "summary": "Manual verification against both tunnels",
+          "description": "Compare access-log output for the same request shape sent via ngrok and via cloudflared to localize the MCP-over-cloudflared failure to edge vs application."
+        }
+      ]
+    },
+    {
+      "summary": "Add docker-compose observability stack for docker/local profiles",
+      "description": "Add `otel-collector`, `prometheus`, `zipkin`, and `grafana` services to <docker-compose.yml>, scoped to local/docker use only per the ADR-004 addendum. The otel-collector receives OTLP from the api service and fans out metrics to Prometheus (scrape) and traces to Zipkin; Grafana is provisioned with both as datasources plus a starter dashboard (request rate, error rate, P50/P95/P99 latency, JVM heap, active DB connections) mirroring the widget list already specified for the prod CloudWatch dashboard in `docs/observability.md`.",
+      "labels": ["docker", "observability", "prometheus", "grafana"],
+      "priority": "High",
+      "storyPoints": 8,
+      "acceptanceCriteria": [
+        {
+          "scenario": "Stack starts with the rest of the app",
+          "given": "docker compose up",
+          "when": "the api service becomes healthy",
+          "then": "otel-collector, prometheus, zipkin, and grafana are all running and reachable on their default ports"
+        },
+        {
+          "scenario": "Traces are visible in Zipkin",
+          "given": "a request made to the api through docker-compose",
+          "when": "the Zipkin UI is opened",
+          "then": "the trace appears with HTTP, JDBC, and Redis spans"
+        },
+        {
+          "scenario": "Grafana renders without manual setup",
+          "given": "a fresh docker compose up with no prior Grafana state",
+          "when": "Grafana is opened",
+          "then": "the Prometheus and Zipkin datasources and the starter dashboard are already provisioned, no manual configuration required"
+        }
+      ],
+      "tasks": [
+        {
+          "summary": "Add otel-collector, prometheus, zipkin, grafana services",
+          "description": "<docker-compose.yml> — otel-collector config file under <infra/otel/collector-config.yaml>, Prometheus scrape config under <infra/prometheus/prometheus.yml>."
+        },
+        {
+          "summary": "Provision Grafana datasources and starter dashboard",
+          "description": "<infra/grafana/provisioning/datasources/> and <infra/grafana/provisioning/dashboards/> — Prometheus + Zipkin datasources, one starter dashboard JSON."
+        },
+        {
+          "summary": "Point application-docker.yaml at the otel-collector",
+          "description": "<backend/api/src/main/resources/application-docker.yaml> — management.otlp.tracing.endpoint: http://otel-collector:4318/v1/traces (and metrics equivalent)."
+        }
+      ]
+    },
+    {
+      "summary": "Wire prod-profile OTLP export to AWS (ADOT → CloudWatch + X-Ray)",
+      "description": "Configure the prod profile's OTLP exporter endpoint to target a local ADOT (AWS Distro for OpenTelemetry) Collector, and document the collector's addition to the ECS task definition in `docs/deployment.md` — this repo has no provisioned AWS infrastructure to deploy the collector into, so this story's code scope is the app-side exporter config, with the ECS/Terraform side captured as documentation for the infra work. Update `docs/observability.md`'s tracing section and ADR-004 (`docs/decisions.md`) with the mechanism-change addendum: CloudWatch + X-Ray remain the prod backend, but they're now reached via OTel/ADOT rather than the `aws-xray-recorder-sdk-spring` code samples currently documented, which are superseded by this epic.",
+      "labels": ["backend", "aws", "observability", "docs"],
+      "priority": "Medium",
+      "storyPoints": 5,
+      "acceptanceCriteria": [
+        {
+          "scenario": "Prod profile targets the ADOT collector",
+          "given": "SPRING_PROFILES_ACTIVE=prod",
+          "when": "the api service starts",
+          "then": "management.otlp.tracing/metrics endpoints point at the local ADOT collector sidecar address, not a hardcoded AWS endpoint"
+        },
+        {
+          "scenario": "Docs reflect the OTel-based mechanism",
+          "given": "docs/observability.md and ADR-004",
+          "when": "read after this story",
+          "then": "both describe OTel + ADOT as the instrumentation mechanism, with CloudWatch + X-Ray still named as the storage backend, and the superseded aws-xray-recorder-sdk-spring code samples are removed or marked superseded"
+        }
+      ],
+      "tasks": [
+        {
+          "summary": "Add prod OTLP exporter config",
+          "description": "<backend/api/src/main/resources/application-prod.yaml> — management.otlp.tracing.endpoint / management.otlp.metrics.export.url pointed at the ADOT sidecar (e.g. http://localhost:4318)."
+        },
+        {
+          "summary": "Document ADOT collector addition to the ECS task definition",
+          "description": "<docs/deployment.md> — add the ADOT collector as a sidecar container definition alongside the existing api container, per AWS's published ADOT-on-ECS pattern."
+        },
+        {
+          "summary": "Update docs/observability.md tracing section",
+          "description": "Replace the aws-xray-recorder-sdk-spring code samples and manual Kafka trace-header propagation example with the OTel/ADOT equivalent; note that Kafka trace context now propagates automatically via Micrometer's Kafka instrumentation rather than the manual X-Amzn-Trace-Id header code."
+        },
+        {
+          "summary": "Add ADR-004 addendum",
+          "description": "<docs/decisions.md> — record the OTel-as-mechanism decision and the docker/local-only Prometheus+Grafana scope carve-out, explicit that the ECS-Prometheus rejection stands unchanged for prod."
+        }
+      ]
+    },
+    {
+      "summary": "Wire the custom business metrics already specified in docs/observability.md",
+      "description": "`docs/observability.md` already enumerates custom Micrometer metrics (`session.status.transitions`, `session.status.transition.errors`, `feedback.submissions`, `background.job.executions`, `background.job.duration`, `auth.failures`) that were never actually instrumented. Wire each via `MeterRegistry` at its documented call site, plus add the ROLE_AI_AGENT-specific metric implied but not covered by that table: `mcp.tool.invocations` tagged by tool name and outcome, so agent/MCP traffic is visible in the same dashboards as human traffic.",
+      "labels": ["backend", "observability"],
+      "priority": "Medium",
+      "storyPoints": 5,
+      "acceptanceCriteria": [
+        {
+          "scenario": "Status transition increments the metric",
+          "given": "a session status transition",
+          "when": "it succeeds or fails",
+          "then": "session.status.transitions or session.status.transition.errors is incremented with from/to/source tags, as specified in docs/observability.md"
+        },
+        {
+          "scenario": "MCP tool calls are visible as metrics",
+          "given": "an MCP client invokes add_questions_to_session",
+          "when": "the call completes",
+          "then": "mcp.tool.invocations is incremented tagged by tool name and outcome (success/failure)"
+        }
+      ],
+      "tasks": [
+        {
+          "summary": "Instrument session status transition metrics",
+          "description": "Wire session.status.transitions / session.status.transition.errors at the existing transition call site."
+        },
+        {
+          "summary": "Instrument feedback, background-job, and auth-failure metrics",
+          "description": "feedback.submissions, background.job.executions/duration, auth.failures at their respective existing call sites."
+        },
+        {
+          "summary": "Add mcp.tool.invocations metric",
+          "description": "<backend/api/src/main/java/xyz/catuns/imp/api/mcp/McpToolConfig.java> — wrap LookupTools/QuestionWriteTools calls to increment a tagged counter per tool/outcome."
+        }
+      ]
+    }
+  ]
+}

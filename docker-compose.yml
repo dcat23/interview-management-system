@@ -10,8 +10,11 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRATION: 10h
       FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://web:4200}
-      JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=75.0
-      LOGGING_LEVEL_ROOT: INFO
+      # Nested Docker-in-Docker here doesn't expose per-container cgroup memory
+      # files, so container-aware ergonomics (-XX:MaxRAMPercentage) reads host
+      # RAM instead of the mem_limit below and sizes heap way past it. Pinning
+      # an absolute -Xmx sidesteps that detection entirely.
+      JAVA_TOOL_OPTIONS: -Xmx512m -Xms256m
     mem_limit: 1g
     depends_on:
       postgres:
@@ -32,7 +35,30 @@ services:
       timeout: 5s
       retries: 10
       start_period: 30s
-#
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: "tunnel --no-autoupdate run --token ${CLOUDFLARED_TOKEN}"
+    networks:
+      - microservice
+
+#  ngrok:
+#    image: ngrok/ngrok
+#    restart: unless-stopped
+#    environment:
+#      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN}
+#    command:
+#      - "http"
+#      - "api:8080"
+#    networks:
+#      - microservice
+#    ports:
+#      - "4040:4040"
+#    depends_on:
+#      api:
+#        condition: service_healthy
+
 #  web:
 #    image: web:latest
 #    ports:
@@ -40,6 +66,68 @@ services:
 #    networks:
 #      - microservice
 #    restart: unless-stopped
+
+  # --- Observability (phase-6 epic, docker/local profiles only — see docs/observability.md) ---
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    restart: unless-stopped
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./infra/otel/collector-config.yaml:/etc/otel-collector-config.yaml:ro
+    ports:
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP
+    networks:
+      - microservice
+    # Headroom above collector-config.yaml's memory_limiter (limit_mib: 300) for the
+    # process's own baseline + GC overhead, without leaving the container uncapped.
+    mem_limit: 512m
+    cpus: 1.0
+
+  prometheus:
+    image: prom/prometheus:latest
+    restart: unless-stopped
+    volumes:
+      - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - microservice
+    depends_on:
+      - otel-collector
+    mem_limit: 512m
+    cpus: 1.0
+
+  zipkin:
+    image: openzipkin/zipkin:latest
+    restart: unless-stopped
+    ports:
+      - "9411:9411"
+    networks:
+      - microservice
+    mem_limit: 512m
+    cpus: 1.0
+
+  grafana:
+    image: grafana/grafana:latest
+    restart: unless-stopped
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+    volumes:
+      - ./infra/grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "3001:3000"
+    networks:
+      - microservice
+    depends_on:
+      - prometheus
+      - zipkin
+    mem_limit: 256m
+    cpus: 0.5
 
   kafka:
     image: confluentinc/cp-kafka:8.2.0
@@ -126,3 +214,5 @@ networks:
 volumes:
   kafka-1-data:
   postgres:
+  prometheus-data:
+  grafana-data:
