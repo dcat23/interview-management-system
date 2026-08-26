@@ -1,4 +1,4 @@
-import NextAuth, { CredentialsSignin, User } from 'next-auth';
+import NextAuth, { CredentialsSignin, NextAuthResult, User } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 
 import { authConfig } from './auth.config';
@@ -9,7 +9,7 @@ import { ApiAuthError } from './error';
 
 const log = logger.child({ module: "nextauth-config"})
 
-export const { auth, handlers, signIn, signOut } = NextAuth({
+const nextAuth: NextAuthResult = NextAuth({
   ...authConfig,
   providers: [
     CredentialsProvider({
@@ -43,9 +43,9 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
             role: data.role,
           } satisfies User;
         }
-        
+
         if (response.error) {
-          throw new ApiAuthError(response.error.body) 
+          throw new ApiAuthError(response.error.body)
         }
 
         throw new CredentialsSignin(response.message);
@@ -53,3 +53,8 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
     }),
   ],
 });
+
+export const auth: NextAuthResult['auth'] = nextAuth.auth;
+export const handlers: NextAuthResult['handlers'] = nextAuth.handlers;
+export const signIn: NextAuthResult['signIn'] = nextAuth.signIn;
+export const signOut: NextAuthResult['signOut'] = nextAuth.signOut;

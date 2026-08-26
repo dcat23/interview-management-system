@@ -7,7 +7,7 @@ const log = logger.child({ module: 'auth-config' });
 const VERCEL_DEPLOYMENT = !!process.env.VERCEL_URL;
 
 // Edge-safe config (no providers) — usable in middleware for route protection.
-export const authConfig = {
+export const authConfig: NextAuthConfig = {
   pages: {
     signIn: `/login`,
     verifyRequest: `/login`,
@@ -46,4 +46,4 @@ export const authConfig = {
     },
   },
   providers: [],
-} satisfies NextAuthConfig;
+};
