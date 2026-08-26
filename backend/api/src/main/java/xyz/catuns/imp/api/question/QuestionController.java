@@ -1,10 +1,15 @@
 package xyz.catuns.imp.api.question;
 
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -34,6 +39,7 @@ public class QuestionController {
     private final QuestionService questionService;
     private final QuestionSearchService questionSearchService;
     private final SessionQuestionService sessionQuestionService;
+    private final QuestionExportService questionExportService;
 
     @PostMapping("/questions")
     @ResponseStatus(HttpStatus.CREATED)
@@ -57,6 +63,25 @@ public class QuestionController {
     @GetMapping("/questions/{id}")
     public QuestionResponse getById(@PathVariable UUID id) {
         return questionService.getById(id);
+    }
+
+    @GetMapping(value = "/questions/export", produces = "text/markdown")
+    public ResponseEntity<byte[]> export(@RequestParam(required = false) UUID clientId) {
+        return markdownAttachment(questionExportService.exportByClient(clientId), "questions-by-client");
+    }
+
+    @GetMapping(value = "/questions/export/by-topic", produces = "text/markdown")
+    public ResponseEntity<byte[]> exportByTopic(@RequestParam(required = false) UUID clientId) {
+        return markdownAttachment(questionExportService.exportByTopic(clientId), "questions-by-topic");
+    }
+
+    private ResponseEntity<byte[]> markdownAttachment(String markdown, String filenamePrefix) {
+        byte[] body = markdown.getBytes(StandardCharsets.UTF_8);
+        String filename = filenamePrefix + "-" + LocalDate.now() + ".md";
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .contentType(MediaType.parseMediaType("text/markdown; charset=UTF-8"))
+                .body(body);
     }
 
     @PatchMapping("/questions/{id}")

@@ -616,6 +616,38 @@
             },
             "description": "Soft-delete a question. Sets `active = false`. The question remains in the database and linked to existing sessions.\n\n**Roles:** admin\n\n**Response:** `204 No Content`"
           }
+        },
+        {
+          "name": "Export Questions (by client)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/questions/export?clientId=",
+              "host": ["{{baseUrl}}"],
+              "path": ["questions", "export"],
+              "query": [
+                { "key": "clientId", "value": "", "description": "Optional. Scope the export to one end client.", "disabled": true }
+              ]
+            },
+            "description": "Export the active question bank as a Markdown file, grouped by client (`##`) then topic (`###`).\n\n**Roles:** admin, marketer, supporter, ai_agent\n\n**Response:** `200` — `text/markdown`, downloaded as `questions-by-client-<date>.md`"
+          }
+        },
+        {
+          "name": "Export Questions (by topic)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/questions/export/by-topic?clientId=",
+              "host": ["{{baseUrl}}"],
+              "path": ["questions", "export", "by-topic"],
+              "query": [
+                { "key": "clientId", "value": "", "description": "Optional. Scope the export to one end client.", "disabled": true }
+              ]
+            },
+            "description": "Same export as above, with the grouping inverted: topic (`##`) then client (`###`).\n\n**Roles:** admin, marketer, supporter, ai_agent\n\n**Response:** `200` — `text/markdown`, downloaded as `questions-by-topic-<date>.md`"
+          }
         }
       ]
     },

@@ -529,6 +529,52 @@ Soft-delete a question. Sets `active = false`. The question remains in the datab
 
 ---
 
+### `GET /questions/export` · `admin` `marketer` `supporter` `ai_agent`
+
+Export the active question bank as a Markdown file, grouped by client (`##`) then topic (`###`).
+
+**Query params**
+
+| Param      | Type   | Description                                  |
+|------------|--------|-----------------------------------------------|
+| `clientId` | uuid   | Optional. Scope the export to one end client. |
+
+**Response `200`** — `Content-Type: text/markdown; charset=UTF-8`, `Content-Disposition: attachment; filename="questions-by-client-<date>.md"`
+```markdown
+# Question Bank Export
+
+## Acme Corp
+
+### Spring Boot
+
+- **[Technical Screen]** Explain the difference between @Component and @Bean.
+```
+
+---
+
+### `GET /questions/export/by-topic` · `admin` `marketer` `supporter` `ai_agent`
+
+Same export as above, with the grouping inverted: topic (`##`) then client (`###`).
+
+**Query params**
+
+| Param      | Type   | Description                                  |
+|------------|--------|-----------------------------------------------|
+| `clientId` | uuid   | Optional. Scope the export to one end client. |
+
+**Response `200`** — `Content-Type: text/markdown; charset=UTF-8`, `Content-Disposition: attachment; filename="questions-by-topic-<date>.md"`
+```markdown
+# Question Bank Export
+
+## Spring Boot
+
+### Acme Corp
+
+- **[Technical Screen]** Explain the difference between @Component and @Bean.
+```
+
+---
+
 ## Interview processes
 
 ### `GET /processes` · `admin` `marketer` `supporter` `candidate`
