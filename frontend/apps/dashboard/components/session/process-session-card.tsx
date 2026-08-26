@@ -1,10 +1,9 @@
-'use client';
-
 import Link from 'next/link';
 import moment from 'moment';
 import { ExternalLinkIcon, ListChecksIcon, MessageSquareIcon, MessageSquarePlusIcon } from 'lucide-react';
 
 import { AnimatedCopyButton } from '@app/dashboard/components/ui/animated-copy-button';
+import { LinkedQuestionsBadge } from '@app/dashboard/components/session/linked-questions-badge';
 import { SessionStateToggleCard } from '@app/dashboard/components/session/session-state-toggle-card';
 import { Badge } from '@feature/ui/components/ui/common/badge';
 import { Button } from '@feature/ui/components/ui/common/button';
@@ -70,13 +69,10 @@ export function ProcessSessionCard({ session, className }: Props) {
       </CardContent>
       <Separator />
       <CardFooter className="flex flex-wrap items-center justify-between gap-2 p-3">
-        {/* TODO: surface the real linked-question count once the log fetches session questions */}
         <div className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
           <ListChecksIcon className="size-3.5" />
           <span>Linked questions</span>
-          <Badge variant="outline" className="h-4 px-1 text-[10px] font-normal">
-            Soon
-          </Badge>
+          <LinkedQuestionsBadge sessionId={session.id} />
         </div>
         <div className="flex items-center gap-2">
           {/* TODO: open a feedback modal/popover */}
