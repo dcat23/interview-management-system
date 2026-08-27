@@ -9,7 +9,12 @@ import { Button } from '@feature/ui/components/ui/common/button';
 import { Combobox, type ComboboxOption } from '@app/dashboard/components/combobox';
 import { Download, Library, Loader2, Search } from 'lucide-react';
 import { QuestionBankRow, QuestionBankRowSkeleton } from './question-bank-row';
-import { getQuestions, exportQuestionsByTopic, type GetQuestionsResponse } from '@feature/backend/server';
+import {
+  getQuestions,
+  exportQuestionsByClient,
+  exportQuestionsByTopic,
+  type GetQuestionsResponse,
+} from '@feature/backend/server';
 import type { Client, Question } from '@feature/base/server';
 
 const SEARCH_DEBOUNCE_MS = 300;
@@ -55,19 +60,21 @@ export function QuestionsBrowser({ clients, initialClientId, initialQuery }: Pro
   const [clientId, setClientId] = useState<string | undefined>(initialClientId);
   const [isExporting, startExportTransition] = useTransition();
 
+  const client = clientId ? clients.find((c) => c.id === clientId) : undefined;
+
   function handleExport() {
     if (isExporting) return;
-    // Grouping by client only means something across multiple clients — once scoped to
-    // one client (or the whole bank), "by topic" is the export that's actually useful, so
-    // that's the only variant exposed here.
-    const client = clientId ? clients.find((c) => c.id === clientId) : undefined;
+    // Grouping by client only pays off across multiple clients, so the ungrouped "all
+    // clients" export groups by client; once scoped to one client, that grouping is
+    // trivial (a single group) and "by topic" is the useful breakdown instead.
     const label = client ? slugify(client.name) : 'all-clients';
+    const suffix = client ? 'questions-by-topic' : 'questions-by-client';
 
     startExportTransition(async () => {
-      const response = await exportQuestionsByTopic(clientId);
+      const response = client ? await exportQuestionsByTopic(clientId) : await exportQuestionsByClient(undefined);
       if (response.success && response.data) {
         const date = new Date().toISOString().slice(0, 10);
-        downloadMarkdown(`${label}-questions-by-topic-${date}.md`, response.data);
+        downloadMarkdown(`${label}-${suffix}-${date}.md`, response.data);
       } else {
         toast.error(response.message ?? 'Failed to export questions');
       }
@@ -162,7 +169,7 @@ export function QuestionsBrowser({ clients, initialClientId, initialQuery }: Pro
             ) : (
               <Download className="h-3.5 w-3.5" />
             )}
-            Export by Topic
+            {client ? 'Export by Topic' : 'Export by Client'}
           </Button>
         </CardAction>
       </CardHeader>
