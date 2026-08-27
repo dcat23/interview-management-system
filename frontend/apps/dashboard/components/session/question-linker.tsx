@@ -91,7 +91,7 @@ export function QuestionLinker({ sessionId, clientId, initialLinkedQuestions, qu
       </CardHeader>
       <CardContent className="px-0">
         {linkedQuestions.length > 0 ? (
-          <ul className="grid grid-cols-1 gap-px overflow-hidden bg-border sm:grid-cols-2">
+          <ul className="grid grid-cols-1 gap-px overflow-hidden bg-border sm:grid-cols-2 lg:grid-cols-3">
             {linkedQuestions.map(({ sessionQuestion, question }) => (
               <li key={question.id} className="bg-card">
                 <LinkedQuestionRow

@@ -40,6 +40,33 @@ export const getQuestions = withApi(
 );
 
 /**
+ * [export-questions-by-client]
+ *
+ * GET /questions/export — markdown of the question bank grouped by client. `clientId`
+ * scopes it to one client; omitted, the backend exports every client. Returns raw
+ * markdown text (not JSON) — the backend sets a Content-Disposition attachment header,
+ * but we ignore its suggested filename and build our own on the frontend.
+ */
+export const exportQuestionsByClient = withApi(async (clientId?: string) => {
+  const params = new URLSearchParams(clientId ? { clientId } : undefined);
+  const query = params.toString();
+  return api.get<string>(`/questions/export${query ? `?${query}` : ''}`);
+}, { fallbackData: '' });
+
+/**
+ * [export-questions-by-topic]
+ *
+ * GET /questions/export/by-topic — markdown of the question bank grouped by topic,
+ * optionally scoped to `clientId`. Same raw-markdown response shape as
+ * exportQuestionsByClient.
+ */
+export const exportQuestionsByTopic = withApi(async (clientId?: string) => {
+  const params = new URLSearchParams(clientId ? { clientId } : undefined);
+  const query = params.toString();
+  return api.get<string>(`/questions/export/by-topic${query ? `?${query}` : ''}`);
+}, { fallbackData: '' });
+
+/**
  * [update-question]
  *
  * PATCH /questions/{id} — partial update of topic/round/body. Backend requires the ADMIN
