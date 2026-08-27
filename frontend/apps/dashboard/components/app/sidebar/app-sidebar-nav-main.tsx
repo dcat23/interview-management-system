@@ -1,3 +1,6 @@
+'use client';
+
+import { useState } from 'react';
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -14,9 +17,11 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@feature/ui/components/ui/common/tooltip';
-import Link from 'next/link';
+import { ScheduleImportDrawer } from '@app/dashboard/components/schedule-import-drawer';
 
 export function AppSidebarNavMain({ items }: { items: NavItem[] }) {
+  const [uploadOpen, setUploadOpen] = useState(false);
+
   return (
     <SidebarGroup>
       <SidebarGroupContent className="flex flex-col gap-2">
@@ -31,20 +36,20 @@ export function AppSidebarNavMain({ items }: { items: NavItem[] }) {
             </SidebarMenuButton>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Link href={"/upload"}>
-                  <Button
-                    size="icon"
-                    className="size-8 group-data-[collapsible=icon]:opacity-0"
-                    variant="outline"
-                  >
-                    <Upload />
-                  </Button>
-                </Link>
+                <Button
+                  size="icon"
+                  className="size-8 group-data-[collapsible=icon]:opacity-0"
+                  variant="outline"
+                  onClick={() => setUploadOpen(true)}
+                >
+                  <Upload />
+                </Button>
               </TooltipTrigger>
               <TooltipContent side="right" align="center">
                 Upload Schedule
               </TooltipContent>
             </Tooltip>
+            <ScheduleImportDrawer open={uploadOpen} onOpenChange={setUploadOpen} />
           </SidebarMenuItem>
         </SidebarMenu>
         <SidebarMenu>
