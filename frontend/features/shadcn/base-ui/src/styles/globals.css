@@ -1,0 +1,15 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+    --destructive-foreground: var(--color-red-700);
+}
+
+.dark {
+    --destructive-foreground: var(--color-red-400);
+}
+
+@theme inline {
+    --color-destructive-foreground: var(--destructive-foreground);
+}

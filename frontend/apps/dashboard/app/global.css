@@ -4,6 +4,7 @@
 @import '../../../features/ui/src/styles/theme.css';
 
 @source '../../../features/ui/src';
+@source '../../../features/shadcn/base-ui/src';
 
 @layer base {
   * {

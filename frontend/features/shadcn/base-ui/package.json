@@ -1,0 +1,24 @@
+{
+  "name": "@feature/base-ui",
+  "version": "0.0.1",
+  "main": "./index.js",
+  "types": "./index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "import": "./index.js",
+      "default": "./index.js"
+    },
+    "./server": {
+      "types": "./server.d.ts",
+      "import": "./server.js",
+      "default": "./server.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "type": "module",
+  "dependencies": {
+    "@base-ui/react": "^1.6.0",
+    "class-variance-authority": "^0.7.1"
+  }
+}

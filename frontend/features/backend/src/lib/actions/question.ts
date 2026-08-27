@@ -40,6 +40,37 @@ export const getQuestions = withApi(
 );
 
 /**
+ * [update-question]
+ *
+ * PATCH /questions/{id} — partial update of topic/round/body. Backend requires the ADMIN
+ * role and snapshots the prior topic/round/body into question_version before applying the
+ * change, bumping `version`. Edits the shared question-bank entry, not a session-scoped link
+ * — expect other sessions referencing this question to see the update too.
+ */
+const updateQuestionSchema = z.object({
+  topic: z.string().min(1).optional(),
+  round: z.string().min(1).optional(),
+  body: z.string().min(1).optional(),
+});
+export type UpdateQuestionRequest = z.infer<typeof updateQuestionSchema>;
+export type UpdateQuestionResponse = Question;
+
+export const updateQuestion = withApi(async (
+  id: string,
+  options: UpdateQuestionRequest
+) => {
+  const parsed = updateQuestionSchema.safeParse(options);
+
+  if (!parsed.success) {
+    throw parsed.error;
+  }
+
+  const endpoint = `/questions/${id}`;
+  const response = await api.patch<Question>(endpoint, parsed.data);
+  return response;
+}, {});
+
+/**
  * [get-session-questions]
  */
 export type GetSessionQuestionsResponse = SessionQuestion[];
