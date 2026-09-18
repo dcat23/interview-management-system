@@ -20,8 +20,25 @@ import {
   DrawerTitle,
 } from '@app/atro-ui/components/ui/common/drawer';
 import { Button } from '@app/atro-ui/components/ui/common/button';
+import { CopyButton } from '@app/atro-ui/components/ui/animate-ui/components/buttons/copy';
 import { SessionStatusBadge } from './session-status-badge';
 import { SessionFeedback } from './session-feedback';
+
+function buildSessionSummary(session: InterviewSession) {
+  return [
+    'Live interview',
+    '',
+    `Candidate: ${session.candidateName ?? 'Unknown candidate'}`,
+    `Client: ${session.clientName ?? 'Unknown client'}`,
+    `Round: ${session.round}`,
+    `Technology: ${session.technology ?? 'Unknown'}`,
+    `Date: ${moment(session.scheduledAt).format('MMM D, YYYY · h:mm A')}`,
+    `Duration: ${session.durationMinutes} min`,
+    `Mode: ${session.mode}`,
+    '',
+    'Introduction about yourself, technical skills, work experience and current project',
+  ].join('\n');
+}
 
 interface Props {
   session: InterviewSession | null;
@@ -124,6 +141,18 @@ export function SessionDetailDrawer({ session, onOpenChange }: Props) {
                     </p>
                   </div>
                 )}
+              </div>
+
+              <div className="flex items-center justify-between gap-3 px-5 pb-3">
+                <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  Copy details
+                </span>
+                <CopyButton
+                  content={buildSessionSummary(session)}
+                  variant="outline"
+                  size="sm"
+                  aria-label="Copy session details"
+                />
               </div>
 
               <SessionFeedback session={session} />
