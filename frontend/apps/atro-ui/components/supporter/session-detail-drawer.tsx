@@ -28,6 +28,14 @@ interface Props {
   onOpenChange: (open: boolean) => void;
 }
 
+// The question bank's `query` searchParam is a free-text search over topic
+// + body (see apps/dashboard's /questions page) — encodeURIComponent keeps
+// multi-word technologies ("Node JS") intact instead of breaking the URL.
+function questionsHref(technology?: string | null) {
+  if (!technology) return '/supporter/questions';
+  return `/supporter/questions?query=${encodeURIComponent(technology)}`;
+}
+
 function DetailRow({
   icon: Icon,
   label,
@@ -56,8 +64,20 @@ export function SessionDetailDrawer({ session, onOpenChange }: Props) {
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <DrawerTitle>{session.candidateName ?? 'Unknown candidate'}</DrawerTitle>
-                  <DrawerDescription>
-                    {session.round} &middot; {session.clientName ?? 'Unknown client'}
+                  <DrawerDescription className="flex items-center gap-1.5">
+                    <Link
+                      href={`/supporter/processes/${session.processId}`}
+                      className="underline-offset-2 hover:text-foreground hover:underline"
+                    >
+                      {session.round}
+                    </Link>
+                    <span>&middot;</span>
+                    <Link
+                      href="/supporter/clients"
+                      className="underline-offset-2 hover:text-foreground hover:underline"
+                    >
+                      {session.clientName ?? 'Unknown client'}
+                    </Link>
                   </DrawerDescription>
                 </div>
                 <SessionStatusBadge status={session.status} />
@@ -85,7 +105,12 @@ export function SessionDetailDrawer({ session, onOpenChange }: Props) {
                     <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       Technology
                     </p>
-                    <p className="mt-1 text-sm">{session.technology}</p>
+                    <Link
+                      href={questionsHref(session.technology)}
+                      className="mt-1 inline-block text-sm text-primary underline-offset-2 hover:underline"
+                    >
+                      {session.technology}
+                    </Link>
                   </div>
                 )}
 
@@ -112,7 +137,7 @@ export function SessionDetailDrawer({ session, onOpenChange }: Props) {
                 </Link>
               </Button>
               <Button asChild variant="outline" size="sm" className="flex-1">
-                <Link href="/supporter/questions">
+                <Link href={questionsHref(session.technology)}>
                   <BookOpenIcon />
                   Questions
                 </Link>
