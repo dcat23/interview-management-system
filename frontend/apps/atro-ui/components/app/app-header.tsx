@@ -19,6 +19,7 @@ import {
 } from '@app/atro-ui/components/ui/common/dropdown-menu';
 import { signOutAction, ROLE_HOME, type Role } from '@feature/auth/server';
 import { ROLE_NAV, getCurrentPage } from '@feature/base/server';
+import { CommandMenu02 } from '@app/atro-ui/components/command-menu-02';
 
 interface Props {
   email?: string | null;
@@ -88,7 +89,8 @@ export function AppHeader({ email, role }: Props) {
           })}
         </nav>
 
-        <div className="hidden items-center md:flex">
+        <div className="hidden items-center gap-3 md:flex">
+          <CommandMenu02 role={role} />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative size-10 rounded-full">
