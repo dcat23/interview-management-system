@@ -56,6 +56,7 @@ export const ROLE_NAV: Record<Role, NavItem[]> = {
     ],
     supporter,
     admin: [
+        { name: 'Users', href: '/admin/users', icon: 'users' },
         { name: 'Processes', href: '/admin/processes', icon: 'briefcase' },
         { name: 'Question Bank', href: '/admin/questions', icon: 'book-open' },
     ],

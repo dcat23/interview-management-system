@@ -6,3 +6,4 @@ export * from './lib/actions/process';
 export * from './lib/actions/question';
 export * from './lib/actions/schedule-import';
 export * from './lib/actions/session';
+export * from './lib/actions/user';

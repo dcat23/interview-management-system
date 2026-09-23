@@ -24,6 +24,7 @@
   "registries": {
     "@animate-ui": "https://animate-ui.com/r/{name}.json",
     "@atroui": "https://www.atroui.com/r/{name}.json",
-    "@blocks-so": "https://blocks.so/r/{name}.json"
+    "@blocks-so": "https://blocks.so/r/{name}.json",
+    "@cnippet": "https://ui.cnippet.dev/r/{name}.json"
   }
 }
