@@ -1,7 +1,7 @@
 'use client';
 
 import { create } from 'zustand';
-import type { DataTableSortState } from '@app/dashboard/components/ui/common/data-table';
+import type { DataTableSortState } from '@feature/ui/components/ui/common/data-table';
 
 export type DataTableDateRange = {
   from: Date | undefined;

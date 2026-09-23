@@ -2,7 +2,7 @@ import { Badge } from '@app/atro-ui/components/ui/common/badge';
 import { cn } from '@app/atro-ui/lib/ui/utils';
 import type { SessionStatus } from '@feature/base/server';
 
-const SESSION_STATUS_CONFIG: Record<SessionStatus, { label: string; className: string }> = {
+export const SESSION_STATUS_CONFIG: Record<SessionStatus, { label: string; className: string }> = {
   SCHEDULED: {
     label: 'Scheduled',
     className: 'bg-blue-500/15 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400',

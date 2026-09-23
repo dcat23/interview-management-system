@@ -2,7 +2,7 @@ import { Badge } from '@app/atro-ui/components/ui/common/badge';
 import { cn } from '@app/atro-ui/lib/ui/utils';
 import type { ProcessStatus } from '@feature/base/server';
 
-const PROCESS_STATUS_CONFIG: Record<ProcessStatus, { label: string; className: string }> = {
+export const PROCESS_STATUS_CONFIG: Record<ProcessStatus, { label: string; className: string }> = {
   ACTIVE: {
     label: 'Active',
     className: 'bg-emerald-500/15 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400',
