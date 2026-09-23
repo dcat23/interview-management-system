@@ -10,72 +10,33 @@
     "importHelpers": true,
     "target": "es2015",
     "module": "esnext",
-    "lib": [
-      "es2020",
-      "dom"
-    ],
+    "lib": ["es2020", "dom"],
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@app/web/*": [
-        "apps/web/*"
-      ],
-      "@feature/ui": [
-        "features/ui/src/index.ts"
-      ],
-      "@feature/ui/server": [
-        "features/ui/src/server.ts"
-      ],
-      "@feature/ui/*": [
-        "features/ui/src/*"
-      ],
-      "@feature/base": [
-        "features/base/src/index.ts"
-      ],
-      "@feature/base/server": [
-        "features/base/src/server.ts"
-      ],
-      "@feature/base/*": [
-        "features/base/src/*"
-      ],
-      "@feature/auth": [
-        "features/auth/src/index.ts"
-      ],
-      "@feature/auth/server": [
-        "features/auth/src/server.ts"
-      ],
-      "@feature/auth/*": [
-        "features/auth/src/*"
-      ],
-      "@feature/backend": [
-        "features/backend/src/index.ts"
-      ],
-      "@feature/backend/server": [
-        "features/backend/src/server.ts"
-      ],
-      "@feature/backend/*": [
-        "features/backend/src/*"
-      ],
-      "@app/dashboard/*": [
-        "apps/dashboard/*"
-      ],
-      "@feature/base-ui": [
-        "features/shadcn/base-ui/src/index.ts"
-      ],
-      "@feature/base-ui/server": [
-        "features/shadcn/base-ui/src/server.ts"
-      ],
-      "@feature/base-ui/*": [
-        "features/shadcn/base-ui/src/*"
-      ],
-      "@app/atro-ui/*": [
-        "apps/atro-ui/*"
-      ]
+      "@app/web/*": ["apps/web/*"],
+      "@feature/ui": ["features/ui/src/index.ts"],
+      "@feature/ui/server": ["features/ui/src/server.ts"],
+      "@feature/ui/*": ["features/ui/src/*"],
+      "@feature/base": ["features/base/src/index.ts"],
+      "@feature/base/server": ["features/base/src/server.ts"],
+      "@feature/base/*": ["features/base/src/*"],
+      "@feature/auth": ["features/auth/src/index.ts"],
+      "@feature/auth/server": ["features/auth/src/server.ts"],
+      "@feature/auth/*": ["features/auth/src/*"],
+      "@feature/backend": ["features/backend/src/index.ts"],
+      "@feature/backend/server": ["features/backend/src/server.ts"],
+      "@feature/backend/*": ["features/backend/src/*"],
+      "@app/dashboard/*": ["apps/dashboard/*"],
+      "@feature/base-ui": ["features/shadcn/base-ui/src/index.ts"],
+      "@feature/base-ui/server": ["features/shadcn/base-ui/src/server.ts"],
+      "@feature/base-ui/*": ["features/shadcn/base-ui/src/*"],
+      "@app/atro-ui/*": ["apps/atro-ui/*"],
+      "@feature/cnippet-ui": ["ui/cnippet/src/index.ts"],
+      "@feature/cnippet-ui/server": ["ui/cnippet/src/server.ts"],
+      "@feature/cnippet-ui/*": ["ui/cnippet/src/*"]
     }
   },
-  "exclude": [
-    "node_modules",
-    "tmp"
-  ]
+  "exclude": ["node_modules", "tmp"]
 }

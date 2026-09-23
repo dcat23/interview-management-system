@@ -7,7 +7,6 @@ import {
   ClockIcon,
   LaptopIcon,
   BriefcaseIcon,
-  BookOpenIcon,
   Building2Icon,
 } from 'lucide-react';
 import type { InterviewSession } from '@feature/base/server';
@@ -23,6 +22,7 @@ import { Button } from '@app/atro-ui/components/ui/common/button';
 import { CopyButton } from '@app/atro-ui/components/ui/animate-ui/components/buttons/copy';
 import { SessionStatusBadge } from './session-status-badge';
 import { SessionFeedback } from './session-feedback';
+import { SessionQuestionsDialog } from './session-questions-dialog';
 
 function buildSessionSummary(session: InterviewSession) {
   return [
@@ -165,12 +165,7 @@ export function SessionDetailDrawer({ session, onOpenChange }: Props) {
                   Process
                 </Link>
               </Button>
-              <Button asChild variant="outline" size="sm" className="flex-1">
-                <Link href={questionsHref(session.technology)}>
-                  <BookOpenIcon />
-                  Questions
-                </Link>
-              </Button>
+              <SessionQuestionsDialog session={session} />
               <Button asChild variant="outline" size="sm" className="flex-1">
                 <Link href="/supporter/clients">
                   <Building2Icon />

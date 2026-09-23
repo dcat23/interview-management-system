@@ -98,6 +98,16 @@ export const updateQuestion = withApi(async (
 }, {});
 
 /**
+ * [get-question-by-id]
+ */
+export type GetQuestionByIdResponse = Question;
+
+export const getQuestionById = withApi(async (id: string) => {
+  const endpoint = `/questions/${id}`;
+  return api.get<GetQuestionByIdResponse>(endpoint);
+}, {});
+
+/**
  * [get-session-questions]
  */
 export type GetSessionQuestionsResponse = SessionQuestion[];
