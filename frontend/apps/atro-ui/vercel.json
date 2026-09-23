@@ -1,0 +1,8 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "npx nx build atro-ui --prod",
+  "outputDirectory": "dist/apps/atro-ui/.next",
+  "installCommand": "pnpm install",
+  "framework": "nextjs",
+  "ignoreCommand": "npx nx-ignore atro-ui"
+}

@@ -207,14 +207,14 @@ Weeks 1–2 of frontend can start in parallel with Phase 3 weeks 3–4. Full API
 
 ### Testing layers
 
-| Layer | Tool | Coverage target |
-|---|---|---|
-| Unit | JUnit 5 + Mockito | Status transition engine, role guards, service logic |
-| Integration | Spring Boot Test + Testcontainers | All API endpoints per role |
-| Contract | Spring Cloud Contract | API spec vs implementation |
-| E2E | Playwright | Happy path per role + key error states |
-| Load | k6 | 500 concurrent users on session list and question bank queries |
-| Security | OWASP ZAP | Staging environment scan |
+| Layer       | Tool                              | Coverage target                                                |
+|-------------|-----------------------------------|----------------------------------------------------------------|
+| Unit        | JUnit 5 + Mockito                 | Status transition engine, role guards, service logic           |
+| Integration | Spring Boot Test + Testcontainers | All API endpoints per role                                     |
+| Contract    | Spring Cloud Contract             | API spec vs implementation                                     |
+| E2E         | Playwright                        | Happy path per role + key error states                         |
+| Load        | k6                                | 500 concurrent users on session list and question bank queries |
+| Security    | OWASP ZAP                         | Staging environment scan                                       |
 
 ### Hardening checklist
 
