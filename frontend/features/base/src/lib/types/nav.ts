@@ -27,6 +27,12 @@ export const SESSIONS: NavItem = {
 export const SETTINGS: NavItem = { 
     name: 'Settings', href: '/settings', icon: 'settings' 
 }
+
+// Role-scoped apps (atro-ui) nest every page under /<role>, so settings lives
+// at /<role>/settings rather than the flat /settings the dashboard uses.
+export function settingsNav(role: Role): NavItem {
+    return { ...SETTINGS, href: `/${role}/settings` }
+}
 /**
  * [role-nav-items]
  * next-feature@0.1.4-0
@@ -37,7 +43,7 @@ const supporter: NavItem[] = [
     { name: 'Processes', href: '/supporter/processes', icon: 'briefcase' },
     { name: 'Clients', href: '/supporter/clients', icon: 'building-2' },
     { name: 'Questions', href: '/supporter/questions', icon: 'book-open' },
-    SETTINGS,
+    settingsNav('supporter'),
 ] as const;
 
 export const ROLE_NAV: Record<Role, NavItem[]> = {
