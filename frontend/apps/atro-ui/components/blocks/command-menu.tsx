@@ -7,12 +7,12 @@ import { useTheme } from "next-themes"
 import {
   ArrowRight,
   ArrowUpRight,
-  Github,
   Home,
   Mail,
   Moon,
   Sun,
 } from "lucide-react"
+import { IconBrandGithub } from "@tabler/icons-react"
 
 /** Edit email, nav, and connect links after install. */
 const CONTENT = {
@@ -199,7 +199,7 @@ export function CommandMenu({
           {connect.map((item) => (
             <CmdItem
               key={item.href}
-              icon={<Github size={14} />}
+              icon={<IconBrandGithub size={14} />}
               label={item.label}
               shortcut={<ArrowUpRight size="0.9em" />}
               onSelect={() => run(() => go(item.href, item.external ?? true))}

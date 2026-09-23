@@ -23,7 +23,7 @@ const orders = [
     email: "olivia@example.com",
     id: "#3210",
     status: "Paid",
-    statusVariant: "success" as const,
+    statusVariant: "soft" as const,
   },
   {
     amount: "$39.00",
@@ -34,7 +34,7 @@ const orders = [
     email: "jackson@example.com",
     id: "#3209",
     status: "Pending",
-    statusVariant: "warning" as const,
+    statusVariant: "secondary" as const,
   },
   {
     amount: "$299.00",
@@ -45,7 +45,7 @@ const orders = [
     email: "isabella@example.com",
     id: "#3208",
     status: "Paid",
-    statusVariant: "success" as const,
+    statusVariant: "soft" as const,
   },
   {
     amount: "$99.00",
@@ -56,7 +56,7 @@ const orders = [
     email: "will@example.com",
     id: "#3207",
     status: "Refunded",
-    statusVariant: "info" as const,
+    statusVariant: "outline" as const,
   },
   {
     amount: "$2,500.00",
@@ -67,7 +67,7 @@ const orders = [
     email: "sofia@example.com",
     id: "#3206",
     status: "Paid",
-    statusVariant: "success" as const,
+    statusVariant: "soft" as const,
   },
 ];
 
@@ -109,7 +109,7 @@ export function Pattern() {
                 </div>
               </TableCell>
               <TableCell>
-                <Badge size="sm" variant={order.statusVariant}>
+                <Badge variant={order.statusVariant}>
                   {order.status}
                 </Badge>
               </TableCell>

@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
 import { cn } from "@app/atro-ui/lib/ui/utils";
-import { buildOgHref, type ProjectBrief } from "@app/atro-ui/lib/ui/project-brief";
+import { buildOgHref, type ProjectBrief } from "@app/atro-ui/lib/project-brief";
 
 type PlannerState = {
   projectType: "mvp" | "full" | "";
