@@ -1,4 +1,3 @@
-import { NEXT_PUBLIC_ROOT_DOMAIN } from "@app/atro-ui/lib/config/env";
 import { PROJECT_DESCRIPTION, PROJECT_NAME } from '@app/atro-ui/lib/constants/metadata';
 import type { Metadata } from 'next';
 import { ReactNode } from 'react';
@@ -11,7 +10,6 @@ import { cn } from "@app/atro-ui/lib/ui/utils";
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
 export const metadata: Metadata = {
-  metadataBase: new URL(NEXT_PUBLIC_ROOT_DOMAIN),
   title: {
     default: PROJECT_NAME,
     template: `%s | ${PROJECT_NAME}`,

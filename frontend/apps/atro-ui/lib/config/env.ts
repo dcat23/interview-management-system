@@ -5,7 +5,6 @@ const envSchema = z.object({
   /* schema start */
   NEXT_PUBLIC_LOGGING_BEACON_PATH: z.string(),
   LOGGING_SERVICE_NAME: z.string(),
-  NEXT_PUBLIC_ROOT_DOMAIN: z.string(),
   /* schema end */
 });
 
@@ -20,5 +19,4 @@ export const NODE_ENV = process.env.NODE_ENV;
 /* vars start */
 export const NEXT_PUBLIC_LOGGING_BEACON_PATH = process.env.NEXT_PUBLIC_LOGGING_BEACON_PATH;
 export const LOGGING_SERVICE_NAME = process.env.LOGGING_SERVICE_NAME;
-export const NEXT_PUBLIC_ROOT_DOMAIN = process.env.NEXT_PUBLIC_ROOT_DOMAIN;
 /* vars end */
