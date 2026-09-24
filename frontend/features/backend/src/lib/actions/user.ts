@@ -3,7 +3,7 @@
 import { withApi } from '@next-feature/client/server';
 import { z } from 'zod';
 import api from '../config/client';
-import type { Page, Pageable, User, UserRole } from '@feature/base/server';
+import type { Page, Pageable, User, UserLookup, UserRole } from '@feature/base/server';
 import { toRecord } from '@feature/base/server';
 
 const userRoleSchema = z.enum(['CANDIDATE', 'MARKETER', 'SUPPORTER', 'ADMIN']);
@@ -85,3 +85,29 @@ export const updateUser = withApi(async (options: UpdateUserRequest) => {
   const endpoint = `/users/${id}`;
   return api.patch<UpdateUserResponse>(endpoint, body);
 }, {});
+
+/**
+ * [lookup-users]
+ *
+ * GET /users/lookup. Case-insensitive partial name search, open to admin,
+ * marketer, and supporter (unlike the admin-only GET /users). Backend caps
+ * results at 20.
+ */
+export type LookupUsersRequest = {
+  query: string;
+  role?: UserRole;
+};
+
+export type LookupUsersResponse = UserLookup[];
+
+export const lookupUsers = withApi(
+  async (options: LookupUsersRequest) => {
+    const params = new URLSearchParams(toRecord(options));
+    const endpoint = '/users/lookup?' + params.toString();
+
+    return api.get<LookupUsersResponse>(endpoint);
+  },
+  {
+    fallbackData: [],
+  },
+);

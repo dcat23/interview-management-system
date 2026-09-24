@@ -50,3 +50,49 @@ export const getProcessById = withApi(async (id: string) => {
   const endpoint = `/processes/${id}`;
   return api.get<GetProcessByIdResponse>(endpoint);
 }, {});
+
+/**
+ * [create-process]
+ *
+ * POST /processes. Admin and marketer roles only.
+ */
+const createProcessSchema = z.object({
+  candidateId: z.string().uuid(),
+  clientId: z.string().uuid(),
+  marketerId: z.string().uuid(),
+  technology: z.string().trim().min(1),
+  jobId: z.string().trim().optional(),
+  description: z.string().trim().optional(),
+});
+export type CreateProcessRequest = z.infer<typeof createProcessSchema>;
+export type CreateProcessResponse = InterviewProcess;
+
+export const createProcess = withApi(async (options: CreateProcessRequest) => {
+  const parsed = createProcessSchema.safeParse(options);
+
+  if (!parsed.success) {
+    throw parsed.error;
+  }
+
+  const endpoint = '/processes';
+  return api.post<CreateProcessResponse>(endpoint, parsed.data);
+}, {});
+
+/**
+ * [lookup-process-technologies]
+ *
+ * GET /processes/technologies/lookup. Autocomplete over technologies already
+ * in use (free text on the backend). Blank query returns the most-used.
+ * Capped at 20.
+ */
+export const lookupProcessTechnologies = withApi(
+  async (query?: string) => {
+    const params = new URLSearchParams(toRecord({ query }));
+    const endpoint = '/processes/technologies/lookup?' + params.toString();
+
+    return api.get<string[]>(endpoint);
+  },
+  {
+    fallbackData: [],
+  },
+);

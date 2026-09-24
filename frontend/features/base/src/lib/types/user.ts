@@ -41,3 +41,13 @@ export interface User {
   createdAt: string;
   updatedAt: string;
 }
+
+/**
+ * Matches UserLookupResponse on the backend (user/dto/UserLookupResponse.java)
+ * — the minimal id/name/role projection returned by GET /users/lookup.
+ */
+export interface UserLookup {
+  id: string;
+  name: string;
+  role: UserRole;
+}

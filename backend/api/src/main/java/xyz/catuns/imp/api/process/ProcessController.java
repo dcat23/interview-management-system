@@ -19,6 +19,7 @@ import xyz.catuns.imp.api.process.entity.ProcessStatus;
 
 import java.net.URI;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -56,6 +57,21 @@ public class ProcessController {
         return ResponseEntity.ok(
                 PageResponse.from(processService.list(search, status, clientId, startedFrom, startedTo, pageable, authentication))
         );
+    }
+
+    @GetMapping("/technologies/lookup")
+    @Operation(
+            summary = "Look up process technologies",
+            description = "Autocomplete over the distinct technologies already used on processes. "
+                    + "Case-insensitive partial match, prefix matches first, then most-used. A blank query returns "
+                    + "the most-used technologies. Capped at 20."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Matching technologies"),
+            @ApiResponse(responseCode = "403", description = "Insufficient role")
+    })
+    public ResponseEntity<List<String>> lookupTechnologies(@RequestParam(required = false) String query) {
+        return ResponseEntity.ok(processService.lookupTechnologies(query));
     }
 
     @GetMapping("/{id}")

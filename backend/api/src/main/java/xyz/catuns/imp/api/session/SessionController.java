@@ -96,6 +96,36 @@ public class SessionController {
         );
     }
 
+    @GetMapping("/sessions/modes/lookup")
+    @Operation(
+            summary = "Look up session modes",
+            description = "Autocomplete over the distinct modes already used on sessions (mode is free text). "
+                    + "Case-insensitive partial match, prefix matches first, then most-used. A blank query returns "
+                    + "the most-used modes. Capped at 20."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Matching modes"),
+            @ApiResponse(responseCode = "403", description = "Insufficient role")
+    })
+    public ResponseEntity<List<String>> lookupModes(@RequestParam(required = false) String query) {
+        return ResponseEntity.ok(sessionService.lookupModes(query));
+    }
+
+    @GetMapping("/sessions/rounds/lookup")
+    @Operation(
+            summary = "Look up session rounds",
+            description = "Autocomplete over the distinct rounds already used on sessions (round is free text). "
+                    + "Case-insensitive partial match, prefix matches first, then most-used. A blank query returns "
+                    + "the most-used rounds. Capped at 20."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Matching rounds"),
+            @ApiResponse(responseCode = "403", description = "Insufficient role")
+    })
+    public ResponseEntity<List<String>> lookupRounds(@RequestParam(required = false) String query) {
+        return ResponseEntity.ok(sessionService.lookupRounds(query));
+    }
+
     @GetMapping("/sessions/{id}")
     @Operation(summary = "Get session by ID", description = "Candidates see only sessions belonging to their own process; admin, marketer, and supporter can access any session.")
     @ApiResponses({

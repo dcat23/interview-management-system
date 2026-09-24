@@ -16,3 +16,17 @@ export function capitalize(s: string) {
 export function initials(data: any) {
   return data;
 }
+
+/**
+ * [extract-job-id]
+ *
+ * Mirrors JobIdExtractor on the backend (scheduleimport/JobIdExtractor.java):
+ * pulls a requisition code from a trailing parenthetical in a technology
+ * string, e.g. "Java Developer (9548BR)" -> "9548BR". The code must contain
+ * a digit, so seniority annotations like "Fullstack Engineer(VP)" are ignored.
+ */
+export function extractJobId(technology: string | null | undefined): string | null {
+  const match = technology?.trim().match(/\(([A-Za-z0-9]+)\)\s*$/);
+  if (!match || !/\d/.test(match[1])) return null;
+  return match[1];
+}

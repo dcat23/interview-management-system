@@ -734,6 +734,25 @@ All submitted feedback across all rounds in a process, ordered by `scheduledAt` 
 
 ---
 
+### `GET /processes/technologies/lookup` · `admin` `marketer` `supporter` `ai_agent`
+
+Autocomplete over the distinct technologies already in use — `technology` is free text, so this surfaces existing spellings instead of a fixed enum. Case/whitespace variants collapse into one entry. Backed by a Redis-cached catalog (30 min TTL, evicted on create/update and schedule import).
+
+**Query params**
+
+| Param   | Type   | Description                                                               |
+|---------|--------|-----------------------------------------------------------------------------|
+| `query` | string | Optional. Partial, case-insensitive match. Omit/blank for the most-used values. |
+
+Prefix matches rank ahead of mid-string matches, then most-used first. Capped at 20 — not paginated.
+
+**Response `200`**
+```json
+["Java", "JavaScript", "React"]
+```
+
+---
+
 ## Interview sessions
 
 ### `GET /sessions` · `admin` `marketer` `supporter` `ai_agent`
@@ -925,6 +944,44 @@ Full audit trail of all status transitions for a session.
 ```
 
 `changeSource` values: `MANUAL`, `BACKGROUND_JOB`
+
+---
+
+### `GET /sessions/modes/lookup` · `admin` `marketer` `supporter` `ai_agent`
+
+Autocomplete over the distinct session modes already in use — `mode` is free text, so this surfaces existing spellings instead of a fixed enum. Case/whitespace variants collapse into one entry. Backed by a Redis-cached catalog (30 min TTL, evicted on create/update and schedule import).
+
+**Query params**
+
+| Param   | Type   | Description                                                               |
+|---------|--------|-----------------------------------------------------------------------------|
+| `query` | string | Optional. Partial, case-insensitive match. Omit/blank for the most-used values. |
+
+Prefix matches rank ahead of mid-string matches, then most-used first. Capped at 20 — not paginated.
+
+**Response `200`**
+```json
+["Video call", "Phone", "In person"]
+```
+
+---
+
+### `GET /sessions/rounds/lookup` · `admin` `marketer` `supporter` `ai_agent`
+
+Autocomplete over the distinct session rounds already in use — `round` is free text, so this surfaces existing spellings instead of a fixed enum. Case/whitespace variants collapse into one entry. Backed by a Redis-cached catalog (30 min TTL, evicted on create/update and schedule import).
+
+**Query params**
+
+| Param   | Type   | Description                                                               |
+|---------|--------|-----------------------------------------------------------------------------|
+| `query` | string | Optional. Partial, case-insensitive match. Omit/blank for the most-used values. |
+
+Prefix matches rank ahead of mid-string matches, then most-used first. Capped at 20 — not paginated.
+
+**Response `200`**
+```json
+["Round 1", "Technical", "Final"]
+```
 
 ---
 

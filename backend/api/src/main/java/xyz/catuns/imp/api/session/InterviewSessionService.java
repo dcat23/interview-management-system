@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -19,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import xyz.catuns.imp.api.client.entity.Client;
 import xyz.catuns.imp.api.client.repository.ClientRepository;
 import xyz.catuns.imp.api.common.util.DateRangeUtil;
+import xyz.catuns.imp.api.common.util.ValueLookupUtil;
 import xyz.catuns.imp.api.config.CacheConfig;
 import xyz.catuns.imp.api.process.entity.InterviewProcess;
 import xyz.catuns.imp.api.process.entity.ProcessStatus;
@@ -37,6 +39,7 @@ import xyz.catuns.spring.base.exception.controller.NotFoundException;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -68,7 +71,11 @@ public class InterviewSessionService {
 
     @PreAuthorize("hasAnyRole('ADMIN','MARKETER')")
     @Transactional
-    @CacheEvict(value = CacheConfig.SESSIONS_BY_PROCESS, key = "#processId")
+    @Caching(evict = {
+            @CacheEvict(value = CacheConfig.SESSIONS_BY_PROCESS, key = "#processId"),
+            @CacheEvict(value = CacheConfig.SESSION_MODES, allEntries = true),
+            @CacheEvict(value = CacheConfig.SESSION_ROUNDS, allEntries = true)
+    })
     public InterviewSessionResponse create(UUID processId, CreateSessionRequest request) {
         InterviewProcess process = processRepository.findById(processId)
                 .orElseThrow(() -> new NotFoundException("Process not found"));
@@ -114,6 +121,29 @@ public class InterviewSessionService {
         }
 
         return self.loadAllByProcess(processId);
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN','MARKETER','SUPPORTER','AI_AGENT')")
+    public List<String> lookupModes(String query) {
+        return ValueLookupUtil.filter(self.loadModeCatalog(), query);
+    }
+
+    // ArrayList, not an immutable list: the Redis serializer records the concrete type and must
+    // be able to instantiate it on read.
+    @Cacheable(value = CacheConfig.SESSION_MODES, key = "'all'")
+    public List<String> loadModeCatalog() {
+        return new ArrayList<>(sessionRepository.findDistinctModesByUsage());
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN','MARKETER','SUPPORTER','AI_AGENT')")
+    public List<String> lookupRounds(String query) {
+        return ValueLookupUtil.filter(self.loadRoundCatalog(), query);
+    }
+
+    // ArrayList for the same Redis-serializer reason as loadModeCatalog.
+    @Cacheable(value = CacheConfig.SESSION_ROUNDS, key = "'all'")
+    public List<String> loadRoundCatalog() {
+        return new ArrayList<>(sessionRepository.findDistinctRoundsByUsage());
     }
 
     @Cacheable(value = CacheConfig.SESSIONS_BY_PROCESS, key = "#processId")
@@ -233,7 +263,11 @@ public class InterviewSessionService {
 
     @PreAuthorize("hasAnyRole('ADMIN','MARKETER')")
     @Transactional
-    @CacheEvict(value = CacheConfig.SESSIONS_BY_PROCESS, allEntries = true)
+    @Caching(evict = {
+            @CacheEvict(value = CacheConfig.SESSIONS_BY_PROCESS, allEntries = true),
+            @CacheEvict(value = CacheConfig.SESSION_MODES, allEntries = true),
+            @CacheEvict(value = CacheConfig.SESSION_ROUNDS, allEntries = true)
+    })
     public InterviewSessionResponse update(UUID id, UpdateSessionRequest request) {
         InterviewSession session = sessionRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Session not found"));

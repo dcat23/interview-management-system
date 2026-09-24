@@ -3,6 +3,10 @@ package xyz.catuns.imp.api.process;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -15,6 +19,8 @@ import org.springframework.transaction.annotation.Transactional;
 import xyz.catuns.imp.api.client.entity.Client;
 import xyz.catuns.imp.api.client.repository.ClientRepository;
 import xyz.catuns.imp.api.common.util.DateRangeUtil;
+import xyz.catuns.imp.api.common.util.ValueLookupUtil;
+import xyz.catuns.imp.api.config.CacheConfig;
 import xyz.catuns.imp.api.process.dto.CreateProcessRequest;
 import xyz.catuns.imp.api.process.dto.InterviewProcessResponse;
 import xyz.catuns.imp.api.process.dto.UpdateProcessRequest;
@@ -61,6 +67,11 @@ public class InterviewProcessService {
     private final ClientRepository clientRepository;
     private final InterviewSessionRepository sessionRepository;
     private final InterviewSessionMapper sessionMapper;
+
+    // Self-injection via @Lazy so @Cacheable proxy intercepts loadTechnologyCatalog from within lookupTechnologies
+    @Autowired
+    @Lazy
+    private InterviewProcessService self;
 
     @PreAuthorize("isAuthenticated()")
     public Page<InterviewProcessResponse> list(String search, ProcessStatus status, UUID clientId,
@@ -165,6 +176,7 @@ public class InterviewProcessService {
 
     @PreAuthorize("hasAnyRole('ADMIN','MARKETER')")
     @Transactional
+    @CacheEvict(value = CacheConfig.PROCESS_TECHNOLOGIES, allEntries = true)
     public InterviewProcessResponse create(CreateProcessRequest request) {
         userRepository.findById(request.candidateId())
                 .orElseThrow(() -> new NotFoundException("Candidate not found"));
@@ -179,11 +191,24 @@ public class InterviewProcessService {
 
     @PreAuthorize("hasAnyRole('ADMIN','MARKETER')")
     @Transactional
+    @CacheEvict(value = CacheConfig.PROCESS_TECHNOLOGIES, allEntries = true)
     public InterviewProcessResponse update(UUID id, UpdateProcessRequest request) {
         InterviewProcess process = processRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Process not found"));
         processMapper.update(request, process);
         return processMapper.toResponse(processRepository.save(process));
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN','MARKETER','SUPPORTER','AI_AGENT')")
+    public List<String> lookupTechnologies(String query) {
+        return ValueLookupUtil.filter(self.loadTechnologyCatalog(), query);
+    }
+
+    // ArrayList, not an immutable list: the Redis serializer records the concrete type and must
+    // be able to instantiate it on read.
+    @Cacheable(value = CacheConfig.PROCESS_TECHNOLOGIES, key = "'all'")
+    public List<String> loadTechnologyCatalog() {
+        return new ArrayList<>(processRepository.findDistinctTechnologiesByUsage());
     }
 
     public boolean isCandidateOwner(UUID processId, String email) {
