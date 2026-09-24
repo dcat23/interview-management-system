@@ -35,7 +35,7 @@ export const authConfig: NextAuthConfig = {
   logger: {
     error(error) {
       if (error instanceof ApiAuthError) {
-        log.error(error.body);
+        log.error(error.body, error.name);
         return;
       }
       log.error(`${error.name}: ${error.message}`);

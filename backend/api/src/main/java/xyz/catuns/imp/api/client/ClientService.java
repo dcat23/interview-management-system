@@ -50,6 +50,13 @@ public class ClientService {
         return clientRepository.findAll(spec, validateSort(pageable)).map(clientMapper::toResponse);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','MARKETER','SUPPORTER','AI_AGENT')")
+    public ClientResponse get(UUID id) {
+        return clientRepository.findById(id)
+                .map(clientMapper::toResponse)
+                .orElseThrow(() -> new NotFoundException("Client not found"));
+    }
+
     private static Pageable validateSort(Pageable pageable) {
         for (Sort.Order order : pageable.getSort()) {
             if (!SORTABLE_PROPERTIES.contains(order.getProperty())) {
