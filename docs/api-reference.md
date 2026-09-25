@@ -774,7 +774,7 @@ List sessions across all processes, paginated.
 | `page` / `limit`                       | Default `0` / `20`.                                                                                                                                                                      |
 | `search`                               | Free text, matched (case-insensitive, substring) against candidate name, round, mode, and description.                                                                                   |
 | `scheduledFrom` / `scheduledTo`        | `yyyy-MM-dd` (plain date, no time/zone). Filters on `scheduledAt`, inclusive on both ends - `scheduledTo` covers the entire day (interpreted as UTC day boundaries). `400` if `scheduledFrom` is after `scheduledTo`. |
-| `sort`                                 | `field,asc\|desc`, repeatable. Sortable fields: `round`, `mode`, `durationMinutes`, `status`, `scheduledAt`, `statusChangedAt`, `createdAt`, `updatedAt`. Any other field returns `400`. |
+| `sort`                                 | `field,asc\|desc`, repeatable. Sortable fields: `candidateName`, `clientName`, `round`, `mode`, `durationMinutes`, `status`, `scheduledAt`, `statusChangedAt`, `createdAt`, `updatedAt`. Any other field returns `400`. |
 
 **Response `200`** — `candidateName`, `clientName`, `clientId`, and `technology` are joined from the session's process; `supporterName` from the assigned supporter.
 ```json

@@ -71,8 +71,8 @@ public class SessionController {
                     + "supporter roles only. Supports free-text search (candidate name, round, mode, description), a "
                     + "clientId filter (matches sessions whose process belongs to that client), a round filter "
                     + "(case-insensitive contains match), a scheduledAt date-range filter (scheduledFrom/scheduledTo "
-                    + "as yyyy-MM-dd, inclusive), and sorting (?sort=field,asc|desc - round, mode, durationMinutes, "
-                    + "status, scheduledAt, statusChangedAt, createdAt, updatedAt)."
+                    + "as yyyy-MM-dd, inclusive), and sorting (?sort=field,asc|desc - candidateName, clientName, "
+                    + "round, mode, durationMinutes, status, scheduledAt, statusChangedAt, createdAt, updatedAt)."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Paginated session list"),

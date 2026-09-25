@@ -9,6 +9,7 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
@@ -54,8 +55,13 @@ import java.util.stream.Stream;
 public class InterviewSessionService {
 
     private static final Set<String> SORTABLE_PROPERTIES = Set.of(
-            "round", "mode", "durationMinutes", "status", "scheduledAt",
+            "candidateName", "clientName", "round", "mode", "durationMinutes", "status", "scheduledAt",
             "statusChangedAt", "createdAt", "updatedAt"
+    );
+    // Response-field names -> entity paths; Spring Data adds the joins through the session's process.
+    private static final Map<String, String> SORT_PROPERTY_ALIASES = Map.of(
+            "candidateName", "process.candidate.name",
+            "clientName", "process.client.name"
     );
 
     private final InterviewSessionRepository sessionRepository;
@@ -215,7 +221,7 @@ public class InterviewSessionService {
                 );
             });
         }
-        Page<InterviewSession> sessions = sessionRepository.findAll(spec, validateSort(pageable));
+        Page<InterviewSession> sessions = sessionRepository.findAll(spec, remapSort(pageable));
 
         List<UUID> processIds = sessions.getContent().stream()
                 .map(InterviewSession::getProcessId)
@@ -253,13 +259,19 @@ public class InterviewSessionService {
         });
     }
 
-    private static Pageable validateSort(Pageable pageable) {
+    private static Pageable remapSort(Pageable pageable) {
+        if (pageable.getSort().isUnsorted()) {
+            return pageable;
+        }
+        List<Sort.Order> orders = new ArrayList<>();
         for (Sort.Order order : pageable.getSort()) {
             if (!SORTABLE_PROPERTIES.contains(order.getProperty())) {
                 throw new BadRequestException("Unsortable field: " + order.getProperty());
             }
+            orders.add(new Sort.Order(order.getDirection(),
+                    SORT_PROPERTY_ALIASES.getOrDefault(order.getProperty(), order.getProperty())));
         }
-        return pageable;
+        return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by(orders));
     }
 
     @PreAuthorize("hasAnyRole('ADMIN','MARKETER','SUPPORTER','AI_AGENT') " +
