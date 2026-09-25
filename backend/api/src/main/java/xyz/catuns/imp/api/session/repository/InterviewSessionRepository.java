@@ -38,4 +38,20 @@ public interface InterviewSessionRepository extends JpaRepository<InterviewSessi
             UUID supporterId, Instant from, Instant to, Collection<SessionStatus> excludedStatuses);
 
     long countBySupporterIdAndStatus(UUID supporterId, SessionStatus status);
+
+    /**
+     * Distinct modes, ranked most-used first. Case/whitespace variants collapse into one entry;
+     * MIN picks a stable spelling for the group.
+     */
+    @Query("SELECT MIN(TRIM(s.mode)) FROM InterviewSession s WHERE TRIM(s.mode) <> '' "
+            + "GROUP BY LOWER(TRIM(s.mode)) ORDER BY COUNT(s) DESC, MIN(TRIM(s.mode))")
+    List<String> findDistinctModesByUsage();
+
+    /**
+     * Distinct rounds, ranked most-used first. Case/whitespace variants collapse into one entry;
+     * MIN picks a stable spelling for the group.
+     */
+    @Query("SELECT MIN(TRIM(s.round)) FROM InterviewSession s WHERE TRIM(s.round) <> '' "
+            + "GROUP BY LOWER(TRIM(s.round)) ORDER BY COUNT(s) DESC, MIN(TRIM(s.round))")
+    List<String> findDistinctRoundsByUsage();
 }

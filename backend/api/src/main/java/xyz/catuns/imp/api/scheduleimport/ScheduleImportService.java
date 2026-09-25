@@ -300,6 +300,9 @@ public class ScheduleImportService {
     private void evictCaches(Set<UUID> touchedProcessIds) {
         Optional.ofNullable(cacheManager.getCache(CacheConfig.CLIENTS)).ifPresent(Cache::clear);
         Optional.ofNullable(cacheManager.getCache(CacheConfig.USER_ROLES)).ifPresent(Cache::clear);
+        Optional.ofNullable(cacheManager.getCache(CacheConfig.SESSION_MODES)).ifPresent(Cache::clear);
+        Optional.ofNullable(cacheManager.getCache(CacheConfig.SESSION_ROUNDS)).ifPresent(Cache::clear);
+        Optional.ofNullable(cacheManager.getCache(CacheConfig.PROCESS_TECHNOLOGIES)).ifPresent(Cache::clear);
         Optional.ofNullable(cacheManager.getCache(CacheConfig.SESSIONS_BY_PROCESS))
                 .ifPresent(cache -> touchedProcessIds.forEach(cache::evict));
     }

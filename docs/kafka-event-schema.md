@@ -6,14 +6,14 @@ AWS MSK (Managed Streaming for Apache Kafka) cluster. Two topics used in the ini
 
 ## Cluster configuration
 
-| Setting | Value |
-|---|---|
-| Broker count | 3 (Multi-AZ) |
-| Kafka version | 3.5.x |
-| Replication factor | 3 |
-| Min in-sync replicas | 2 |
-| Retention | 7 days |
-| Compression | `lz4` |
+| Setting              | Value        |
+|----------------------|--------------|
+| Broker count         | 3 (Multi-AZ) |
+| Kafka version        | 3.5.x        |
+| Replication factor   | 3            |
+| Min in-sync replicas | 2            |
+| Retention            | 7 days       |
+| Compression          | `lz4`        |
 
 ---
 

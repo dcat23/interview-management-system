@@ -203,6 +203,36 @@ class ClientControllerTest {
     }
 
     @Nested
+    @DisplayName("GET /clients/{id}")
+    class GetClient {
+
+        @Test
+        @DisplayName("returns 200 for supporter")
+        void supporterCanGetClient() throws Exception {
+            mockMvc.perform(get("/clients/" + existingClientId)
+                            .header("Authorization", "Bearer " + supporterToken))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.id").value(existingClientId.toString()));
+        }
+
+        @Test
+        @DisplayName("returns 404 for unknown id")
+        void unknownIdReturns404() throws Exception {
+            mockMvc.perform(get("/clients/" + UUID.randomUUID())
+                            .header("Authorization", "Bearer " + adminToken))
+                    .andExpect(status().isNotFound());
+        }
+
+        @Test
+        @DisplayName("returns 403 for candidate")
+        void candidateCannotGetClient() throws Exception {
+            mockMvc.perform(get("/clients/" + existingClientId)
+                            .header("Authorization", "Bearer " + candidateToken))
+                    .andExpect(status().isForbidden());
+        }
+    }
+
+    @Nested
     @DisplayName("POST /clients")
     class CreateClient {
 

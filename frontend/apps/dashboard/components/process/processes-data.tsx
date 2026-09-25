@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@feature/ui/components/ui/common/select';
-import { DataTable, DataTableColumn } from '../ui/common/data-table';
+import { DataTable, DataTableColumn } from '@feature/ui/components/ui/common/data-table';
 import { useRouter } from 'next/navigation';
 import { AnimatedCalendar } from '@feature/ui/components/ui/common/calender';
 import { RefreshCw } from 'lucide-react';

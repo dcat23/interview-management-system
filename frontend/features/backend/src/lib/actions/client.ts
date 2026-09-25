@@ -1,6 +1,7 @@
 'use server';
 
 import { withApi } from '@next-feature/client/server';
+import { z } from 'zod';
 import api from '../config/client';
 import type { Client, Page, Pageable } from '@feature/base/server';
 import { toRecord } from '@feature/base/server';
@@ -40,4 +41,27 @@ export const getClientById = withApi(async (id: string) => {
   const endpoint = '/clients/' + id;
 
   return await api.get<GetClientByIdResponse>(endpoint);
+}, {});
+
+/**
+ * [create-client]
+ *
+ * POST /clients. Admin and marketer roles only.
+ */
+const createClientSchema = z.object({
+  name: z.string().trim().min(1),
+  industry: z.string().trim().optional(),
+});
+export type CreateClientRequest = z.infer<typeof createClientSchema>;
+export type CreateClientResponse = Client;
+
+export const createClient = withApi(async (options: CreateClientRequest) => {
+  const parsed = createClientSchema.safeParse(options);
+
+  if (!parsed.success) {
+    throw parsed.error;
+  }
+
+  const endpoint = '/clients';
+  return api.post<CreateClientResponse>(endpoint, parsed.data);
 }, {});

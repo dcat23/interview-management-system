@@ -1,5 +1,6 @@
 export * from './lib/constants/session';
 export * from './lib/types/api';
+export * from './lib/types/api-key';
 export * from './lib/types/client';
 export * from './lib/types/feedback';
 export * from './lib/types/nav';

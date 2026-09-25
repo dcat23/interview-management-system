@@ -1,0 +1,59 @@
+{
+  "name": "atro-ui",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/atro-ui",
+  "projectType": "application",
+  "tags": [],
+  "targets": {
+    "build": {
+      "executor": "@nx/next:build",
+      "outputs": [
+        "{options.outputPath}"
+      ],
+      "defaultConfiguration": "production",
+      "options": {
+        "outputPath": "dist/apps/atro-ui"
+      },
+      "configurations": {
+        "development": {
+          "outputPath": "apps/atro-ui"
+        },
+        "production": {}
+      }
+    },
+    "serve": {
+      "executor": "@nx/next:server",
+      "defaultConfiguration": "development",
+      "options": {
+        "buildTarget": "atro-ui:build",
+        "dev": true
+      },
+      "configurations": {
+        "development": {
+          "buildTarget": "atro-ui:build:development",
+          "dev": true
+        },
+        "production": {
+          "buildTarget": "atro-ui:build:production",
+          "dev": false
+        }
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": [
+        "{workspaceRoot}/coverage/{projectRoot}"
+      ],
+      "options": {
+        "jestConfig": "apps/atro-ui/jest.config.cts"
+      }
+    },
+    "shadcn": {
+      "executor": "next-feature:shadcn",
+      "options": {}
+    }
+  }
+}

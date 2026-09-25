@@ -27,6 +27,12 @@ export const SESSIONS: NavItem = {
 export const SETTINGS: NavItem = { 
     name: 'Settings', href: '/settings', icon: 'settings' 
 }
+
+// Role-scoped apps (atro-ui) nest every page under /<role>, so settings lives
+// at /<role>/settings rather than the flat /settings the dashboard uses.
+export function settingsNav(role: Role): NavItem {
+    return { ...SETTINGS, href: `/${role}/settings` }
+}
 /**
  * [role-nav-items]
  * next-feature@0.1.4-0
@@ -37,19 +43,23 @@ const supporter: NavItem[] = [
     { name: 'Processes', href: '/supporter/processes', icon: 'briefcase' },
     { name: 'Clients', href: '/supporter/clients', icon: 'building-2' },
     { name: 'Questions', href: '/supporter/questions', icon: 'book-open' },
-    SETTINGS,
+    settingsNav('supporter'),
 ] as const;
 
 export const ROLE_NAV: Record<Role, NavItem[]> = {
     candidate: [
         { name: 'My Processes', href: '/candidate/processes', icon: 'briefcase' },
     ],
+    // New processes are created from the dashboard header drawer, not a route.
     marketer: [
+        { name: 'Sessions', href: '/marketer/sessions', icon: 'calendar-check' },
         { name: 'Processes', href: '/marketer/processes', icon: 'briefcase' },
-        { name: 'New Process', href: '/marketer/processes/new', icon: 'plus' },
+        { name: 'Clients', href: '/marketer/clients', icon: 'building-2' },
+        settingsNav('marketer'),
     ],
     supporter,
     admin: [
+        { name: 'Users', href: '/admin/users', icon: 'users' },
         { name: 'Processes', href: '/admin/processes', icon: 'briefcase' },
         { name: 'Question Bank', href: '/admin/questions', icon: 'book-open' },
     ],

@@ -2,7 +2,13 @@ package xyz.catuns.imp.api.process;
 
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.Subquery;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -15,6 +21,8 @@ import org.springframework.transaction.annotation.Transactional;
 import xyz.catuns.imp.api.client.entity.Client;
 import xyz.catuns.imp.api.client.repository.ClientRepository;
 import xyz.catuns.imp.api.common.util.DateRangeUtil;
+import xyz.catuns.imp.api.common.util.ValueLookupUtil;
+import xyz.catuns.imp.api.config.CacheConfig;
 import xyz.catuns.imp.api.process.dto.CreateProcessRequest;
 import xyz.catuns.imp.api.process.dto.InterviewProcessResponse;
 import xyz.catuns.imp.api.process.dto.UpdateProcessRequest;
@@ -24,6 +32,7 @@ import xyz.catuns.imp.api.process.mapper.InterviewProcessMapper;
 import xyz.catuns.imp.api.process.repository.InterviewProcessRepository;
 import xyz.catuns.imp.api.session.dto.InterviewSessionResponse;
 import xyz.catuns.imp.api.session.entity.InterviewSession;
+import xyz.catuns.imp.api.session.entity.SessionStatus;
 import xyz.catuns.imp.api.session.mapper.InterviewSessionMapper;
 import xyz.catuns.imp.api.session.repository.InterviewSessionRepository;
 import xyz.catuns.imp.api.user.entity.User;
@@ -35,6 +44,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -50,6 +60,9 @@ public class InterviewProcessService {
     private static final Set<String> SORTABLE_PROPERTIES = Set.of(
             "candidateName", "clientName", "technology", "status", "startedAt", "closedAt", "createdAt", "updatedAt"
     );
+    /** Sessions still in flight — a process with none of these has nothing moving it forward. */
+    private static final Set<SessionStatus> PENDING_SESSION_STATUSES =
+            EnumSet.of(SessionStatus.SCHEDULED, SessionStatus.IN_REVIEW, SessionStatus.RESCHEDULED);
     private static final Map<String, String> SORT_PROPERTY_ALIASES = Map.of(
             "candidateName", "candidate.name",
             "clientName", "client.name"
@@ -62,9 +75,14 @@ public class InterviewProcessService {
     private final InterviewSessionRepository sessionRepository;
     private final InterviewSessionMapper sessionMapper;
 
+    // Self-injection via @Lazy so @Cacheable proxy intercepts loadTechnologyCatalog from within lookupTechnologies
+    @Autowired
+    @Lazy
+    private InterviewProcessService self;
+
     @PreAuthorize("isAuthenticated()")
     public Page<InterviewProcessResponse> list(String search, ProcessStatus status, UUID clientId,
-                                                LocalDate startedFrom, LocalDate startedTo,
+                                                LocalDate startedFrom, LocalDate startedTo, Boolean hasPendingSession,
                                                 Pageable pageable, Authentication authentication) {
         if (startedFrom != null && startedTo != null && startedFrom.isAfter(startedTo)) {
             throw new BadRequestException("startedFrom must not be after startedTo");
@@ -88,6 +106,17 @@ public class InterviewProcessService {
         if (startedTo != null) {
             Instant toExclusive = DateRangeUtil.startOfNextDayUtc(startedTo);
             spec = spec.and((root, query, cb) -> cb.lessThan(root.get("startedAt"), toExclusive));
+        }
+        if (hasPendingSession != null) {
+            // EXISTS subquery rather than a join so each process is still counted once for paging.
+            spec = spec.and((root, query, cb) -> {
+                Subquery<UUID> pending = query.subquery(UUID.class);
+                Root<InterviewSession> session = pending.from(InterviewSession.class);
+                pending.select(session.get("id")).where(
+                        cb.equal(session.get("processId"), root.get("id")),
+                        session.get("status").in(PENDING_SESSION_STATUSES));
+                return hasPendingSession ? cb.exists(pending) : cb.not(cb.exists(pending));
+            });
         }
         if (search != null && !search.isBlank()) {
             String pattern = "%" + search.trim().toLowerCase(Locale.ROOT) + "%";
@@ -125,17 +154,18 @@ public class InterviewProcessService {
 
         return processes.map(process -> {
             List<InterviewSession> sessions = sessionsByProcessId.getOrDefault(process.getId(), List.of());
-            String currentRound = sessions.stream()
+            InterviewSession latest = sessions.stream()
                     .max(Comparator.comparing(InterviewSession::getScheduledAt))
-                    .map(InterviewSession::getRound)
                     .orElse(null);
 
             return processMapper.toResponse(
                     process,
                     candidateNamesById.get(process.getCandidateId()),
                     clientNamesById.get(process.getClientId()),
-                    currentRound,
-                    sessions.size()
+                    latest != null ? latest.getRound() : null,
+                    sessions.size(),
+                    latest != null ? latest.getScheduledAt() : null,
+                    latest != null ? latest.getStatus() : null
             );
         });
     }
@@ -151,20 +181,28 @@ public class InterviewProcessService {
         String clientName = clientRepository.findById(process.getClientId())
                 .map(Client::getName)
                 .orElse(null);
-        List<InterviewSessionResponse> sessions = sessionRepository.findByProcessIdOrderByScheduledAt(id).stream()
-                .map(session -> sessionMapper.toResponse(session, candidateName, clientName, process.getTechnology()))
+        List<InterviewSession> processSessions = sessionRepository.findByProcessIdOrderByScheduledAt(id);
+        Map<UUID, String> supporterNamesById = userRepository.findAllById(
+                        processSessions.stream().map(InterviewSession::getSupporterId).distinct().toList())
+                .stream().collect(Collectors.toMap(User::getId, User::getName));
+        List<InterviewSessionResponse> sessions = processSessions.stream()
+                .map(session -> sessionMapper.toResponse(session, candidateName, clientName,
+                        process.getClientId(), process.getTechnology(),
+                        supporterNamesById.get(session.getSupporterId())))
                 .toList();
 
-        String currentRound = sessions.stream()
+        InterviewSessionResponse latest = sessions.stream()
                 .max(Comparator.comparing(InterviewSessionResponse::scheduledAt))
-                .map(InterviewSessionResponse::round)
                 .orElse(null);
 
-        return processMapper.toResponse(process, candidateName, clientName, sessions, currentRound, sessions.size());
+        return processMapper.toResponse(process, candidateName, clientName, sessions,
+                latest != null ? latest.round() : null, sessions.size(),
+                latest != null ? latest.scheduledAt() : null, latest != null ? latest.status() : null);
     }
 
     @PreAuthorize("hasAnyRole('ADMIN','MARKETER')")
     @Transactional
+    @CacheEvict(value = CacheConfig.PROCESS_TECHNOLOGIES, allEntries = true)
     public InterviewProcessResponse create(CreateProcessRequest request) {
         userRepository.findById(request.candidateId())
                 .orElseThrow(() -> new NotFoundException("Candidate not found"));
@@ -179,11 +217,24 @@ public class InterviewProcessService {
 
     @PreAuthorize("hasAnyRole('ADMIN','MARKETER')")
     @Transactional
+    @CacheEvict(value = CacheConfig.PROCESS_TECHNOLOGIES, allEntries = true)
     public InterviewProcessResponse update(UUID id, UpdateProcessRequest request) {
         InterviewProcess process = processRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Process not found"));
         processMapper.update(request, process);
         return processMapper.toResponse(processRepository.save(process));
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN','MARKETER','SUPPORTER','AI_AGENT')")
+    public List<String> lookupTechnologies(String query) {
+        return ValueLookupUtil.filter(self.loadTechnologyCatalog(), query);
+    }
+
+    // ArrayList, not an immutable list: the Redis serializer records the concrete type and must
+    // be able to instantiate it on read.
+    @Cacheable(value = CacheConfig.PROCESS_TECHNOLOGIES, key = "'all'")
+    public List<String> loadTechnologyCatalog() {
+        return new ArrayList<>(processRepository.findDistinctTechnologiesByUsage());
     }
 
     public boolean isCandidateOwner(UUID processId, String email) {

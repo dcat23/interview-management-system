@@ -1,4 +1,3 @@
-import { NEXT_PUBLIC_ROOT_DOMAIN } from '@app/dashboard/lib/config/env';
 import {
   PROJECT_DESCRIPTION,
   PROJECT_NAME,
@@ -18,7 +17,6 @@ const oxanium = Oxanium({ subsets: ['latin'], variable: '--font-sans' });
 const jetbrainsMono = JetBrains_Mono({subsets:['latin'],variable:'--font-mono'});
 
 export const metadata: Metadata = {
-  metadataBase: new URL(NEXT_PUBLIC_ROOT_DOMAIN),
   title: {
     default: PROJECT_NAME,
     template: `%s | ${PROJECT_NAME}`,

@@ -29,6 +29,9 @@ public class CacheConfig implements CachingConfigurer {
     public static final String QUESTIONS_BY_SESSION = "questions-by-session";
     public static final String USER_ROLES           = "user-roles";
     public static final String CLIENTS              = "clients";
+    public static final String SESSION_MODES        = "session-modes";
+    public static final String SESSION_ROUNDS       = "session-rounds";
+    public static final String PROCESS_TECHNOLOGIES = "process-technologies";
 
     private GenericJackson2JsonRedisSerializer redisSerializer() {
         ObjectMapper om = new ObjectMapper()
@@ -51,7 +54,10 @@ public class CacheConfig implements CachingConfigurer {
                 SESSIONS_BY_PROCESS,  base.entryTtl(Duration.ofMinutes(5)),
                 QUESTIONS_BY_SESSION, base.entryTtl(Duration.ofMinutes(10)),
                 USER_ROLES,           base.entryTtl(Duration.ofMinutes(15)),
-                CLIENTS,              base.entryTtl(Duration.ofMinutes(30)));
+                CLIENTS,              base.entryTtl(Duration.ofMinutes(30)),
+                SESSION_MODES,        base.entryTtl(Duration.ofMinutes(30)),
+                SESSION_ROUNDS,       base.entryTtl(Duration.ofMinutes(30)),
+                PROCESS_TECHNOLOGIES, base.entryTtl(Duration.ofMinutes(30)));
 
         return RedisCacheManager.builder(connectionFactory)
                 .cacheDefaults(base.entryTtl(Duration.ofHours(1)))

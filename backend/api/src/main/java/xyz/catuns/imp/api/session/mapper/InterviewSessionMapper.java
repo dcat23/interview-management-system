@@ -9,6 +9,8 @@ import xyz.catuns.imp.api.session.dto.InterviewSessionResponse;
 import xyz.catuns.imp.api.session.dto.UpdateSessionRequest;
 import xyz.catuns.imp.api.session.entity.InterviewSession;
 
+import java.util.UUID;
+
 @Mapper(
         componentModel = "spring",
         nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE
@@ -17,8 +19,11 @@ public interface InterviewSessionMapper {
 
     @Mapping(target = "candidateName", source = "candidateName")
     @Mapping(target = "clientName", source = "clientName")
+    @Mapping(target = "clientId", source = "clientId")
     @Mapping(target = "technology", source = "technology")
-    InterviewSessionResponse toResponse(InterviewSession session, String candidateName, String clientName, String technology);
+    @Mapping(target = "supporterName", source = "supporterName")
+    InterviewSessionResponse toResponse(InterviewSession session, String candidateName, String clientName,
+                                        UUID clientId, String technology, String supporterName);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "processId", ignore = true)

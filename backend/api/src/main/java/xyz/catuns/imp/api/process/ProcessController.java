@@ -19,6 +19,7 @@ import xyz.catuns.imp.api.process.entity.ProcessStatus;
 
 import java.net.URI;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -37,7 +38,8 @@ public class ProcessController {
                     + "search (candidate/client name, technology, job id), status/client/startedAt-range "
                     + "filters (startedFrom/startedTo as yyyy-MM-dd, inclusive), and sorting "
                     + "(?sort=field,asc|desc - candidateName, clientName, technology, status, startedAt, "
-                    + "closedAt, createdAt, updatedAt)."
+                    + "closedAt, createdAt, updatedAt). hasPendingSession=true|false filters on whether any "
+                    + "session is SCHEDULED, IN_REVIEW, or RESCHEDULED - false with status=ACTIVE finds stalled processes."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Paginated process list"),
@@ -50,12 +52,28 @@ public class ProcessController {
             @RequestParam(required = false) UUID clientId,
             @RequestParam(required = false) LocalDate startedFrom,
             @RequestParam(required = false) LocalDate startedTo,
+            @RequestParam(required = false) Boolean hasPendingSession,
             Pageable pageable,
             Authentication authentication
     ) {
         return ResponseEntity.ok(
-                PageResponse.from(processService.list(search, status, clientId, startedFrom, startedTo, pageable, authentication))
+                PageResponse.from(processService.list(search, status, clientId, startedFrom, startedTo, hasPendingSession, pageable, authentication))
         );
+    }
+
+    @GetMapping("/technologies/lookup")
+    @Operation(
+            summary = "Look up process technologies",
+            description = "Autocomplete over the distinct technologies already used on processes. "
+                    + "Case-insensitive partial match, prefix matches first, then most-used. A blank query returns "
+                    + "the most-used technologies. Capped at 20."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Matching technologies"),
+            @ApiResponse(responseCode = "403", description = "Insufficient role")
+    })
+    public ResponseEntity<List<String>> lookupTechnologies(@RequestParam(required = false) String query) {
+        return ResponseEntity.ok(processService.lookupTechnologies(query));
     }
 
     @GetMapping("/{id}")

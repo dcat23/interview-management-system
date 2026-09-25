@@ -96,3 +96,97 @@ export const transitionSessionStatus = withApi(async (sessionId: string, options
   const endpoint = `/sessions/${sessionId}/status`;
   return api.patch<TransitionSessionStatusResponse>(endpoint, parsed.data);
 }, {});
+
+/**
+ * [create-session]
+ *
+ * POST /processes/:id/sessions. Admin and marketer roles only. `mode` is
+ * free text on the backend (varchar), not an enum.
+ */
+const createSessionSchema = z.object({
+  supporterId: z.string().uuid(),
+  round: z.string().trim().min(1),
+  mode: z.string().trim().min(1),
+  durationMinutes: z.number().int().positive(),
+  description: z.string().trim().optional(),
+  /** ISO-8601 instant. */
+  scheduledAt: z.string().datetime(),
+});
+export type CreateSessionRequest = z.infer<typeof createSessionSchema>;
+export type CreateSessionResponse = InterviewSession;
+
+export const createSession = withApi(async (processId: string, options: CreateSessionRequest) => {
+  const parsed = createSessionSchema.safeParse(options);
+
+  if (!parsed.success) {
+    throw parsed.error;
+  }
+
+  const endpoint = `/processes/${processId}/sessions`;
+  return api.post<CreateSessionResponse>(endpoint, parsed.data);
+}, {});
+
+/**
+ * [lookup-session-modes]
+ *
+ * GET /sessions/modes/lookup. Autocomplete over modes already in use (free
+ * text on the backend). Blank query returns the most-used. Capped at 20.
+ */
+export const lookupSessionModes = withApi(
+  async (query?: string) => {
+    const params = new URLSearchParams(toRecord({ query }));
+    const endpoint = '/sessions/modes/lookup?' + params.toString();
+
+    return api.get<string[]>(endpoint);
+  },
+  {
+    fallbackData: [],
+  },
+);
+
+/**
+ * [lookup-session-rounds]
+ *
+ * GET /sessions/rounds/lookup. Autocomplete over rounds already in use (free
+ * text on the backend). Blank query returns the most-used. Capped at 20.
+ */
+export const lookupSessionRounds = withApi(
+  async (query?: string) => {
+    const params = new URLSearchParams(toRecord({ query }));
+    const endpoint = '/sessions/rounds/lookup?' + params.toString();
+
+    return api.get<string[]>(endpoint);
+  },
+  {
+    fallbackData: [],
+  },
+);
+
+/**
+ * [update-session]
+ *
+ * PATCH /sessions/:id. Admin and marketer roles only. Partial — omitted
+ * fields are left unchanged. 404 if the supporterId doesn't exist.
+ */
+const updateSessionSchema = z.object({
+  supporterId: z.string().uuid().optional(),
+  round: z.string().trim().min(1).optional(),
+  mode: z.string().trim().min(1).optional(),
+  durationMinutes: z.number().int().positive().optional(),
+  description: z.string().trim().optional(),
+  /** ISO-8601 instant. */
+  scheduledAt: z.string().datetime().optional(),
+});
+export type UpdateSessionRequest = z.infer<typeof updateSessionSchema>;
+export type UpdateSessionResponse = InterviewSession;
+
+export const updateSession = withApi(async (sessionId: string, options: UpdateSessionRequest) => {
+  const parsed = updateSessionSchema.safeParse(options);
+
+  if (!parsed.success) {
+    throw parsed.error;
+  }
+
+  const endpoint = `/sessions/${sessionId}`;
+  return api.patch<UpdateSessionResponse>(endpoint, parsed.data);
+}, {});

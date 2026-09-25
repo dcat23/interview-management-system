@@ -58,7 +58,7 @@ class QuestionWriteToolsTest {
         UUID sessionId = UUID.randomUUID();
         UUID questionId = UUID.randomUUID();
         SessionQuestionResponse expected = new SessionQuestionResponse(UUID.randomUUID(), sessionId, questionId, 2,
-                "asked as a follow-up", Instant.now());
+                "asked as a follow-up", Instant.now(), "Spring", "Explain bean scopes.");
         when(sessionQuestionService.link(eq(sessionId), any(LinkQuestionRequest.class))).thenReturn(expected);
 
         SessionQuestionResponse actual = questionWriteTools.linkExistingQuestion(sessionId, questionId, 2,

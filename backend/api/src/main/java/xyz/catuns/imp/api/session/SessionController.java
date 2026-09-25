@@ -71,8 +71,8 @@ public class SessionController {
                     + "supporter roles only. Supports free-text search (candidate name, round, mode, description), a "
                     + "clientId filter (matches sessions whose process belongs to that client), a round filter "
                     + "(case-insensitive contains match), a scheduledAt date-range filter (scheduledFrom/scheduledTo "
-                    + "as yyyy-MM-dd, inclusive), and sorting (?sort=field,asc|desc - round, mode, durationMinutes, "
-                    + "status, scheduledAt, statusChangedAt, createdAt, updatedAt)."
+                    + "as yyyy-MM-dd, inclusive), and sorting (?sort=field,asc|desc - candidateName, clientName, "
+                    + "round, mode, durationMinutes, status, scheduledAt, statusChangedAt, createdAt, updatedAt)."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Paginated session list"),
@@ -94,6 +94,36 @@ public class SessionController {
                 PageResponse.from(sessionService.list(search, status, processId, supporterId, clientId, round,
                         scheduledFrom, scheduledTo, pageable))
         );
+    }
+
+    @GetMapping("/sessions/modes/lookup")
+    @Operation(
+            summary = "Look up session modes",
+            description = "Autocomplete over the distinct modes already used on sessions (mode is free text). "
+                    + "Case-insensitive partial match, prefix matches first, then most-used. A blank query returns "
+                    + "the most-used modes. Capped at 20."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Matching modes"),
+            @ApiResponse(responseCode = "403", description = "Insufficient role")
+    })
+    public ResponseEntity<List<String>> lookupModes(@RequestParam(required = false) String query) {
+        return ResponseEntity.ok(sessionService.lookupModes(query));
+    }
+
+    @GetMapping("/sessions/rounds/lookup")
+    @Operation(
+            summary = "Look up session rounds",
+            description = "Autocomplete over the distinct rounds already used on sessions (round is free text). "
+                    + "Case-insensitive partial match, prefix matches first, then most-used. A blank query returns "
+                    + "the most-used rounds. Capped at 20."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Matching rounds"),
+            @ApiResponse(responseCode = "403", description = "Insufficient role")
+    })
+    public ResponseEntity<List<String>> lookupRounds(@RequestParam(required = false) String query) {
+        return ResponseEntity.ok(sessionService.lookupRounds(query));
     }
 
     @GetMapping("/sessions/{id}")

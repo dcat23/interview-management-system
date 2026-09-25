@@ -6,8 +6,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
@@ -19,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import xyz.catuns.imp.api.client.entity.Client;
 import xyz.catuns.imp.api.client.repository.ClientRepository;
 import xyz.catuns.imp.api.common.util.DateRangeUtil;
+import xyz.catuns.imp.api.common.util.ValueLookupUtil;
 import xyz.catuns.imp.api.config.CacheConfig;
 import xyz.catuns.imp.api.process.entity.InterviewProcess;
 import xyz.catuns.imp.api.process.entity.ProcessStatus;
@@ -37,12 +40,14 @@ import xyz.catuns.spring.base.exception.controller.NotFoundException;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -50,8 +55,13 @@ import java.util.stream.Collectors;
 public class InterviewSessionService {
 
     private static final Set<String> SORTABLE_PROPERTIES = Set.of(
-            "round", "mode", "durationMinutes", "status", "scheduledAt",
+            "candidateName", "clientName", "round", "mode", "durationMinutes", "status", "scheduledAt",
             "statusChangedAt", "createdAt", "updatedAt"
+    );
+    // Response-field names -> entity paths; Spring Data adds the joins through the session's process.
+    private static final Map<String, String> SORT_PROPERTY_ALIASES = Map.of(
+            "candidateName", "process.candidate.name",
+            "clientName", "process.client.name"
     );
 
     private final InterviewSessionRepository sessionRepository;
@@ -68,7 +78,11 @@ public class InterviewSessionService {
 
     @PreAuthorize("hasAnyRole('ADMIN','MARKETER')")
     @Transactional
-    @CacheEvict(value = CacheConfig.SESSIONS_BY_PROCESS, key = "#processId")
+    @Caching(evict = {
+            @CacheEvict(value = CacheConfig.SESSIONS_BY_PROCESS, key = "#processId"),
+            @CacheEvict(value = CacheConfig.SESSION_MODES, allEntries = true),
+            @CacheEvict(value = CacheConfig.SESSION_ROUNDS, allEntries = true)
+    })
     public InterviewSessionResponse create(UUID processId, CreateSessionRequest request) {
         InterviewProcess process = processRepository.findById(processId)
                 .orElseThrow(() -> new NotFoundException("Process not found"));
@@ -83,7 +97,8 @@ public class InterviewSessionService {
         syncProcessStartedAt(process);
         reactivateProcess(processId);
         return sessionMapper.toResponse(session, resolveCandidateName(process.getCandidateId()),
-                resolveClientName(process.getClientId()), process.getTechnology());
+                resolveClientName(process.getClientId()), process.getClientId(), process.getTechnology(),
+                resolveUserName(session.getSupporterId()));
     }
 
     private void autoPassInReviewSessions(UUID processId) {
@@ -116,6 +131,29 @@ public class InterviewSessionService {
         return self.loadAllByProcess(processId);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','MARKETER','SUPPORTER','AI_AGENT')")
+    public List<String> lookupModes(String query) {
+        return ValueLookupUtil.filter(self.loadModeCatalog(), query);
+    }
+
+    // ArrayList, not an immutable list: the Redis serializer records the concrete type and must
+    // be able to instantiate it on read.
+    @Cacheable(value = CacheConfig.SESSION_MODES, key = "'all'")
+    public List<String> loadModeCatalog() {
+        return new ArrayList<>(sessionRepository.findDistinctModesByUsage());
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN','MARKETER','SUPPORTER','AI_AGENT')")
+    public List<String> lookupRounds(String query) {
+        return ValueLookupUtil.filter(self.loadRoundCatalog(), query);
+    }
+
+    // ArrayList for the same Redis-serializer reason as loadModeCatalog.
+    @Cacheable(value = CacheConfig.SESSION_ROUNDS, key = "'all'")
+    public List<String> loadRoundCatalog() {
+        return new ArrayList<>(sessionRepository.findDistinctRoundsByUsage());
+    }
+
     @Cacheable(value = CacheConfig.SESSIONS_BY_PROCESS, key = "#processId")
     public List<InterviewSessionResponse> loadAllByProcess(UUID processId) {
         InterviewProcess process = processRepository.findById(processId).orElse(null);
@@ -123,8 +161,13 @@ public class InterviewSessionService {
         String clientName = process != null ? resolveClientName(process.getClientId()) : null;
         String technology = process != null ? process.getTechnology() : null;
 
-        return sessionRepository.findByProcessIdOrderByScheduledAt(processId).stream()
-                .map(session -> sessionMapper.toResponse(session, candidateName, clientName, technology))
+        List<InterviewSession> sessions = sessionRepository.findByProcessIdOrderByScheduledAt(processId);
+        Map<UUID, String> supporterNamesById = userNamesById(
+                sessions.stream().map(InterviewSession::getSupporterId).distinct().toList());
+        return sessions.stream()
+                .map(session -> sessionMapper.toResponse(session, candidateName, clientName,
+                process != null ? process.getClientId() : null, technology,
+                supporterNamesById.get(session.getSupporterId())))
                 .toList();
     }
 
@@ -178,7 +221,7 @@ public class InterviewSessionService {
                 );
             });
         }
-        Page<InterviewSession> sessions = sessionRepository.findAll(spec, validateSort(pageable));
+        Page<InterviewSession> sessions = sessionRepository.findAll(spec, remapSort(pageable));
 
         List<UUID> processIds = sessions.getContent().stream()
                 .map(InterviewSession::getProcessId)
@@ -196,27 +239,39 @@ public class InterviewSessionService {
                 .distinct()
                 .toList();
 
-        Map<UUID, String> candidateNamesById = userRepository.findAllById(candidateIds).stream()
-                .collect(Collectors.toMap(User::getId, User::getName));
+        List<UUID> supporterIds = sessions.getContent().stream()
+                .map(InterviewSession::getSupporterId)
+                .toList();
+        // One user query covers both candidates and supporters.
+        Map<UUID, String> userNamesById = userNamesById(
+                Stream.concat(candidateIds.stream(), supporterIds.stream()).distinct().toList());
         Map<UUID, String> clientNamesById = clientRepository.findAllById(clientIds).stream()
                 .collect(Collectors.toMap(Client::getId, Client::getName));
 
         return sessions.map(session -> {
             InterviewProcess process = processesById.get(session.getProcessId());
-            String candidateName = process != null ? candidateNamesById.get(process.getCandidateId()) : null;
+            String candidateName = process != null ? userNamesById.get(process.getCandidateId()) : null;
             String clientName = process != null ? clientNamesById.get(process.getClientId()) : null;
             String technology = process != null ? process.getTechnology() : null;
-            return sessionMapper.toResponse(session, candidateName, clientName, technology);
+            return sessionMapper.toResponse(session, candidateName, clientName,
+                process != null ? process.getClientId() : null, technology,
+                userNamesById.get(session.getSupporterId()));
         });
     }
 
-    private static Pageable validateSort(Pageable pageable) {
+    private static Pageable remapSort(Pageable pageable) {
+        if (pageable.getSort().isUnsorted()) {
+            return pageable;
+        }
+        List<Sort.Order> orders = new ArrayList<>();
         for (Sort.Order order : pageable.getSort()) {
             if (!SORTABLE_PROPERTIES.contains(order.getProperty())) {
                 throw new BadRequestException("Unsortable field: " + order.getProperty());
             }
+            orders.add(new Sort.Order(order.getDirection(),
+                    SORT_PROPERTY_ALIASES.getOrDefault(order.getProperty(), order.getProperty())));
         }
-        return pageable;
+        return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by(orders));
     }
 
     @PreAuthorize("hasAnyRole('ADMIN','MARKETER','SUPPORTER','AI_AGENT') " +
@@ -228,15 +283,26 @@ public class InterviewSessionService {
         String candidateName = process != null ? resolveCandidateName(process.getCandidateId()) : null;
         String clientName = process != null ? resolveClientName(process.getClientId()) : null;
         String technology = process != null ? process.getTechnology() : null;
-        return sessionMapper.toResponse(session, candidateName, clientName, technology);
+        return sessionMapper.toResponse(session, candidateName, clientName,
+                process != null ? process.getClientId() : null, technology,
+                resolveUserName(session.getSupporterId()));
     }
 
     @PreAuthorize("hasAnyRole('ADMIN','MARKETER')")
     @Transactional
-    @CacheEvict(value = CacheConfig.SESSIONS_BY_PROCESS, allEntries = true)
+    @Caching(evict = {
+            @CacheEvict(value = CacheConfig.SESSIONS_BY_PROCESS, allEntries = true),
+            @CacheEvict(value = CacheConfig.SESSION_MODES, allEntries = true),
+            @CacheEvict(value = CacheConfig.SESSION_ROUNDS, allEntries = true)
+    })
     public InterviewSessionResponse update(UUID id, UpdateSessionRequest request) {
         InterviewSession session = sessionRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Session not found"));
+        // Same check as create(): an unknown id would otherwise surface as an FK violation.
+        if (request.supporterId() != null) {
+            userRepository.findById(request.supporterId())
+                    .orElseThrow(() -> new NotFoundException("Supporter not found"));
+        }
         sessionMapper.update(request, session);
         session = sessionRepository.save(session);
 
@@ -247,7 +313,9 @@ public class InterviewSessionService {
         String candidateName = process != null ? resolveCandidateName(process.getCandidateId()) : null;
         String clientName = process != null ? resolveClientName(process.getClientId()) : null;
         String technology = process != null ? process.getTechnology() : null;
-        return sessionMapper.toResponse(session, candidateName, clientName, technology);
+        return sessionMapper.toResponse(session, candidateName, clientName,
+                process != null ? process.getClientId() : null, technology,
+                resolveUserName(session.getSupporterId()));
     }
 
     private void syncProcessStartedAt(InterviewProcess process) {
@@ -269,6 +337,15 @@ public class InterviewSessionService {
 
     private String resolveCandidateName(UUID candidateId) {
         return userRepository.findById(candidateId).map(User::getName).orElse(null);
+    }
+
+    private String resolveUserName(UUID userId) {
+        return userId != null ? userRepository.findById(userId).map(User::getName).orElse(null) : null;
+    }
+
+    private Map<UUID, String> userNamesById(List<UUID> userIds) {
+        return userRepository.findAllById(userIds).stream()
+                .collect(Collectors.toMap(User::getId, User::getName));
     }
 
     private String resolveClientName(UUID clientId) {

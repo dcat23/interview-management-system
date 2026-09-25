@@ -2,11 +2,11 @@
 
 ## Environments
 
-| Environment | Purpose | Branch | URL |
-|---|---|---|---|
-| `dev` | Active development, integration testing | `develop` | `dev.api.{domain}` |
-| `staging` | Pre-release validation, load testing | `main` | `staging.api.{domain}` |
-| `prod` | Live system | tagged release | `api.{domain}` |
+| Environment | Purpose                                 | Branch         | URL                    |
+|-------------|-----------------------------------------|----------------|------------------------|
+| `dev`       | Active development, integration testing | `develop`      | `dev.api.{domain}`     |
+| `staging`   | Pre-release validation, load testing    | `main`         | `staging.api.{domain}` |
+| `prod`      | Live system                             | tagged release | `api.{domain}`         |
 
 ---
 
@@ -168,12 +168,12 @@ CMD ["node", "server.js"]
 
 ### Trigger matrix
 
-| Workflow | Trigger | Target |
-|---|---|---|
-| `api-ci.yml` | Push to `develop` or PR targeting `main` | Build + test API |
-| `web-ci.yml` | Push to `develop` or PR targeting `main` | Build + test web |
-| `job-ci.yml` | Push to `develop` or PR targeting `main` | Build + test background job |
-| `deploy.yml` | Push to `main` (staging) or published release (prod) | Deploy all services |
+| Workflow     | Trigger                                              | Target                      |
+|--------------|------------------------------------------------------|-----------------------------|
+| `api-ci.yml` | Push to `develop` or PR targeting `main`             | Build + test API            |
+| `web-ci.yml` | Push to `develop` or PR targeting `main`             | Build + test web            |
+| `job-ci.yml` | Push to `develop` or PR targeting `main`             | Build + test background job |
+| `deploy.yml` | Push to `main` (staging) or published release (prod) | Deploy all services         |
 
 ### `api-ci.yml`
 
@@ -360,11 +360,11 @@ Terraform is **not** run automatically in CI. Infrastructure changes are applied
 
 All secrets stored in AWS Secrets Manager with automatic rotation enabled:
 
-| Secret | Rotation period |
-|---|---|
-| `db-password` | 30 days (RDS native rotation Lambda) |
-| `jwt-secret` | 90 days (custom Lambda) |
-| `redis-url` | Not rotated (connection string, not credential) |
+| Secret        | Rotation period                                 |
+|---------------|-------------------------------------------------|
+| `db-password` | 30 days (RDS native rotation Lambda)            |
+| `jwt-secret`  | 90 days (custom Lambda)                         |
+| `redis-url`   | Not rotated (connection string, not credential) |
 
 On rotation, ECS tasks are restarted to pick up new secret values via a CloudWatch Events rule triggering a Lambda that calls `ecs:update-service --force-new-deployment`.
 

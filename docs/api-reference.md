@@ -591,6 +591,7 @@ List interview processes.
 | `status`   | Exact match: `ACTIVE`, `COMPLETED`, `WITHDRAWN`, `CANCELLED`.                                                                                                                            |
 | `clientId` | Exact match on `clientId`.                                                                                                                                                               |
 | `startedFrom` / `startedTo` | `yyyy-MM-dd` (plain date, no time/zone). Filters on `startedAt`, inclusive on both ends - `startedTo` covers the entire day (interpreted as UTC day boundaries). `400` if `startedFrom` is after `startedTo`. |
+| `hasPendingSession` | `true` / `false`. Whether the process has any session that is `SCHEDULED`, `IN_REVIEW`, or `RESCHEDULED`. `status=ACTIVE&hasPendingSession=false` finds stalled processes — active but nothing moving them forward. |
 | `sort`     | `field,asc\|desc`, repeatable. Sortable fields: `candidateName`, `clientName`, `technology`, `status`, `startedAt`, `closedAt`, `createdAt`, `updatedAt`. Any other field returns `400`. |
 
 **Role constraints:**
@@ -614,7 +615,11 @@ List interview processes.
       "closedAt": null,
       "createdAt": "2024-01-01T00:00:00Z",
       "updatedAt": "2024-01-15T12:00:00Z",
-      "sessions": null
+      "sessions": null,
+      "currentRound": "2nd round",
+      "sessionCount": 2,
+      "lastSessionAt": "2024-01-15T14:00:00Z",
+      "lastSessionStatus": "PASSED"
     }
   ],
   "total": 15,
@@ -623,7 +628,7 @@ List interview processes.
 }
 ```
 
-`sessions` is always `null` here — it's only populated by `GET /processes/:id` (see below), to avoid an extra query per row.
+`sessions` is always `null` here — it's only populated by `GET /processes/:id` (see below), to avoid an extra query per row. `currentRound`, `lastSessionAt`, and `lastSessionStatus` describe the latest session by `scheduledAt` (all `null` when there are none).
 
 `status` values: `ACTIVE`, `COMPLETED`, `WITHDRAWN`, `CANCELLED`
 
@@ -734,6 +739,25 @@ All submitted feedback across all rounds in a process, ordered by `scheduledAt` 
 
 ---
 
+### `GET /processes/technologies/lookup` · `admin` `marketer` `supporter` `ai_agent`
+
+Autocomplete over the distinct technologies already in use — `technology` is free text, so this surfaces existing spellings instead of a fixed enum. Case/whitespace variants collapse into one entry. Backed by a Redis-cached catalog (30 min TTL, evicted on create/update and schedule import).
+
+**Query params**
+
+| Param   | Type   | Description                                                               |
+|---------|--------|-----------------------------------------------------------------------------|
+| `query` | string | Optional. Partial, case-insensitive match. Omit/blank for the most-used values. |
+
+Prefix matches rank ahead of mid-string matches, then most-used first. Capped at 20 — not paginated.
+
+**Response `200`**
+```json
+["Java", "JavaScript", "React"]
+```
+
+---
+
 ## Interview sessions
 
 ### `GET /sessions` · `admin` `marketer` `supporter` `ai_agent`
@@ -750,9 +774,9 @@ List sessions across all processes, paginated.
 | `page` / `limit`                       | Default `0` / `20`.                                                                                                                                                                      |
 | `search`                               | Free text, matched (case-insensitive, substring) against candidate name, round, mode, and description.                                                                                   |
 | `scheduledFrom` / `scheduledTo`        | `yyyy-MM-dd` (plain date, no time/zone). Filters on `scheduledAt`, inclusive on both ends - `scheduledTo` covers the entire day (interpreted as UTC day boundaries). `400` if `scheduledFrom` is after `scheduledTo`. |
-| `sort`                                 | `field,asc\|desc`, repeatable. Sortable fields: `round`, `mode`, `durationMinutes`, `status`, `scheduledAt`, `statusChangedAt`, `createdAt`, `updatedAt`. Any other field returns `400`. |
+| `sort`                                 | `field,asc\|desc`, repeatable. Sortable fields: `candidateName`, `clientName`, `round`, `mode`, `durationMinutes`, `status`, `scheduledAt`, `statusChangedAt`, `createdAt`, `updatedAt`. Any other field returns `400`. |
 
-**Response `200`**
+**Response `200`** — `candidateName`, `clientName`, `clientId`, and `technology` are joined from the session's process; `supporterName` from the assigned supporter.
 ```json
 {
   "data": [
@@ -769,7 +793,12 @@ List sessions across all processes, paginated.
       "statusChangedAt": null,
       "statusChangedBy": null,
       "createdAt": "2024-01-20T09:00:00Z",
-      "updatedAt": "2024-01-20T09:00:00Z"
+      "updatedAt": "2024-01-20T09:00:00Z",
+      "candidateName": "string",
+      "clientName": "string",
+      "clientId": "uuid",
+      "technology": "string",
+      "supporterName": "string"
     }
   ],
   "total": 42,
@@ -928,11 +957,49 @@ Full audit trail of all status transitions for a session.
 
 ---
 
+### `GET /sessions/modes/lookup` · `admin` `marketer` `supporter` `ai_agent`
+
+Autocomplete over the distinct session modes already in use — `mode` is free text, so this surfaces existing spellings instead of a fixed enum. Case/whitespace variants collapse into one entry. Backed by a Redis-cached catalog (30 min TTL, evicted on create/update and schedule import).
+
+**Query params**
+
+| Param   | Type   | Description                                                               |
+|---------|--------|-----------------------------------------------------------------------------|
+| `query` | string | Optional. Partial, case-insensitive match. Omit/blank for the most-used values. |
+
+Prefix matches rank ahead of mid-string matches, then most-used first. Capped at 20 — not paginated.
+
+**Response `200`**
+```json
+["Video call", "Phone", "In person"]
+```
+
+---
+
+### `GET /sessions/rounds/lookup` · `admin` `marketer` `supporter` `ai_agent`
+
+Autocomplete over the distinct session rounds already in use — `round` is free text, so this surfaces existing spellings instead of a fixed enum. Case/whitespace variants collapse into one entry. Backed by a Redis-cached catalog (30 min TTL, evicted on create/update and schedule import).
+
+**Query params**
+
+| Param   | Type   | Description                                                               |
+|---------|--------|-----------------------------------------------------------------------------|
+| `query` | string | Optional. Partial, case-insensitive match. Omit/blank for the most-used values. |
+
+Prefix matches rank ahead of mid-string matches, then most-used first. Capped at 20 — not paginated.
+
+**Response `200`**
+```json
+["Round 1", "Technical", "Final"]
+```
+
+---
+
 ## Session questions
 
 ### `GET /sessions/:id/questions` · `admin` `marketer` `supporter` `candidate` `ai_agent`
 
-Get questions linked to a session, ordered by `displayOrder`.
+Get questions linked to a session, ordered by `displayOrder`. `topic` and `body` are joined from the linked question so the list renders without a per-question lookup.
 
 **Response `200`** — array of session-question objects.
 
@@ -944,7 +1011,9 @@ Get questions linked to a session, ordered by `displayOrder`.
     "questionId": "uuid",
     "displayOrder": 1,
     "notes": "string",
-    "createdAt": "2024-01-20T09:00:00Z"
+    "createdAt": "2024-01-20T09:00:00Z",
+    "topic": "string",
+    "body": "string"
   }
 ]
 ```

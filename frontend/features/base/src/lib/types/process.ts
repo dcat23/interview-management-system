@@ -1,4 +1,4 @@
-import type { InterviewSession } from './session';
+import type { InterviewSession, SessionStatus } from './session';
 
 /**
  * [interview-process]
@@ -25,6 +25,9 @@ export interface InterviewProcess {
   sessions: InterviewSession[] | null;
   currentRound: string | null;
   sessionCount: number;
+  /** scheduledAt of the latest session (by scheduledAt); null when there are none. */
+  lastSessionAt: string | null;
+  lastSessionStatus: SessionStatus | null;
 }
 
 /**

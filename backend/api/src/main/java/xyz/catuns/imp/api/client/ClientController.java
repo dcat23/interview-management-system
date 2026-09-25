@@ -49,6 +49,17 @@ public class ClientController {
         );
     }
 
+    @GetMapping("/{id}")
+    @Operation(summary = "Get client", description = "Returns a single end client. Admin, marketer, and supporter roles.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Client found"),
+            @ApiResponse(responseCode = "403", description = "Insufficient role"),
+            @ApiResponse(responseCode = "404", description = "Client not found")
+    })
+    public ResponseEntity<ClientResponse> get(@PathVariable UUID id) {
+        return ResponseEntity.ok(clientService.get(id));
+    }
+
     @PostMapping
     @Operation(summary = "Create client", description = "Creates a new end client. Admin and marketer roles.")
     @ApiResponses({

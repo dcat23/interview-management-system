@@ -32,7 +32,10 @@ import xyz.catuns.spring.base.exception.controller.NotFoundException;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -60,8 +63,15 @@ public class SessionQuestionService {
     public List<SessionQuestionResponse> listBySession(UUID sessionId) {
         sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new NotFoundException("Session not found"));
-        return sessionQuestionRepository.findBySessionIdOrderByDisplayOrder(sessionId)
-                .stream().map(this::toResponse).toList();
+        List<SessionQuestion> links = sessionQuestionRepository.findBySessionIdOrderByDisplayOrder(sessionId);
+        Map<UUID, Question> questions = questionRepository
+                .findAllById(links.stream().map(SessionQuestion::getQuestionId).toList())
+                .stream().collect(Collectors.toMap(Question::getId, Function.identity()));
+        // ArrayList, not an immutable list: the Redis serializer records the concrete type and must
+        // be able to instantiate it on read.
+        return new ArrayList<>(links.stream()
+                .map(sq -> toResponse(sq, questions.get(sq.getQuestionId())))
+                .toList());
     }
 
     // ROLE_AI_AGENT is unscoped here, unlike SUPPORTER — deliberately not inheriting the
@@ -86,7 +96,7 @@ public class SessionQuestionService {
         sq.setQuestionId(question.getId());
         sq.setDisplayOrder(request.displayOrder() != null ? request.displayOrder() : 0);
         sq.setNotes(request.notes());
-        return toResponse(sessionQuestionRepository.save(sq));
+        return toResponse(sessionQuestionRepository.save(sq), question);
     }
 
     // Same authorization shape as link(): ROLE_AI_AGENT is unscoped, SUPPORTER stays restricted to
@@ -177,10 +187,12 @@ public class SessionQuestionService {
                 .orElse(false);
     }
 
-    private SessionQuestionResponse toResponse(SessionQuestion sq) {
+    private SessionQuestionResponse toResponse(SessionQuestion sq, Question question) {
         return new SessionQuestionResponse(
                 sq.getId(), sq.getSessionId(), sq.getQuestionId(),
-                sq.getDisplayOrder(), sq.getNotes(), sq.getCreatedAt());
+                sq.getDisplayOrder(), sq.getNotes(), sq.getCreatedAt(),
+                question != null ? question.getTopic() : null,
+                question != null ? question.getBody() : null);
     }
 
     private UUID resolveUserId(String email) {

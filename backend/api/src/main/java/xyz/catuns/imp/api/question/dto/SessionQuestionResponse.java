@@ -9,5 +9,8 @@ public record SessionQuestionResponse(
         UUID questionId,
         int displayOrder,
         String notes,
-        Instant createdAt
+        Instant createdAt,
+        // Joined from the linked question so clients can render the list without a lookup per row.
+        String topic,
+        String body
 ) {}

@@ -19,3 +19,35 @@ export interface Candidate {
   name: string;
 }
 
+
+/**
+ * Wire value of the backend UserRole enum on /users endpoints. Unlike /auth
+ * (see Role above), UserResponse serializes the enum as-is — uppercase.
+ */
+export type UserRole = 'CANDIDATE' | 'MARKETER' | 'SUPPORTER' | 'ADMIN';
+
+export const USER_ROLES: readonly UserRole[] = ['CANDIDATE', 'MARKETER', 'SUPPORTER', 'ADMIN'];
+
+/**
+ * Matches UserResponse on the backend (user/dto/UserResponse.java) — the
+ * full, admin-only view of a user returned by /users.
+ */
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Matches UserLookupResponse on the backend (user/dto/UserLookupResponse.java)
+ * — the minimal id/name/role projection returned by GET /users/lookup.
+ */
+export interface UserLookup {
+  id: string;
+  name: string;
+  role: UserRole;
+}

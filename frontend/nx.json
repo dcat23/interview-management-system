@@ -15,7 +15,9 @@
       "!{projectRoot}/src/test-setup.[jt]s",
       "!{projectRoot}/test-setup.[jt]s"
     ],
-    "sharedGlobals": []
+    "sharedGlobals": [
+      "{workspaceRoot}/tsconfig.base.json"
+    ]
   },
   "targetDefaults": {
     "@nx/next:build": {
@@ -74,7 +76,7 @@
     },
     "next-feature": {
       "component": {
-        "projectName": "dashboard",
+        "projectName": "atro-ui",
         "inferPath": true
       },
       "feature": {

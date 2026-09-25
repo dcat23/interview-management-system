@@ -1,0 +1,8 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "installCommand": "pnpm install",
+  "buildCommand": "npx nx build $NX_APP --prod --outputPath=dist/vercel",
+  "outputDirectory": "dist/vercel/.next",
+  "ignoreCommand": "sh tools/vercel-ignore.sh"
+}
