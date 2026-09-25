@@ -20,6 +20,7 @@ import {
 import { signOutAction, ROLE_HOME, type Role } from '@feature/auth/server';
 import { ROLE_NAV, getCurrentPage } from '@feature/base/server';
 import { CommandMenu02 } from '@app/atro-ui/components/command-menu-02';
+import { PROJECT_NAME } from '@app/atro-ui/lib/constants/metadata';
 
 interface Props {
   email?: string | null;
@@ -63,9 +64,9 @@ export function AppHeader({ email, role }: Props) {
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 md:px-6">
         <Link href={homeHref} className="group flex items-center gap-2.5">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/30 transition-colors group-hover:border-primary/50">
-            <span className="font-mono text-xs font-semibold text-primary">A</span>
+            <span className="font-mono text-xs font-semibold text-primary">{PROJECT_NAME}</span>
           </div>
-          <span className="hidden text-lg font-semibold tracking-tight sm:inline-block">Atro</span>
+          <span className="hidden text-lg font-semibold tracking-tight sm:inline-block">{role.toUpperCase()}</span>
         </Link>
 
         <nav className="hidden items-center gap-1 md:flex">
@@ -132,9 +133,9 @@ export function AppHeader({ email, role }: Props) {
               onClick={() => setMobileMenuOpen(false)}
             >
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/30">
-                <span className="font-mono text-xs font-semibold text-primary">A</span>
+                <span className="font-mono text-xs font-semibold text-primary">{PROJECT_NAME}</span>
               </div>
-              <span className="text-lg font-semibold tracking-tight">Atro</span>
+              <span className="text-lg font-semibold tracking-tight">{role} Portal</span>
             </Link>
             <Button
               variant="ghost"

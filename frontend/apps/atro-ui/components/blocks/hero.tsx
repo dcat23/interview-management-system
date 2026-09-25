@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { ArrowRight, Briefcase, BookOpen, CalendarCheck, ClipboardCheck } from 'lucide-react';
 import { Button } from '@app/atro-ui/components/ui/common/button';
 import { Badge } from '@app/atro-ui/components/ui/common/badge';
+import { PROJECT_NAME } from '@app/atro-ui/lib/constants/metadata';
 
 const ROLES = [
   {
@@ -43,7 +44,7 @@ export function Hero() {
           </h1>
 
           <p className="mt-6 max-w-2xl text-lg text-muted-foreground text-balance">
-            Atro brings candidates, marketers, supporters, and admins onto a single
+            {PROJECT_NAME} brings candidates, marketers, supporters, and admins onto a single
             platform &mdash; so processes stay on schedule, sessions stay organized, and
             feedback never falls through the cracks.
           </p>

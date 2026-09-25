@@ -1,4 +1,8 @@
-import { PROJECT_DESCRIPTION, PROJECT_NAME } from '@app/atro-ui/lib/constants/metadata';
+import {
+  PROJECT_DESCRIPTION,
+  PROJECT_NAME,
+  PROJECT_TITLE,
+} from '@app/atro-ui/lib/constants/metadata';
 import type { Metadata } from 'next';
 import { ReactNode } from 'react';
 import './global.css';
@@ -11,19 +15,19 @@ const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
 export const metadata: Metadata = {
   title: {
-    default: PROJECT_NAME,
-    template: `%s | ${PROJECT_NAME}`,
+    default: PROJECT_TITLE,
+    template: `%s | ${PROJECT_TITLE}`,
   },
   description: PROJECT_DESCRIPTION,
   keywords: [],
-  authors: [{ name: "" }],
-  creator: "",
-  publisher: "",
-  generator: "next-feature",
+  authors: [{ name: '' }],
+  creator: '',
+  publisher: '',
+  generator: 'next-feature',
   openGraph: {
-    type: "website",
-    locale: "en_US",
-    url: "/",
+    type: 'website',
+    locale: 'en_US',
+    url: '/',
     title: PROJECT_NAME,
     description: PROJECT_DESCRIPTION,
     siteName: PROJECT_NAME,
@@ -44,8 +48,8 @@ export const metadata: Metadata = {
   icons: {
     icon: [],
   },
-  manifest: "/site.webmanifest",
-}
+  manifest: '/site.webmanifest',
+};
 
 export default function RootLayout({
   children,

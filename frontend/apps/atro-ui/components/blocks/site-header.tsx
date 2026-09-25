@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { Menu, X } from 'lucide-react';
 import { Button } from '@app/atro-ui/components/ui/common/button';
+import { PROJECT_NAME } from '@app/atro-ui/lib/constants/metadata';
 
 const NAV_LINKS = [
   { name: 'Roles', href: '#roles' },
@@ -20,7 +21,7 @@ export function SiteHeader() {
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/30 transition-colors group-hover:border-primary/50">
             <span className="font-mono text-xs font-semibold text-primary">A</span>
           </div>
-          <span className="text-lg font-semibold tracking-tight">Atro</span>
+          <span className="text-lg font-semibold tracking-tight">{PROJECT_NAME}</span>
         </Link>
 
         <nav className="hidden items-center gap-1 md:flex">
@@ -66,7 +67,7 @@ export function SiteHeader() {
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/30">
                 <span className="font-mono text-xs font-semibold text-primary">A</span>
               </div>
-              <span className="text-lg font-semibold tracking-tight">Atro</span>
+              <span className="text-lg font-semibold tracking-tight">{PROJECT_NAME}</span>
             </Link>
             <Button
               variant="ghost"

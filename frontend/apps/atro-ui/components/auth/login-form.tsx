@@ -16,6 +16,7 @@ import {
 import { Input } from '@app/atro-ui/components/ui/common/input';
 import { Label } from '@app/atro-ui/components/ui/common/label';
 import { LoginButton } from './login-button';
+import { PROJECT_NAME } from '@app/atro-ui/lib/constants/metadata';
 
 interface Props extends React.ComponentProps<'div'> {
   action?: (
@@ -59,7 +60,7 @@ export function LoginForm({
       <Card>
         <CardHeader className="text-center">
           <CardTitle className="text-xl">Welcome back</CardTitle>
-          <CardDescription>Sign in to your Atro account</CardDescription>
+          <CardDescription>Sign in to your {PROJECT_NAME} account</CardDescription>
         </CardHeader>
         <CardContent>
           <form action={formAction} className="flex flex-col gap-5">
