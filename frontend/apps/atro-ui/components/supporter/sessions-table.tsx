@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import moment from 'moment';
 import { useRouter } from 'next/navigation';
 import { RefreshCw } from 'lucide-react';
@@ -21,7 +21,7 @@ import { Button } from '@app/atro-ui/components/ui/common/button';
 import { useDebouncedValue } from '@app/atro-ui/hooks/ui/use-debounced-value';
 import { useSessionsFilterStore } from '@app/atro-ui/stores/sessions-filter-store';
 import { SESSION_STATUS_CONFIG, SessionStatusBadge } from './session-status-badge';
-import { SessionDetailDrawer } from './session-detail-drawer';
+import { SessionDetailDrawer, type SessionDrawerRenderProps } from './session-detail-drawer';
 
 const ALL_STATUSES = 'all';
 const ALL_CLIENTS = 'all';
@@ -65,7 +65,22 @@ const columns: DataTableColumn<InterviewSession>[] = [
   },
 ];
 
-export function SessionsTable() {
+const supporterColumn: DataTableColumn<InterviewSession> = {
+  id: 'supporterName',
+  header: 'Supporter',
+  cell: (session) => session.supporterName ?? '—',
+};
+
+interface Props {
+  /** Role route prefix for row links, e.g. "/marketer". */
+  basePath?: string;
+  /** Adds a Supporter column — useful for roles that see everyone's sessions. */
+  showSupporter?: boolean;
+  /** Drawer shown for "Details"; defaults to the supporter drawer. */
+  renderSessionDrawer?: (props: SessionDrawerRenderProps) => ReactNode;
+}
+
+export function SessionsTable({ basePath = '/supporter', showSupporter = false, renderSessionDrawer }: Props) {
   const page = useSessionsFilterStore((state) => state.page);
   const setPage = useSessionsFilterStore((state) => state.setPage);
   const limit = useSessionsFilterStore((state) => state.limit);
@@ -99,6 +114,12 @@ export function SessionsTable() {
     sort: sortState ? `${sortState.columnId},${sortState.direction}` : 'scheduledAt,desc',
   });
 
+  // Supporter goes after Client.
+  const tableColumns = useMemo(
+    () => (showSupporter ? [...columns.slice(0, 4), supporterColumn, ...columns.slice(4)] : columns),
+    [showSupporter],
+  );
+
   const roundOptions = useMemo(() => {
     const rounds = new Set<string>();
     pageResponse?.data.forEach((session) => rounds.add(session.round));
@@ -113,7 +134,7 @@ export function SessionsTable() {
         isLoading={isLoading}
         onPageChange={setPage}
         onPageSizeChange={setLimit}
-        columns={columns}
+        columns={tableColumns}
         getRowId={(row) => row.id}
         enableSorting
         sortState={sortState}
@@ -202,17 +223,25 @@ export function SessionsTable() {
               },
               {
                 label: 'View process',
-                onClick: () => router.push(`/supporter/processes/${session.processId}`),
+                onClick: () => router.push(`${basePath}/processes/${session.processId}`),
               },
             ],
           },
         ]}
       />
 
-      <SessionDetailDrawer
-        session={selectedSession}
-        onOpenChange={(open) => !open && setSelectedSession(null)}
-      />
+      {renderSessionDrawer ? (
+        renderSessionDrawer({
+          session: selectedSession,
+          onOpenChange: (open) => !open && setSelectedSession(null),
+          onSessionChanged: setSelectedSession,
+        })
+      ) : (
+        <SessionDetailDrawer
+          session={selectedSession}
+          onOpenChange={(open) => !open && setSelectedSession(null)}
+        />
+      )}
     </>
   );
 }

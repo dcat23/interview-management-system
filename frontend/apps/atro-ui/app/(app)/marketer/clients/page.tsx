@@ -14,12 +14,11 @@ async function AppMarketerClientsPage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Clients</h1>
         <p className="mt-1 text-muted-foreground">
-          Companies candidates are interviewing with. Jump to their processes.
+          Companies candidates are interviewing with. Jump to their processes or sessions.
         </p>
       </div>
 
-      {/* No marketer sessions page yet, so the "View sessions" row action is hidden. */}
-      <ClientsTable basePath="/marketer" showSessions={false} />
+      <ClientsTable basePath="/marketer" />
     </div>
   );
 }

@@ -85,11 +85,9 @@ function toActiveValue(isActive: boolean | undefined) {
 interface Props {
   /** Role route prefix for row links, e.g. "/marketer". */
   basePath?: string;
-  /** Hide "View sessions" for roles without a sessions page. */
-  showSessions?: boolean;
 }
 
-export function ClientsTable({ basePath = '/supporter', showSessions = true }: Props) {
+export function ClientsTable({ basePath = '/supporter' }: Props) {
   const page = useClientsFilterStore((state) => state.page);
   const setPage = useClientsFilterStore((state) => state.setPage);
   const limit = useClientsFilterStore((state) => state.limit);
@@ -166,17 +164,13 @@ export function ClientsTable({ basePath = '/supporter', showSessions = true }: P
                 router.push(`${basePath}/processes`);
               },
             },
-            ...(showSessions
-              ? [
-                  {
-                    label: 'View sessions',
-                    onClick: () => {
-                      setSessionFilters({ clientId: client.id });
-                      router.push(`${basePath}/sessions`);
-                    },
-                  },
-                ]
-              : []),
+            {
+              label: 'View sessions',
+              onClick: () => {
+                setSessionFilters({ clientId: client.id });
+                router.push(`${basePath}/sessions`);
+              },
+            },
           ],
         },
       ]}

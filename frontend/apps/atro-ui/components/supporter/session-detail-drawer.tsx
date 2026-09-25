@@ -45,6 +45,14 @@ interface Props {
   onOpenChange: (open: boolean) => void;
 }
 
+/** Props handed to a `renderSessionDrawer` override (e.g. the marketer drawer). */
+export interface SessionDrawerRenderProps {
+  session: InterviewSession | null;
+  onOpenChange: (open: boolean) => void;
+  /** Keeps the open drawer on the updated session after an edit. */
+  onSessionChanged: (session: InterviewSession) => void;
+}
+
 // The question bank's `query` searchParam is a free-text search over topic
 // + body (see apps/dashboard's /questions page) — encodeURIComponent keeps
 // multi-word technologies ("Node JS") intact instead of breaking the URL.

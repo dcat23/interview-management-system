@@ -16,14 +16,7 @@ import type { InterviewProcess, InterviewSession, SessionStatus } from '@feature
 import { cn } from '@app/atro-ui/lib/ui/utils';
 import { ProcessStatusBadge } from './process-status-badge';
 import { SessionStatusBadge } from './session-status-badge';
-import { SessionDetailDrawer } from './session-detail-drawer';
-
-interface SessionDrawerProps {
-  session: InterviewSession | null;
-  onOpenChange: (open: boolean) => void;
-  /** Keeps the open drawer on the updated session after an edit. */
-  onSessionChanged: (session: InterviewSession) => void;
-}
+import { SessionDetailDrawer, type SessionDrawerRenderProps } from './session-detail-drawer';
 
 interface Props {
   process: InterviewProcess;
@@ -31,7 +24,7 @@ interface Props {
   /** Extra controls in the header, e.g. a marketer's "Schedule session". */
   actions?: ReactNode;
   /** Drawer shown for a clicked session; defaults to the supporter drawer. */
-  renderSessionDrawer?: (props: SessionDrawerProps) => ReactNode;
+  renderSessionDrawer?: (props: SessionDrawerRenderProps) => ReactNode;
 }
 
 function formatDate(value: string | null) {
