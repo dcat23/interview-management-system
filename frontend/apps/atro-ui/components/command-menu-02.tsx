@@ -32,8 +32,11 @@ import { ScheduleImportDrawer } from '@app/atro-ui/components/schedule-import-dr
 import { signOutAction, type Role } from '@feature/auth/server';
 import { ROLE_NAV } from '@feature/base/server';
 
-/** Roles that manage interview logistics and can bulk-import a schedule. */
-const IMPORT_SCHEDULE_ROLES: Role[] = ['supporter', 'admin'];
+/**
+ * Roles that manage interview logistics and can bulk-import a schedule —
+ * mirrors ScheduleImportService's @PreAuthorize (ADMIN, MARKETER, SUPPORTER).
+ */
+const IMPORT_SCHEDULE_ROLES: Role[] = ['supporter', 'marketer', 'admin'];
 
 interface Props {
   role: Role;
