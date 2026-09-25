@@ -55,6 +55,7 @@ export const ROLE_NAV: Record<Role, NavItem[]> = {
         { name: 'Sessions', href: '/marketer/sessions', icon: 'calendar-check' },
         { name: 'Processes', href: '/marketer/processes', icon: 'briefcase' },
         { name: 'Clients', href: '/marketer/clients', icon: 'building-2' },
+        settingsNav('marketer'),
     ],
     supporter,
     admin: [

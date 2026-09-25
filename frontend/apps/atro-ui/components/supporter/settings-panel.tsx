@@ -12,19 +12,23 @@ import {
   SETTINGS_SECTIONS,
   stampClass,
   type SettingsSection,
+  type SettingsSectionItem,
 } from '@app/atro-ui/components/supporter/settings-fields';
 
 interface Props {
   me: MeResponse;
-  apiKeys: ApiKey[];
+  /** Only read when the api-keys section is shown. */
+  apiKeys?: ApiKey[];
   initialSection: SettingsSection;
+  /** Sections to offer; defaults to all (profile + API keys). */
+  sections?: readonly SettingsSectionItem[];
 }
 
-export function SettingsPanel({ me, apiKeys, initialSection }: Props) {
+export function SettingsPanel({ me, apiKeys = [], initialSection, sections = SETTINGS_SECTIONS }: Props) {
   const reduce = useReducedMotion();
   const [section, setSection] = useState<SettingsSection>(initialSection);
   const [createdKey, setCreatedKey] = useState<ApiKeyCreated | null>(null);
-  const index = SETTINGS_SECTIONS.findIndex((s) => s.id === section);
+  const index = sections.findIndex((s) => s.id === section);
 
   const select = (id: SettingsSection) => {
     setSection(id);
@@ -42,7 +46,7 @@ export function SettingsPanel({ me, apiKeys, initialSection }: Props) {
         <p className={stampClass}>Settings</p>
         <nav aria-label="Settings sections">
           <ol className="mt-6 flex gap-1 overflow-x-auto lg:flex-col lg:space-y-1">
-            {SETTINGS_SECTIONS.map((s, i) => {
+            {sections.map((s, i) => {
               const active = s.id === section;
               return (
                 <li key={s.id}>
@@ -75,7 +79,7 @@ export function SettingsPanel({ me, apiKeys, initialSection }: Props) {
         <div className="border-b border-border px-6 py-4 sm:px-8 lg:px-10">
           <div className="flex items-center justify-between gap-3">
             <p className="font-mono text-[11px] tracking-wider text-muted-foreground uppercase tabular-nums">
-              {String(index + 1).padStart(2, '0')} / {String(SETTINGS_SECTIONS.length).padStart(2, '0')}
+              {String(index + 1).padStart(2, '0')} / {String(sections.length).padStart(2, '0')}
             </p>
             <p className="text-xs text-muted-foreground">{me.email}</p>
           </div>

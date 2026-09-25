@@ -9,6 +9,12 @@ export const SETTINGS_SECTIONS = [
 ] as const;
 
 export type SettingsSection = (typeof SETTINGS_SECTIONS)[number]['id'];
+export type SettingsSectionItem = (typeof SETTINGS_SECTIONS)[number];
+
+// API keys are admin/supporter-only on the backend, so marketers get profile alone.
+export const MARKETER_SETTINGS_SECTIONS: readonly SettingsSectionItem[] = SETTINGS_SECTIONS.filter(
+  (s) => s.id === 'profile',
+);
 
 // Shared class strings for the settings sections. Mirrors the contact-form /
 // project-planner blocks, mapped onto the app's shadcn tokens (border,
