@@ -35,16 +35,17 @@ function RoundSegments({ sessionCount }: RoundSegmentsProps) {
 interface ProcessRowProps {
   process: InterviewProcess;
   index: number;
+  basePath: string;
 }
 
-function ProcessRow({ process, index }: ProcessRowProps) {
+function ProcessRow({ process, index, basePath }: ProcessRowProps) {
   return (
     <li
       className="animate-in fade-in slide-in-from-bottom-1 fill-mode-both duration-500"
       style={{ animationDelay: `${index * 50}ms` }}
     >
       <Link
-        href={`/supporter/processes/${process.id}`}
+        href={`${basePath}/processes/${process.id}`}
         className="group grid grid-cols-1 items-start gap-3 px-4 py-4 transition-colors hover:bg-muted/50 md:grid-cols-12 md:gap-4 md:px-6"
       >
         <span className="font-mono text-[11px] tabular-nums text-muted-foreground md:col-span-1">
@@ -85,9 +86,11 @@ function ProcessRow({ process, index }: ProcessRowProps) {
 
 interface Props {
   clientId: string;
+  /** Role route prefix for row links, e.g. "/marketer". */
+  basePath?: string;
 }
 
-export function ClientActiveProcesses({ clientId }: Props) {
+export function ClientActiveProcesses({ clientId, basePath = '/supporter' }: Props) {
   const { data: pageResponse, isLoading, dataUpdatedAt } = useProcesses({
     page: 0,
     limit: PROCESS_LIMIT,
@@ -132,7 +135,7 @@ export function ClientActiveProcesses({ clientId }: Props) {
       ) : (
         <ul className="divide-y divide-border/50">
           {processes.map((process, i) => (
-            <ProcessRow key={process.id} process={process} index={i} />
+            <ProcessRow key={process.id} process={process} index={i} basePath={basePath} />
           ))}
         </ul>
       )}

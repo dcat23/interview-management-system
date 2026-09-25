@@ -50,9 +50,10 @@ export const ROLE_NAV: Record<Role, NavItem[]> = {
     candidate: [
         { name: 'My Processes', href: '/candidate/processes', icon: 'briefcase' },
     ],
+    // New processes are created from the dashboard header drawer, not a route.
     marketer: [
         { name: 'Processes', href: '/marketer/processes', icon: 'briefcase' },
-        { name: 'New Process', href: '/marketer/processes/new', icon: 'plus' },
+        { name: 'Clients', href: '/marketer/clients', icon: 'building-2' },
     ],
     supporter,
     admin: [

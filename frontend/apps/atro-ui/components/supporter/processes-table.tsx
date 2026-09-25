@@ -62,7 +62,12 @@ const columns: DataTableColumn<InterviewProcess>[] = [
   },
 ];
 
-export function ProcessesTable() {
+interface Props {
+  /** Role route prefix for row links, e.g. "/marketer". */
+  basePath?: string;
+}
+
+export function ProcessesTable({ basePath = '/supporter' }: Props) {
   const page = useProcessesFilterStore((state) => state.page);
   const setPage = useProcessesFilterStore((state) => state.setPage);
   const limit = useProcessesFilterStore((state) => state.limit);
@@ -166,7 +171,7 @@ export function ProcessesTable() {
           actions: [
             {
               label: 'Details',
-              onClick: () => router.push(`/supporter/processes/${process.id}`),
+              onClick: () => router.push(`${basePath}/processes/${process.id}`),
             },
           ],
         },

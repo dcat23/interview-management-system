@@ -82,7 +82,14 @@ function toActiveValue(isActive: boolean | undefined) {
   return isActive ? ACTIVE : INACTIVE;
 }
 
-export function ClientsTable() {
+interface Props {
+  /** Role route prefix for row links, e.g. "/marketer". */
+  basePath?: string;
+  /** Hide "View sessions" for roles without a sessions page. */
+  showSessions?: boolean;
+}
+
+export function ClientsTable({ basePath = '/supporter', showSessions = true }: Props) {
   const page = useClientsFilterStore((state) => state.page);
   const setPage = useClientsFilterStore((state) => state.setPage);
   const limit = useClientsFilterStore((state) => state.limit);
@@ -150,22 +157,26 @@ export function ClientsTable() {
           actions: [
             {
               label: 'Details',
-              onClick: () => router.push(`/supporter/clients/${client.id}`),
+              onClick: () => router.push(`${basePath}/clients/${client.id}`),
             },
             {
               label: 'View processes',
               onClick: () => {
                 setProcessFilters({ clientId: client.id });
-                router.push('/supporter/processes');
+                router.push(`${basePath}/processes`);
               },
             },
-            {
-              label: 'View sessions',
-              onClick: () => {
-                setSessionFilters({ clientId: client.id });
-                router.push('/supporter/sessions');
-              },
-            },
+            ...(showSessions
+              ? [
+                  {
+                    label: 'View sessions',
+                    onClick: () => {
+                      setSessionFilters({ clientId: client.id });
+                      router.push(`${basePath}/sessions`);
+                    },
+                  },
+                ]
+              : []),
           ],
         },
       ]}

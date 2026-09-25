@@ -18,16 +18,27 @@ import { ProcessStatusBadge } from './process-status-badge';
 import { SessionStatusBadge } from './session-status-badge';
 import { SessionDetailDrawer } from './session-detail-drawer';
 
+interface SessionDrawerProps {
+  session: InterviewSession | null;
+  onOpenChange: (open: boolean) => void;
+  /** Keeps the open drawer on the updated session after an edit. */
+  onSessionChanged: (session: InterviewSession) => void;
+}
+
 interface Props {
   process: InterviewProcess;
   className?: string;
+  /** Extra controls in the header, e.g. a marketer's "Schedule session". */
+  actions?: ReactNode;
+  /** Drawer shown for a clicked session; defaults to the supporter drawer. */
+  renderSessionDrawer?: (props: SessionDrawerProps) => ReactNode;
 }
 
 function formatDate(value: string | null) {
   return value ? moment(value).format('MMM D, YYYY') : '—';
 }
 
-export function ProcessResume({ process, className }: Props) {
+export function ProcessResume({ process, className, actions, renderSessionDrawer }: Props) {
   const [selectedSession, setSelectedSession] = useState<InterviewSession | null>(null);
 
   const sessions = process.sessions ?? [];
@@ -49,7 +60,7 @@ export function ProcessResume({ process, className }: Props) {
         className,
       )}
     >
-      <header className="border-b border-border bg-muted/40 p-6 sm:p-8">
+      <header className="flex flex-col gap-4 border-b border-border bg-muted/40 p-6 sm:flex-row sm:items-start sm:justify-between sm:p-8">
         <div className="space-y-3">
           <div>
             <div className="flex flex-wrap items-center gap-3">
@@ -74,6 +85,7 @@ export function ProcessResume({ process, className }: Props) {
             </MetaChip>
           </div>
         </div>
+        {actions ? <div className="flex shrink-0 flex-wrap gap-2">{actions}</div> : null}
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-3">
@@ -194,10 +206,18 @@ export function ProcessResume({ process, className }: Props) {
         ) : null}
       </div>
 
-      <SessionDetailDrawer
-        session={selectedSession}
-        onOpenChange={(open) => !open && setSelectedSession(null)}
-      />
+      {renderSessionDrawer ? (
+        renderSessionDrawer({
+          session: selectedSession,
+          onOpenChange: (open) => !open && setSelectedSession(null),
+          onSessionChanged: setSelectedSession,
+        })
+      ) : (
+        <SessionDetailDrawer
+          session={selectedSession}
+          onOpenChange={(open) => !open && setSelectedSession(null)}
+        />
+      )}
     </div>
   );
 }
