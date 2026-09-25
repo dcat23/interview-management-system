@@ -162,9 +162,14 @@ public class InterviewProcessService {
         String clientName = clientRepository.findById(process.getClientId())
                 .map(Client::getName)
                 .orElse(null);
-        List<InterviewSessionResponse> sessions = sessionRepository.findByProcessIdOrderByScheduledAt(id).stream()
+        List<InterviewSession> processSessions = sessionRepository.findByProcessIdOrderByScheduledAt(id);
+        Map<UUID, String> supporterNamesById = userRepository.findAllById(
+                        processSessions.stream().map(InterviewSession::getSupporterId).distinct().toList())
+                .stream().collect(Collectors.toMap(User::getId, User::getName));
+        List<InterviewSessionResponse> sessions = processSessions.stream()
                 .map(session -> sessionMapper.toResponse(session, candidateName, clientName,
-                        process.getClientId(), process.getTechnology()))
+                        process.getClientId(), process.getTechnology(),
+                        supporterNamesById.get(session.getSupporterId())))
                 .toList();
 
         String currentRound = sessions.stream()

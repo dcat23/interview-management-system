@@ -23,6 +23,8 @@ public record InterviewSessionResponse(
         String clientName,
         // Owning process's client, joined so clients can link to it without a process lookup.
         UUID clientId,
-        String technology
+        String technology,
+        // Assigned supporter's name, joined like candidateName.
+        String supporterName
 ) {
 }

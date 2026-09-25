@@ -47,6 +47,12 @@ const columns: ActionTableColumn<InterviewSession>[] = [
     cell: (session) => session.round,
   },
   {
+    id: 'supporter',
+    header: 'Supporter',
+    className: 'text-sm text-muted-foreground',
+    cell: (session) => session.supporterName ?? '—',
+  },
+  {
     id: 'date',
     header: 'Date',
     className: 'text-sm text-muted-foreground whitespace-nowrap',

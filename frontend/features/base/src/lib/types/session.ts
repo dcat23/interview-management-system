@@ -24,6 +24,8 @@ export interface InterviewSession {
   /** The owning process's client — joined server-side like clientName. */
   clientId: string | null;
   technology: string | null;
+  /** Assigned supporter's name — joined server-side like candidateName. */
+  supporterName: string | null;
 }
 
 /**

@@ -46,6 +46,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -90,7 +91,8 @@ public class InterviewSessionService {
         syncProcessStartedAt(process);
         reactivateProcess(processId);
         return sessionMapper.toResponse(session, resolveCandidateName(process.getCandidateId()),
-                resolveClientName(process.getClientId()), process.getClientId(), process.getTechnology());
+                resolveClientName(process.getClientId()), process.getClientId(), process.getTechnology(),
+                resolveUserName(session.getSupporterId()));
     }
 
     private void autoPassInReviewSessions(UUID processId) {
@@ -153,9 +155,13 @@ public class InterviewSessionService {
         String clientName = process != null ? resolveClientName(process.getClientId()) : null;
         String technology = process != null ? process.getTechnology() : null;
 
-        return sessionRepository.findByProcessIdOrderByScheduledAt(processId).stream()
+        List<InterviewSession> sessions = sessionRepository.findByProcessIdOrderByScheduledAt(processId);
+        Map<UUID, String> supporterNamesById = userNamesById(
+                sessions.stream().map(InterviewSession::getSupporterId).distinct().toList());
+        return sessions.stream()
                 .map(session -> sessionMapper.toResponse(session, candidateName, clientName,
-                process != null ? process.getClientId() : null, technology))
+                process != null ? process.getClientId() : null, technology,
+                supporterNamesById.get(session.getSupporterId())))
                 .toList();
     }
 
@@ -227,18 +233,23 @@ public class InterviewSessionService {
                 .distinct()
                 .toList();
 
-        Map<UUID, String> candidateNamesById = userRepository.findAllById(candidateIds).stream()
-                .collect(Collectors.toMap(User::getId, User::getName));
+        List<UUID> supporterIds = sessions.getContent().stream()
+                .map(InterviewSession::getSupporterId)
+                .toList();
+        // One user query covers both candidates and supporters.
+        Map<UUID, String> userNamesById = userNamesById(
+                Stream.concat(candidateIds.stream(), supporterIds.stream()).distinct().toList());
         Map<UUID, String> clientNamesById = clientRepository.findAllById(clientIds).stream()
                 .collect(Collectors.toMap(Client::getId, Client::getName));
 
         return sessions.map(session -> {
             InterviewProcess process = processesById.get(session.getProcessId());
-            String candidateName = process != null ? candidateNamesById.get(process.getCandidateId()) : null;
+            String candidateName = process != null ? userNamesById.get(process.getCandidateId()) : null;
             String clientName = process != null ? clientNamesById.get(process.getClientId()) : null;
             String technology = process != null ? process.getTechnology() : null;
             return sessionMapper.toResponse(session, candidateName, clientName,
-                process != null ? process.getClientId() : null, technology);
+                process != null ? process.getClientId() : null, technology,
+                userNamesById.get(session.getSupporterId()));
         });
     }
 
@@ -261,7 +272,8 @@ public class InterviewSessionService {
         String clientName = process != null ? resolveClientName(process.getClientId()) : null;
         String technology = process != null ? process.getTechnology() : null;
         return sessionMapper.toResponse(session, candidateName, clientName,
-                process != null ? process.getClientId() : null, technology);
+                process != null ? process.getClientId() : null, technology,
+                resolveUserName(session.getSupporterId()));
     }
 
     @PreAuthorize("hasAnyRole('ADMIN','MARKETER')")
@@ -285,7 +297,8 @@ public class InterviewSessionService {
         String clientName = process != null ? resolveClientName(process.getClientId()) : null;
         String technology = process != null ? process.getTechnology() : null;
         return sessionMapper.toResponse(session, candidateName, clientName,
-                process != null ? process.getClientId() : null, technology);
+                process != null ? process.getClientId() : null, technology,
+                resolveUserName(session.getSupporterId()));
     }
 
     private void syncProcessStartedAt(InterviewProcess process) {
@@ -307,6 +320,15 @@ public class InterviewSessionService {
 
     private String resolveCandidateName(UUID candidateId) {
         return userRepository.findById(candidateId).map(User::getName).orElse(null);
+    }
+
+    private String resolveUserName(UUID userId) {
+        return userId != null ? userRepository.findById(userId).map(User::getName).orElse(null) : null;
+    }
+
+    private Map<UUID, String> userNamesById(List<UUID> userIds) {
+        return userRepository.findAllById(userIds).stream()
+                .collect(Collectors.toMap(User::getId, User::getName));
     }
 
     private String resolveClientName(UUID clientId) {

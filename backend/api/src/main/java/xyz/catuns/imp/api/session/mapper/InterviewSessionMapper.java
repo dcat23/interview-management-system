@@ -21,8 +21,9 @@ public interface InterviewSessionMapper {
     @Mapping(target = "clientName", source = "clientName")
     @Mapping(target = "clientId", source = "clientId")
     @Mapping(target = "technology", source = "technology")
+    @Mapping(target = "supporterName", source = "supporterName")
     InterviewSessionResponse toResponse(InterviewSession session, String candidateName, String clientName,
-                                        UUID clientId, String technology);
+                                        UUID clientId, String technology, String supporterName);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "processId", ignore = true)

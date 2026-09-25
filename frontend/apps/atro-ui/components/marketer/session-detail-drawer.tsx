@@ -3,7 +3,7 @@
 import type { ComponentType, ReactNode } from 'react';
 import Link from 'next/link';
 import moment from 'moment';
-import { BriefcaseIcon, Building2Icon, CalendarIcon, ClockIcon, LaptopIcon } from 'lucide-react';
+import { BriefcaseIcon, Building2Icon, CalendarIcon, ClockIcon, LaptopIcon, UserIcon } from 'lucide-react';
 import type { InterviewSession } from '@feature/base/server';
 import {
   Drawer,
@@ -78,6 +78,7 @@ export function SessionDetailDrawer({ session, onOpenChange, onStatusChanged }: 
                     value={`${moment(session.scheduledAt).format('h:mm A')} · ${session.durationMinutes} min`}
                   />
                   <DetailRow icon={LaptopIcon} label="Mode" value={session.mode} />
+                  <DetailRow icon={UserIcon} label="Supporter" value={session.supporterName ?? '—'} />
                 </div>
 
                 {session.technology && (
