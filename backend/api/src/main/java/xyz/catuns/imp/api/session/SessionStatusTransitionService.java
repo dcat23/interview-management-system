@@ -152,7 +152,8 @@ public class SessionStatusTransitionService {
         String clientName = process != null
                 ? clientRepository.findById(process.getClientId()).map(Client::getName).orElse(null) : null;
         String technology = process != null ? process.getTechnology() : null;
-        return sessionMapper.toResponse(session, candidateName, clientName, technology);
+        return sessionMapper.toResponse(session, candidateName, clientName,
+                process != null ? process.getClientId() : null, technology);
     }
 
     private void cascadeProcessStatus(UUID processId, SessionStatus toStatus) {

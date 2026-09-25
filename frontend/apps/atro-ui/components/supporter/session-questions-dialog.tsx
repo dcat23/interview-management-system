@@ -220,6 +220,8 @@ export function SessionQuestionsDialog({ session }: Props) {
             displayOrder: items.length + 1,
             notes: notes.trim() || null,
             createdAt: new Date().toISOString(),
+            topic: questionResponse.data.topic,
+            body: questionResponse.data.body,
           };
           setItems((prev) => [...prev, toItem(sessionQuestion, questionResponse.data)]);
         }

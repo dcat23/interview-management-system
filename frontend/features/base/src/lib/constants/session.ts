@@ -17,3 +17,19 @@ export const SESSION_STATUS_TRANSITIONS: Record<SessionStatus, SessionStatus[]> 
   CANCELLED: ['CANCELLED'],
   RESCHEDULED: ['RESCHEDULED', 'IN_REVIEW', 'CANCELLED'],
 };
+
+/**
+ * Transitions the MARKETER role may apply, per SessionStatusTransitionService
+ * .ALLOWED_TRANSITIONS on the backend. Unlike SESSION_STATUS_TRANSITIONS this
+ * excludes the current status and anything reserved for other roles
+ * (e.g. SCHEDULED -> IN_REVIEW is supporter-only).
+ */
+export const MARKETER_SESSION_TRANSITIONS: Record<SessionStatus, SessionStatus[]> = {
+  SCHEDULED: ['CANCELLED'],
+  IN_REVIEW: ['PASSED', 'REJECTED', 'NO_SHOW', 'CANCELLED'],
+  PASSED: [],
+  REJECTED: [],
+  NO_SHOW: ['CANCELLED'],
+  CANCELLED: [],
+  RESCHEDULED: ['CANCELLED'],
+};

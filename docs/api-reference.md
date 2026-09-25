@@ -771,7 +771,7 @@ List sessions across all processes, paginated.
 | `scheduledFrom` / `scheduledTo`        | `yyyy-MM-dd` (plain date, no time/zone). Filters on `scheduledAt`, inclusive on both ends - `scheduledTo` covers the entire day (interpreted as UTC day boundaries). `400` if `scheduledFrom` is after `scheduledTo`. |
 | `sort`                                 | `field,asc\|desc`, repeatable. Sortable fields: `round`, `mode`, `durationMinutes`, `status`, `scheduledAt`, `statusChangedAt`, `createdAt`, `updatedAt`. Any other field returns `400`. |
 
-**Response `200`**
+**Response `200`** — `candidateName`, `clientName`, `clientId`, and `technology` are joined from the session's process.
 ```json
 {
   "data": [
@@ -788,7 +788,11 @@ List sessions across all processes, paginated.
       "statusChangedAt": null,
       "statusChangedBy": null,
       "createdAt": "2024-01-20T09:00:00Z",
-      "updatedAt": "2024-01-20T09:00:00Z"
+      "updatedAt": "2024-01-20T09:00:00Z",
+      "candidateName": "string",
+      "clientName": "string",
+      "clientId": "uuid",
+      "technology": "string"
     }
   ],
   "total": 42,
@@ -989,7 +993,7 @@ Prefix matches rank ahead of mid-string matches, then most-used first. Capped at
 
 ### `GET /sessions/:id/questions` · `admin` `marketer` `supporter` `candidate` `ai_agent`
 
-Get questions linked to a session, ordered by `displayOrder`.
+Get questions linked to a session, ordered by `displayOrder`. `topic` and `body` are joined from the linked question so the list renders without a per-question lookup.
 
 **Response `200`** — array of session-question objects.
 
@@ -1001,7 +1005,9 @@ Get questions linked to a session, ordered by `displayOrder`.
     "questionId": "uuid",
     "displayOrder": 1,
     "notes": "string",
-    "createdAt": "2024-01-20T09:00:00Z"
+    "createdAt": "2024-01-20T09:00:00Z",
+    "topic": "string",
+    "body": "string"
   }
 ]
 ```

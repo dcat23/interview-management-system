@@ -21,6 +21,8 @@ public record InterviewSessionResponse(
         Instant updatedAt,
         String candidateName,
         String clientName,
+        // Owning process's client, joined so clients can link to it without a process lookup.
+        UUID clientId,
         String technology
 ) {
 }

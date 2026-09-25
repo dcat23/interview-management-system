@@ -163,7 +163,8 @@ public class InterviewProcessService {
                 .map(Client::getName)
                 .orElse(null);
         List<InterviewSessionResponse> sessions = sessionRepository.findByProcessIdOrderByScheduledAt(id).stream()
-                .map(session -> sessionMapper.toResponse(session, candidateName, clientName, process.getTechnology()))
+                .map(session -> sessionMapper.toResponse(session, candidateName, clientName,
+                        process.getClientId(), process.getTechnology()))
                 .toList();
 
         String currentRound = sessions.stream()

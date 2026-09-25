@@ -12,6 +12,9 @@ export interface SessionQuestion {
   displayOrder: number;
   notes: string | null;
   createdAt: string;
+  /** Joined from the linked question on GET /sessions/:id/questions and link responses. */
+  topic: string | null;
+  body: string | null;
 }
 
 /**

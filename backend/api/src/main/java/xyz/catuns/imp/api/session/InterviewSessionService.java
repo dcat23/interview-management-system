@@ -90,7 +90,7 @@ public class InterviewSessionService {
         syncProcessStartedAt(process);
         reactivateProcess(processId);
         return sessionMapper.toResponse(session, resolveCandidateName(process.getCandidateId()),
-                resolveClientName(process.getClientId()), process.getTechnology());
+                resolveClientName(process.getClientId()), process.getClientId(), process.getTechnology());
     }
 
     private void autoPassInReviewSessions(UUID processId) {
@@ -154,7 +154,8 @@ public class InterviewSessionService {
         String technology = process != null ? process.getTechnology() : null;
 
         return sessionRepository.findByProcessIdOrderByScheduledAt(processId).stream()
-                .map(session -> sessionMapper.toResponse(session, candidateName, clientName, technology))
+                .map(session -> sessionMapper.toResponse(session, candidateName, clientName,
+                process != null ? process.getClientId() : null, technology))
                 .toList();
     }
 
@@ -236,7 +237,8 @@ public class InterviewSessionService {
             String candidateName = process != null ? candidateNamesById.get(process.getCandidateId()) : null;
             String clientName = process != null ? clientNamesById.get(process.getClientId()) : null;
             String technology = process != null ? process.getTechnology() : null;
-            return sessionMapper.toResponse(session, candidateName, clientName, technology);
+            return sessionMapper.toResponse(session, candidateName, clientName,
+                process != null ? process.getClientId() : null, technology);
         });
     }
 
@@ -258,7 +260,8 @@ public class InterviewSessionService {
         String candidateName = process != null ? resolveCandidateName(process.getCandidateId()) : null;
         String clientName = process != null ? resolveClientName(process.getClientId()) : null;
         String technology = process != null ? process.getTechnology() : null;
-        return sessionMapper.toResponse(session, candidateName, clientName, technology);
+        return sessionMapper.toResponse(session, candidateName, clientName,
+                process != null ? process.getClientId() : null, technology);
     }
 
     @PreAuthorize("hasAnyRole('ADMIN','MARKETER')")
@@ -281,7 +284,8 @@ public class InterviewSessionService {
         String candidateName = process != null ? resolveCandidateName(process.getCandidateId()) : null;
         String clientName = process != null ? resolveClientName(process.getClientId()) : null;
         String technology = process != null ? process.getTechnology() : null;
-        return sessionMapper.toResponse(session, candidateName, clientName, technology);
+        return sessionMapper.toResponse(session, candidateName, clientName,
+                process != null ? process.getClientId() : null, technology);
     }
 
     private void syncProcessStartedAt(InterviewProcess process) {
