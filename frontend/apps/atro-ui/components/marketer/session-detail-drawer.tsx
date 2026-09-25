@@ -18,6 +18,7 @@ import { SessionStatusBadge } from '@app/atro-ui/components/supporter/session-st
 import { SessionFeedbackView } from './session-feedback-view';
 import { SessionQuestionsDialog } from './session-questions-dialog';
 import { SessionStatusControl } from './session-status-control';
+import { SupporterSelect } from './supporter-select';
 
 interface DetailRowProps {
   icon: ComponentType<{ className?: string }>;
@@ -38,7 +39,8 @@ function DetailRow({ icon: Icon, label, value }: DetailRowProps) {
 interface Props {
   session: InterviewSession | null;
   onOpenChange: (open: boolean) => void;
-  onStatusChanged?: (session: InterviewSession) => void;
+  /** Called with the updated session after a status change or supporter reassignment. */
+  onSessionChanged?: (session: InterviewSession) => void;
 }
 
 /**
@@ -46,7 +48,7 @@ interface Props {
  * Where the supporter drawer has "Copy details" this offers the status
  * transitions a marketer may apply; feedback and questions are read-only.
  */
-export function SessionDetailDrawer({ session, onOpenChange, onStatusChanged }: Props) {
+export function SessionDetailDrawer({ session, onOpenChange, onSessionChanged }: Props) {
   return (
     <Drawer direction="right" open={!!session} onOpenChange={onOpenChange}>
       <DrawerContent>
@@ -78,7 +80,11 @@ export function SessionDetailDrawer({ session, onOpenChange, onStatusChanged }: 
                     value={`${moment(session.scheduledAt).format('h:mm A')} · ${session.durationMinutes} min`}
                   />
                   <DetailRow icon={LaptopIcon} label="Mode" value={session.mode} />
-                  <DetailRow icon={UserIcon} label="Supporter" value={session.supporterName ?? '—'} />
+                  <DetailRow
+                    icon={UserIcon}
+                    label="Supporter"
+                    value={<SupporterSelect session={session} onUpdated={onSessionChanged} />}
+                  />
                 </div>
 
                 {session.technology && (
@@ -97,7 +103,7 @@ export function SessionDetailDrawer({ session, onOpenChange, onStatusChanged }: 
               </div>
 
               {/* Keyed so a pending confirmation doesn't carry over to another session. */}
-              <SessionStatusControl key={session.id} session={session} onStatusChanged={onStatusChanged} />
+              <SessionStatusControl key={session.id} session={session} onStatusChanged={onSessionChanged} />
 
               <SessionFeedbackView session={session} />
             </div>

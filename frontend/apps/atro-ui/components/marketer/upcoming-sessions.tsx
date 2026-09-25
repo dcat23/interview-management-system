@@ -190,7 +190,7 @@ export function UpcomingSessions() {
       <SessionDetailDrawer
         session={selected}
         onOpenChange={(open) => !open && setSelected(null)}
-        onStatusChanged={setSelected}
+        onSessionChanged={setSelected}
       />
     </Card>
   );

@@ -161,3 +161,32 @@ export const lookupSessionRounds = withApi(
     fallbackData: [],
   },
 );
+
+/**
+ * [update-session]
+ *
+ * PATCH /sessions/:id. Admin and marketer roles only. Partial — omitted
+ * fields are left unchanged. 404 if the supporterId doesn't exist.
+ */
+const updateSessionSchema = z.object({
+  supporterId: z.string().uuid().optional(),
+  round: z.string().trim().min(1).optional(),
+  mode: z.string().trim().min(1).optional(),
+  durationMinutes: z.number().int().positive().optional(),
+  description: z.string().trim().optional(),
+  /** ISO-8601 instant. */
+  scheduledAt: z.string().datetime().optional(),
+});
+export type UpdateSessionRequest = z.infer<typeof updateSessionSchema>;
+export type UpdateSessionResponse = InterviewSession;
+
+export const updateSession = withApi(async (sessionId: string, options: UpdateSessionRequest) => {
+  const parsed = updateSessionSchema.safeParse(options);
+
+  if (!parsed.success) {
+    throw parsed.error;
+  }
+
+  const endpoint = `/sessions/${sessionId}`;
+  return api.patch<UpdateSessionResponse>(endpoint, parsed.data);
+}, {});

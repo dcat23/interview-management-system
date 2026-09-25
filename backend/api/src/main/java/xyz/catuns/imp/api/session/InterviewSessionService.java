@@ -286,6 +286,11 @@ public class InterviewSessionService {
     public InterviewSessionResponse update(UUID id, UpdateSessionRequest request) {
         InterviewSession session = sessionRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Session not found"));
+        // Same check as create(): an unknown id would otherwise surface as an FK violation.
+        if (request.supporterId() != null) {
+            userRepository.findById(request.supporterId())
+                    .orElseThrow(() -> new NotFoundException("Supporter not found"));
+        }
         sessionMapper.update(request, session);
         session = sessionRepository.save(session);
 

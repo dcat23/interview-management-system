@@ -160,8 +160,8 @@ export function AwaitingDecision() {
       <SessionDetailDrawer
         session={selected}
         onOpenChange={(open) => !open && setSelected(null)}
-        // Keep the drawer open on the updated session so the new status shows.
-        onStatusChanged={setSelected}
+        // Keep the drawer open on the updated session so the change shows.
+        onSessionChanged={setSelected}
       />
     </section>
   );
