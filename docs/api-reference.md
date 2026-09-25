@@ -591,6 +591,7 @@ List interview processes.
 | `status`   | Exact match: `ACTIVE`, `COMPLETED`, `WITHDRAWN`, `CANCELLED`.                                                                                                                            |
 | `clientId` | Exact match on `clientId`.                                                                                                                                                               |
 | `startedFrom` / `startedTo` | `yyyy-MM-dd` (plain date, no time/zone). Filters on `startedAt`, inclusive on both ends - `startedTo` covers the entire day (interpreted as UTC day boundaries). `400` if `startedFrom` is after `startedTo`. |
+| `hasPendingSession` | `true` / `false`. Whether the process has any session that is `SCHEDULED`, `IN_REVIEW`, or `RESCHEDULED`. `status=ACTIVE&hasPendingSession=false` finds stalled processes — active but nothing moving them forward. |
 | `sort`     | `field,asc\|desc`, repeatable. Sortable fields: `candidateName`, `clientName`, `technology`, `status`, `startedAt`, `closedAt`, `createdAt`, `updatedAt`. Any other field returns `400`. |
 
 **Role constraints:**
@@ -614,7 +615,11 @@ List interview processes.
       "closedAt": null,
       "createdAt": "2024-01-01T00:00:00Z",
       "updatedAt": "2024-01-15T12:00:00Z",
-      "sessions": null
+      "sessions": null,
+      "currentRound": "2nd round",
+      "sessionCount": 2,
+      "lastSessionAt": "2024-01-15T14:00:00Z",
+      "lastSessionStatus": "PASSED"
     }
   ],
   "total": 15,
@@ -623,7 +628,7 @@ List interview processes.
 }
 ```
 
-`sessions` is always `null` here — it's only populated by `GET /processes/:id` (see below), to avoid an extra query per row.
+`sessions` is always `null` here — it's only populated by `GET /processes/:id` (see below), to avoid an extra query per row. `currentRound`, `lastSessionAt`, and `lastSessionStatus` describe the latest session by `scheduledAt` (all `null` when there are none).
 
 `status` values: `ACTIVE`, `COMPLETED`, `WITHDRAWN`, `CANCELLED`
 

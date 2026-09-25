@@ -4,6 +4,7 @@ import { AwaitingDecision } from '@app/atro-ui/components/marketer/awaiting-deci
 import { MarketerHeader } from '@app/atro-ui/components/marketer/marketer-header';
 import { MarketerKpis } from '@app/atro-ui/components/marketer/marketer-kpis';
 import { RecentProcesses } from '@app/atro-ui/components/marketer/recent-processes';
+import { StalledProcesses } from '@app/atro-ui/components/marketer/stalled-processes';
 import { UpcomingSessions } from '@app/atro-ui/components/marketer/upcoming-sessions';
 
 export default async function MarketerPage() {
@@ -19,6 +20,7 @@ export default async function MarketerPage() {
       <MarketerKpis />
       <AwaitingDecision />
       <UpcomingSessions />
+      <StalledProcesses />
       <RecentProcesses />
     </div>
   );

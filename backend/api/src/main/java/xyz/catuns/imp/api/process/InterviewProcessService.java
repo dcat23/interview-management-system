@@ -2,6 +2,8 @@ package xyz.catuns.imp.api.process;
 
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.Subquery;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
@@ -30,6 +32,7 @@ import xyz.catuns.imp.api.process.mapper.InterviewProcessMapper;
 import xyz.catuns.imp.api.process.repository.InterviewProcessRepository;
 import xyz.catuns.imp.api.session.dto.InterviewSessionResponse;
 import xyz.catuns.imp.api.session.entity.InterviewSession;
+import xyz.catuns.imp.api.session.entity.SessionStatus;
 import xyz.catuns.imp.api.session.mapper.InterviewSessionMapper;
 import xyz.catuns.imp.api.session.repository.InterviewSessionRepository;
 import xyz.catuns.imp.api.user.entity.User;
@@ -41,6 +44,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -56,6 +60,9 @@ public class InterviewProcessService {
     private static final Set<String> SORTABLE_PROPERTIES = Set.of(
             "candidateName", "clientName", "technology", "status", "startedAt", "closedAt", "createdAt", "updatedAt"
     );
+    /** Sessions still in flight — a process with none of these has nothing moving it forward. */
+    private static final Set<SessionStatus> PENDING_SESSION_STATUSES =
+            EnumSet.of(SessionStatus.SCHEDULED, SessionStatus.IN_REVIEW, SessionStatus.RESCHEDULED);
     private static final Map<String, String> SORT_PROPERTY_ALIASES = Map.of(
             "candidateName", "candidate.name",
             "clientName", "client.name"
@@ -75,7 +82,7 @@ public class InterviewProcessService {
 
     @PreAuthorize("isAuthenticated()")
     public Page<InterviewProcessResponse> list(String search, ProcessStatus status, UUID clientId,
-                                                LocalDate startedFrom, LocalDate startedTo,
+                                                LocalDate startedFrom, LocalDate startedTo, Boolean hasPendingSession,
                                                 Pageable pageable, Authentication authentication) {
         if (startedFrom != null && startedTo != null && startedFrom.isAfter(startedTo)) {
             throw new BadRequestException("startedFrom must not be after startedTo");
@@ -99,6 +106,17 @@ public class InterviewProcessService {
         if (startedTo != null) {
             Instant toExclusive = DateRangeUtil.startOfNextDayUtc(startedTo);
             spec = spec.and((root, query, cb) -> cb.lessThan(root.get("startedAt"), toExclusive));
+        }
+        if (hasPendingSession != null) {
+            // EXISTS subquery rather than a join so each process is still counted once for paging.
+            spec = spec.and((root, query, cb) -> {
+                Subquery<UUID> pending = query.subquery(UUID.class);
+                Root<InterviewSession> session = pending.from(InterviewSession.class);
+                pending.select(session.get("id")).where(
+                        cb.equal(session.get("processId"), root.get("id")),
+                        session.get("status").in(PENDING_SESSION_STATUSES));
+                return hasPendingSession ? cb.exists(pending) : cb.not(cb.exists(pending));
+            });
         }
         if (search != null && !search.isBlank()) {
             String pattern = "%" + search.trim().toLowerCase(Locale.ROOT) + "%";
@@ -136,17 +154,18 @@ public class InterviewProcessService {
 
         return processes.map(process -> {
             List<InterviewSession> sessions = sessionsByProcessId.getOrDefault(process.getId(), List.of());
-            String currentRound = sessions.stream()
+            InterviewSession latest = sessions.stream()
                     .max(Comparator.comparing(InterviewSession::getScheduledAt))
-                    .map(InterviewSession::getRound)
                     .orElse(null);
 
             return processMapper.toResponse(
                     process,
                     candidateNamesById.get(process.getCandidateId()),
                     clientNamesById.get(process.getClientId()),
-                    currentRound,
-                    sessions.size()
+                    latest != null ? latest.getRound() : null,
+                    sessions.size(),
+                    latest != null ? latest.getScheduledAt() : null,
+                    latest != null ? latest.getStatus() : null
             );
         });
     }
@@ -172,12 +191,13 @@ public class InterviewProcessService {
                         supporterNamesById.get(session.getSupporterId())))
                 .toList();
 
-        String currentRound = sessions.stream()
+        InterviewSessionResponse latest = sessions.stream()
                 .max(Comparator.comparing(InterviewSessionResponse::scheduledAt))
-                .map(InterviewSessionResponse::round)
                 .orElse(null);
 
-        return processMapper.toResponse(process, candidateName, clientName, sessions, currentRound, sessions.size());
+        return processMapper.toResponse(process, candidateName, clientName, sessions,
+                latest != null ? latest.round() : null, sessions.size(),
+                latest != null ? latest.scheduledAt() : null, latest != null ? latest.status() : null);
     }
 
     @PreAuthorize("hasAnyRole('ADMIN','MARKETER')")

@@ -14,14 +14,16 @@ interface UseProcessesParams {
   startedFrom?: string
   /** yyyy-MM-dd, inclusive - filters on startedAt. */
   startedTo?: string
+  /** Any SCHEDULED/IN_REVIEW/RESCHEDULED session. false + status ACTIVE = stalled. */
+  hasPendingSession?: boolean
   sort?: string
 }
 
-export function useProcesses({ page, limit, search, status, clientId, startedFrom, startedTo, sort }: UseProcessesParams) {
+export function useProcesses({ page, limit, search, status, clientId, startedFrom, startedTo, hasPendingSession, sort }: UseProcessesParams) {
   return useQuery({
-    queryKey: ["processes", { page, limit, search, status, clientId, startedFrom, startedTo, sort }],
+    queryKey: ["processes", { page, limit, search, status, clientId, startedFrom, startedTo, hasPendingSession, sort }],
     queryFn: async () => {
-      const { data } = await getInterviewProcesses({ page, limit, search, status, clientId, startedFrom, startedTo, sort })
+      const { data } = await getInterviewProcesses({ page, limit, search, status, clientId, startedFrom, startedTo, hasPendingSession, sort })
       return data
     },
     placeholderData: keepPreviousData,

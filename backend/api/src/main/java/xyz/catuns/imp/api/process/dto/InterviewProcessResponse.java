@@ -2,6 +2,7 @@ package xyz.catuns.imp.api.process.dto;
 
 import xyz.catuns.imp.api.process.entity.ProcessStatus;
 import xyz.catuns.imp.api.session.dto.InterviewSessionResponse;
+import xyz.catuns.imp.api.session.entity.SessionStatus;
 
 import java.time.Instant;
 import java.util.List;
@@ -25,6 +26,9 @@ public record InterviewProcessResponse(
         /** Only populated by GET /processes/:id - null on list responses to avoid an N+1 per row. */
         List<InterviewSessionResponse> sessions,
         String currentRound,
-        int sessionCount
+        int sessionCount,
+        /** scheduledAt / status of the latest session (by scheduledAt); null when there are none. */
+        Instant lastSessionAt,
+        SessionStatus lastSessionStatus
 ) {
 }

@@ -9,7 +9,9 @@ import xyz.catuns.imp.api.process.dto.InterviewProcessResponse;
 import xyz.catuns.imp.api.process.dto.UpdateProcessRequest;
 import xyz.catuns.imp.api.process.entity.InterviewProcess;
 import xyz.catuns.imp.api.session.dto.InterviewSessionResponse;
+import xyz.catuns.imp.api.session.entity.SessionStatus;
 
+import java.time.Instant;
 import java.util.List;
 
 @Mapper(
@@ -23,6 +25,8 @@ public interface InterviewProcessMapper {
     @Mapping(target = "sessions", ignore = true)
     @Mapping(target = "currentRound", ignore = true)
     @Mapping(target = "sessionCount", constant = "0")
+    @Mapping(target = "lastSessionAt", ignore = true)
+    @Mapping(target = "lastSessionStatus", ignore = true)
     InterviewProcessResponse toResponse(InterviewProcess process);
 
     @Mapping(target = "candidateName", source = "candidateName")
@@ -30,16 +34,22 @@ public interface InterviewProcessMapper {
     @Mapping(target = "sessions", ignore = true)
     @Mapping(target = "currentRound", source = "currentRound")
     @Mapping(target = "sessionCount", source = "sessionCount")
+    @Mapping(target = "lastSessionAt", source = "lastSessionAt")
+    @Mapping(target = "lastSessionStatus", source = "lastSessionStatus")
     InterviewProcessResponse toResponse(InterviewProcess process, String candidateName, String clientName,
-                                         String currentRound, int sessionCount);
+                                         String currentRound, int sessionCount,
+                                         Instant lastSessionAt, SessionStatus lastSessionStatus);
 
     @Mapping(target = "candidateName", source = "candidateName")
     @Mapping(target = "clientName", source = "clientName")
     @Mapping(target = "sessions", source = "sessions")
     @Mapping(target = "currentRound", source = "currentRound")
     @Mapping(target = "sessionCount", source = "sessionCount")
+    @Mapping(target = "lastSessionAt", source = "lastSessionAt")
+    @Mapping(target = "lastSessionStatus", source = "lastSessionStatus")
     InterviewProcessResponse toResponse(InterviewProcess process, String candidateName, String clientName,
-                                         List<InterviewSessionResponse> sessions, String currentRound, int sessionCount);
+                                         List<InterviewSessionResponse> sessions, String currentRound, int sessionCount,
+                                         Instant lastSessionAt, SessionStatus lastSessionStatus);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "status", ignore = true)

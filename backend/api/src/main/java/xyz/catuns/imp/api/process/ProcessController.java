@@ -38,7 +38,8 @@ public class ProcessController {
                     + "search (candidate/client name, technology, job id), status/client/startedAt-range "
                     + "filters (startedFrom/startedTo as yyyy-MM-dd, inclusive), and sorting "
                     + "(?sort=field,asc|desc - candidateName, clientName, technology, status, startedAt, "
-                    + "closedAt, createdAt, updatedAt)."
+                    + "closedAt, createdAt, updatedAt). hasPendingSession=true|false filters on whether any "
+                    + "session is SCHEDULED, IN_REVIEW, or RESCHEDULED - false with status=ACTIVE finds stalled processes."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Paginated process list"),
@@ -51,11 +52,12 @@ public class ProcessController {
             @RequestParam(required = false) UUID clientId,
             @RequestParam(required = false) LocalDate startedFrom,
             @RequestParam(required = false) LocalDate startedTo,
+            @RequestParam(required = false) Boolean hasPendingSession,
             Pageable pageable,
             Authentication authentication
     ) {
         return ResponseEntity.ok(
-                PageResponse.from(processService.list(search, status, clientId, startedFrom, startedTo, pageable, authentication))
+                PageResponse.from(processService.list(search, status, clientId, startedFrom, startedTo, hasPendingSession, pageable, authentication))
         );
     }
 
