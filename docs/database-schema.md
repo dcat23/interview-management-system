@@ -191,7 +191,7 @@ CREATE INDEX idx_sessions_job_query
 - `mode` is free text (e.g. "Microsoft Teams", "Zoom", "On-site", "Phone"). Not an enum — client preferences vary.
 - `status_changed_by` is `NULL` when the background job performs the transition.
 - The partial index `idx_sessions_job_query` optimises the background job's query significantly at scale.
-- Creating, updating, or CSV-importing a session recomputes the parent process's `started_at` as `MIN(scheduled_at)` across its sessions — so `started_at` always reflects the earliest interview round, moving backward when an earlier round is added and never drifting forward on its own. Backfilled for pre-existing rows in `V13__backfill_started_at_from_sessions.sql`.
+- Creating, updating, or CSV-importing a session recomputes the parent process's `started_at` as `MIN(scheduled_at)` across its sessions — so `started_at` always reflects the earliest interview round, moving backward when an earlier round is added and never drifting forward on its own. Pre-existing rows were backfilled by a one-off migration before the schema was squashed into `V1__init_schema.sql`.
 
 ---
 
@@ -345,22 +345,10 @@ Any other transition returns HTTP 409.
 ## Flyway migration naming
 
 ```
-V1__create_enums.sql
-V2__create_users.sql
-V3__create_end_clients.sql
-V4__create_interview_processes.sql
-V5__create_interview_sessions.sql
-V6__create_questions.sql
-V7__create_session_questions.sql
-V8__create_feedback.sql
-V9__create_status_history.sql
-V10__add_search_vector_trigger.sql
-V11__create_question_versions.sql
-V12__add_job_id_to_interview_processes.sql
-V13__backfill_started_at_from_sessions.sql
-V14__add_rescheduled_to_session_status.sql
-V15__create_api_keys.sql
+V1__init_schema.sql
 ```
+
+`V1__init_schema.sql` is a baseline that squashes the original V1–V15 migrations. New migrations continue from `V2__`.
 
 ---
 
