@@ -1,1 +1,0 @@
-ALTER TYPE session_status ADD VALUE 'rescheduled';

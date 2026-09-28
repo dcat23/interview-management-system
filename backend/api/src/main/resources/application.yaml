@@ -49,6 +49,9 @@ spring:
     redis:
       port: ${REDIS_PORT:6379}
       host: ${REDIS_HOST:localhost}
+      password: ${REDIS_PASSWORD:}
+      ssl:
+        enabled: ${REDIS_SSL_ENABLED:false}
     web:
       pageable:
         page-parameter: page

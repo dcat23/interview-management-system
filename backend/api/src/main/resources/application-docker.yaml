@@ -1,7 +1,7 @@
 spring:
   data:
     redis:
-      host: redis
+      host: ${REDIS_HOST:redis}
   datasource:
     url: jdbc:postgresql://${DATABASE_HOST:postgres}:${DATABASE_PORT:5432}/${DATABASE_NAME:ims}
   kafka:

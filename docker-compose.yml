@@ -7,6 +7,15 @@ services:
       - "8080:8080"
     environment:
       SPRING_PROFILES_ACTIVE: docker,seed-data
+      DATABASE_HOST: ${DATABASE_HOST:-postgres}
+      DATABASE_PORT: ${DATABASE_PORT:-5432}
+      DATABASE_NAME: ${DATABASE_NAME:-ims}
+      DATABASE_USER: ${DATABASE_USER:-default}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-password}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      REDIS_SSL_ENABLED: ${REDIS_SSL_ENABLED:-false}
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRATION: 10h
       FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://web:4200}
@@ -17,16 +26,16 @@ services:
       JAVA_TOOL_OPTIONS: -Xmx512m -Xms256m
     mem_limit: 1g
     depends_on:
-      postgres:
-        condition: service_healthy
+#      postgres:
+#        condition: service_healthy
       kafka:
         condition: service_healthy
-      redis:
-        condition: service_healthy
+#      redis:
+#        condition: service_healthy
     networks:
       - microservice
       - kafka-net
-      - redis
+#      - redis
       - postgres
     restart: unless-stopped
     healthcheck:
@@ -165,41 +174,41 @@ services:
       retries: 15
       start_period: 30s
 
-  postgres:
-    image: postgres:17-alpine3.19
-    environment:
-      POSTGRES_USER: ${DATABASE_USER:-default}
-      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-password}
-      POSTGRES_DB: ${DATABASE_NAME:-ims}
-      PGDATA: /data/postgres
-    mem_limit: 512m
-    volumes:
-      - postgres:/data/postgres
-      - ./infra/postgres:/docker-entrypoint-initdb.d
-    ports:
-      - '${DATABASE_PORT:-5432}:5432'
-    networks:
-      - postgres
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USER:-default} -d ${DATABASE_NAME:-ims}"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
+#  postgres:
+#    image: postgres:17-alpine3.19
+#    environment:
+#      POSTGRES_USER: ${DATABASE_USER:-default}
+#      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-password}
+#      POSTGRES_DB: ${DATABASE_NAME:-ims}
+#      PGDATA: /data/postgres
+#    mem_limit: 512m
+#    volumes:
+#      - postgres:/data/postgres
+#      - ./infra/postgres:/docker-entrypoint-initdb.d
+#    ports:
+#      - '${DATABASE_PORT:-5432}:5432'
+#    networks:
+#      - postgres
+#    restart: unless-stopped
+#    healthcheck:
+#      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USER:-default} -d ${DATABASE_NAME:-ims}"]
+#      interval: 5s
+#      timeout: 5s
+#      retries: 10
 
-  redis:
-    image: redis
-    mem_limit: 256m
-    ports:
-      - "${REDIS_PORT:-6379}:6379"
-    networks:
-      - redis
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
+#  redis:
+#    image: redis
+#    mem_limit: 256m
+#    ports:
+#      - "${REDIS_PORT:-6379}:6379"
+#    networks:
+#      - redis
+#    restart: unless-stopped
+#    healthcheck:
+#      test: ["CMD", "redis-cli", "ping"]
+#      interval: 5s
+#      timeout: 5s
+#      retries: 10
 
 networks:
   microservice:
@@ -208,8 +217,8 @@ networks:
     driver: bridge
   postgres:
     driver: bridge
-  redis:
-    driver: bridge
+#  redis:
+#    driver: bridge
 
 volumes:
   kafka-1-data:
