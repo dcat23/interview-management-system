@@ -7,13 +7,15 @@ spring:
       bundle: aiven-kafka
   ssl:
     bundle:
+      # Each file can be overridden on its own (KAFKA_SSL_CERT/KEY/CA) for Cloud Run, which
+      # mounts every Secret Manager secret into its own directory — see infra/terraform.
       pem:
         aiven-kafka:
           keystore:
-            certificate: file:${KAFKA_SSL_DIR:/etc/kafka-ssl}/service.cert
-            private-key: file:${KAFKA_SSL_DIR:/etc/kafka-ssl}/service.key
+            certificate: ${KAFKA_SSL_CERT:file:${KAFKA_SSL_DIR:/etc/kafka-ssl}/service.cert}
+            private-key: ${KAFKA_SSL_KEY:file:${KAFKA_SSL_DIR:/etc/kafka-ssl}/service.key}
           truststore:
-            certificate: file:${KAFKA_SSL_DIR:/etc/kafka-ssl}/ca.pem
+            certificate: ${KAFKA_SSL_CA:file:${KAFKA_SSL_DIR:/etc/kafka-ssl}/ca.pem}
 app:
   kafka:
     replicas: ${KAFKA_REPLICAS:3}

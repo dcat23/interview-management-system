@@ -1,0 +1,24 @@
+# Copy to terraform.tfvars (gitignored). Secrets are NOT set here — use set-secrets.sh.
+
+project_id  = "eva-packaging"
+region      = "us-east4"
+environment = "prod"
+
+# Leave empty for the first apply; set after pushing the first image.
+image = ""
+# image = "us-east4-docker.pkg.dev/my-gcp-project/ims/api:<git-sha>"
+
+database = {
+  host = "ep-xxxx-pooler.c-10.us-east-1.aws.neon.tech"
+  name = "ims"
+  user = "neondb_owner"
+}
+
+redis = {
+  host = "xxxx.upstash.io"
+}
+
+kafka = {
+  bootstrap_servers = "kafka-xxxx.a.aivencloud.com:12874"
+  replicas          = 2
+}

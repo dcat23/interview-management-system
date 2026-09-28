@@ -1,5 +1,8 @@
 # Deployment
 
+> **Backend api now targets GCP Cloud Run** — see [`infra/terraform/README.md`](../infra/terraform/README.md).
+> The AWS/ECS sections below are the original design and no longer describe how the api is deployed.
+
 ## Environments
 
 | Environment | Purpose                                 | Branch         | URL                    |

@@ -37,3 +37,12 @@ build/
 
 # Aiven Kafka client certificates
 infra/kafka/aiven/
+
+### Terraform ###
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+tfplan
+terraform.tfvars
+backend.hcl
