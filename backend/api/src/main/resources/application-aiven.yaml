@@ -1,0 +1,19 @@
+spring:
+  kafka:
+    bootstrap-servers: ${BOOTSTRAP_SERVERS}
+    security:
+      protocol: SSL
+    ssl:
+      bundle: aiven-kafka
+  ssl:
+    bundle:
+      pem:
+        aiven-kafka:
+          keystore:
+            certificate: file:${KAFKA_SSL_DIR:/etc/kafka-ssl}/service.cert
+            private-key: file:${KAFKA_SSL_DIR:/etc/kafka-ssl}/service.key
+          truststore:
+            certificate: file:${KAFKA_SSL_DIR:/etc/kafka-ssl}/ca.pem
+app:
+  kafka:
+    replicas: ${KAFKA_REPLICAS:3}

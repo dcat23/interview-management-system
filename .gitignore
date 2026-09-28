@@ -34,3 +34,6 @@ build/
 !.env.example
 
 .flattened-pom.xml
+
+# Aiven Kafka client certificates
+infra/kafka/aiven/

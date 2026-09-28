@@ -6,7 +6,7 @@ services:
     ports:
       - "8080:8080"
     environment:
-      SPRING_PROFILES_ACTIVE: docker,seed-data
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-docker,seed-data}
       DATABASE_HOST: ${DATABASE_HOST:-postgres}
       DATABASE_PORT: ${DATABASE_PORT:-5432}
       DATABASE_NAME: ${DATABASE_NAME:-ims}
@@ -16,6 +16,8 @@ services:
       REDIS_PORT: ${REDIS_PORT:-6379}
       REDIS_PASSWORD: ${REDIS_PASSWORD:-}
       REDIS_SSL_ENABLED: ${REDIS_SSL_ENABLED:-false}
+      BOOTSTRAP_SERVERS: ${BOOTSTRAP_SERVERS:-kafka:9090}
+      KAFKA_REPLICAS: ${KAFKA_REPLICAS:-3}
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRATION: 10h
       FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://web:4200}
@@ -25,16 +27,19 @@ services:
       # an absolute -Xmx sidesteps that detection entirely.
       JAVA_TOOL_OPTIONS: -Xmx512m -Xms256m
     mem_limit: 1g
-    depends_on:
+    volumes:
+      # Aiven client certificates (service.cert, service.key, ca.pem), read by the aiven profile
+      - ./infra/kafka/aiven:/etc/kafka-ssl:ro
+#    depends_on:
 #      postgres:
 #        condition: service_healthy
-      kafka:
-        condition: service_healthy
+#      kafka:
+#        condition: service_healthy
 #      redis:
 #        condition: service_healthy
     networks:
       - microservice
-      - kafka-net
+#      - kafka-net
 #      - redis
       - postgres
     restart: unless-stopped
@@ -138,41 +143,41 @@ services:
 #    mem_limit: 256m
 #    cpus: 0.5
 
-  kafka:
-    image: confluentinc/cp-kafka:8.2.0
-    hostname: kafka-1
-    ports:
-      - "9092:9092"
-    environment:
-      CLUSTER_ID: "WnLkTHhkQaiJbwP8FClPhw"
-      KAFKA_NODE_ID: 1
-      KAFKA_PROCESS_ROLES: broker,controller
-      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka-1:9091
-      KAFKA_LISTENERS: "PLAINTEXT://:9090,CONTROLLER://:9091,EXTERNAL://:9092"
-      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka:9090,EXTERNAL://${HOSTNAME:-localhost}:9092"
-      KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT"
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-      KAFKA_LOG_DIRS: /var/lib/kafka/data
+#  kafka:
+#    image: confluentinc/cp-kafka:8.2.0
+#    hostname: kafka-1
+#    ports:
+#      - "9092:9092"
+#    environment:
+#      CLUSTER_ID: "WnLkTHhkQaiJbwP8FClPhw"
+#      KAFKA_NODE_ID: 1
+#      KAFKA_PROCESS_ROLES: broker,controller
+#      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka-1:9091
+#      KAFKA_LISTENERS: "PLAINTEXT://:9090,CONTROLLER://:9091,EXTERNAL://:9092"
+#      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka:9090,EXTERNAL://${HOSTNAME:-localhost}:9092"
+#      KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+#      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT"
+#      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+#      KAFKA_LOG_DIRS: /var/lib/kafka/data
 
-      # single broker properties
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: "1"
-      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: "1"
-      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: "1"
-      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: "0"
-    mem_limit: 1500m
-    volumes:
-      - kafka-1-data:/var/lib/kafka/data
-      - ./infra/kafka/server.properties:/opt/kafka/config/server.properties
-    networks:
-      - kafka-net
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server localhost:9090"]
-      interval: 10s
-      timeout: 10s
-      retries: 15
-      start_period: 30s
+#      # single broker properties
+#      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: "1"
+#      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: "1"
+#      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: "1"
+#      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: "0"
+#    mem_limit: 1500m
+#    volumes:
+#      - kafka-1-data:/var/lib/kafka/data
+#      - ./infra/kafka/server.properties:/opt/kafka/config/server.properties
+#    networks:
+#      - kafka-net
+#    restart: unless-stopped
+#    healthcheck:
+#      test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server localhost:9090"]
+#      interval: 10s
+#      timeout: 10s
+#      retries: 15
+#      start_period: 30s
 
 #  postgres:
 #    image: postgres:17-alpine3.19
@@ -213,8 +218,8 @@ services:
 networks:
   microservice:
     driver: bridge
-  kafka-net:
-    driver: bridge
+#  kafka-net:
+#    driver: bridge
   postgres:
     driver: bridge
 #  redis:
