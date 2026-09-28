@@ -50,6 +50,30 @@ public class SessionController {
                 .body(created);
     }
 
+    @PostMapping("/sessions/{id}/reschedule")
+    @Operation(
+            summary = "Reschedule session",
+            description = "Marks the session RESCHEDULED and creates its replacement under the same process, "
+                    + "atomically. Admin and marketer roles only. Returns the new session."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Replacement session created"),
+            @ApiResponse(responseCode = "400", description = "Validation error"),
+            @ApiResponse(responseCode = "403", description = "Insufficient role"),
+            @ApiResponse(responseCode = "404", description = "Session or supporter not found"),
+            @ApiResponse(responseCode = "409", description = "Session's current status can't be rescheduled")
+    })
+    public ResponseEntity<InterviewSessionResponse> reschedule(
+            @PathVariable UUID id,
+            @Valid @RequestBody CreateSessionRequest request,
+            Authentication authentication
+    ) {
+        InterviewSessionResponse created = sessionService.reschedule(id, request, authentication);
+        return ResponseEntity
+                .created(URI.create("/sessions/" + created.id()))
+                .body(created);
+    }
+
     @GetMapping("/processes/{processId}/sessions")
     @Operation(summary = "List sessions for a process", description = "Candidates see only their own process's sessions; admin, marketer, and supporter see all sessions in the process.")
     @ApiResponses({

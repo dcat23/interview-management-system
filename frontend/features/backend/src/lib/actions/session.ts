@@ -127,6 +127,28 @@ export const createSession = withApi(async (processId: string, options: CreateSe
 }, {});
 
 /**
+ * [reschedule-session]
+ *
+ * POST /sessions/:id/reschedule. Admin and marketer roles only. Marks the
+ * session RESCHEDULED and creates its replacement under the same process in
+ * one transaction; returns the new session. 409 if the session's current
+ * status can't be rescheduled.
+ */
+export type RescheduleSessionRequest = CreateSessionRequest;
+export type RescheduleSessionResponse = InterviewSession;
+
+export const rescheduleSession = withApi(async (sessionId: string, options: RescheduleSessionRequest) => {
+  const parsed = createSessionSchema.safeParse(options);
+
+  if (!parsed.success) {
+    throw parsed.error;
+  }
+
+  const endpoint = `/sessions/${sessionId}/reschedule`;
+  return api.post<RescheduleSessionResponse>(endpoint, parsed.data);
+}, {});
+
+/**
  * [lookup-session-modes]
  *
  * GET /sessions/modes/lookup. Autocomplete over modes already in use (free

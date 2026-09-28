@@ -41,6 +41,9 @@ public class SessionStatusTransitionService {
         Map<SessionStatus, Set<UserRole>> fromScheduled = new EnumMap<>(SessionStatus.class);
         fromScheduled.put(SessionStatus.IN_REVIEW, Set.of(UserRole.SUPPORTER));
         fromScheduled.put(SessionStatus.CANCELLED, Set.of(UserRole.MARKETER, UserRole.ADMIN));
+        // Applied by InterviewSessionService.reschedule, which books the replacement session in the
+        // same transaction.
+        fromScheduled.put(SessionStatus.RESCHEDULED, Set.of(UserRole.MARKETER, UserRole.ADMIN));
         ALLOWED_TRANSITIONS.put(SessionStatus.SCHEDULED, fromScheduled);
         // NO_SHOW is treated like SCHEDULED: same outgoing transitions/roles.
         ALLOWED_TRANSITIONS.put(SessionStatus.NO_SHOW, fromScheduled);

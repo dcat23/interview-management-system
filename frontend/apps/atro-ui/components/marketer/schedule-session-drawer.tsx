@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useState, type FormEvent } from 'react';
+import moment from 'moment';
 import { useQueryClient } from '@tanstack/react-query';
 import { Loader2Icon, XIcon } from 'lucide-react';
-import { createSession, lookupSessionModes, lookupSessionRounds } from '@feature/backend/server';
+import { createSession, lookupSessionModes, lookupSessionRounds, rescheduleSession } from '@feature/backend/server';
 import { useProcesses } from '@feature/backend/hooks/process/use-processes';
 import type { InterviewProcess, InterviewSession, UserLookup } from '@feature/base/server';
 import { Button } from '@app/atro-ui/components/ui/common/button';
@@ -43,7 +44,21 @@ interface FormState {
   description: string;
 }
 
-function emptyForm(process: InterviewProcess | null): FormState {
+function emptyForm(process: InterviewProcess | null, rescheduleFrom: InterviewSession | null): FormState {
+  if (rescheduleFrom) {
+    // Carry the original booking over; only the new date & time must be picked.
+    return {
+      process: null,
+      supporter: rescheduleFrom.supporterId
+        ? { id: rescheduleFrom.supporterId, name: rescheduleFrom.supporterName ?? 'Unknown supporter', role: 'SUPPORTER' }
+        : null,
+      round: rescheduleFrom.round,
+      mode: rescheduleFrom.mode,
+      durationMinutes: String(rescheduleFrom.durationMinutes),
+      scheduledAt: undefined,
+      description: rescheduleFrom.description ?? '',
+    };
+  }
   return {
     process,
     supporter: null,
@@ -153,21 +168,29 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   // Preselects the process, e.g. right after creating one.
   initialProcess?: InterviewProcess | null;
+  // Reschedules this session instead: it's marked RESCHEDULED and the new one is booked under its process.
+  rescheduleFrom?: InterviewSession | null;
   onScheduled?: (session: InterviewSession) => void;
 }
 
-export function ScheduleSessionDrawer({ open, onOpenChange, initialProcess = null, onScheduled }: Props) {
+export function ScheduleSessionDrawer({
+  open,
+  onOpenChange,
+  initialProcess = null,
+  rescheduleFrom = null,
+  onScheduled,
+}: Props) {
   const queryClient = useQueryClient();
-  const [form, setForm] = useState<FormState>(() => emptyForm(initialProcess));
+  const [form, setForm] = useState<FormState>(() => emptyForm(initialProcess, rescheduleFrom));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) {
-      setForm(emptyForm(initialProcess));
+      setForm(emptyForm(initialProcess, rescheduleFrom));
       setError(null);
     }
-  }, [open, initialProcess]);
+  }, [open, initialProcess, rescheduleFrom]);
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -175,7 +198,7 @@ export function ScheduleSessionDrawer({ open, onOpenChange, initialProcess = nul
   const duration = Number(form.durationMinutes);
   const canSubmit =
     !saving &&
-    form.process !== null &&
+    (rescheduleFrom !== null || form.process !== null) &&
     form.supporter !== null &&
     form.round.trim() !== '' &&
     form.mode.trim() !== '' &&
@@ -185,11 +208,13 @@ export function ScheduleSessionDrawer({ open, onOpenChange, initialProcess = nul
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!canSubmit || !form.process || !form.supporter || !form.scheduledAt) return;
+    if (!canSubmit || !form.supporter || !form.scheduledAt) return;
+    const { process } = form;
+    if (!rescheduleFrom && !process) return;
 
     setSaving(true);
     setError(null);
-    const result = await createSession(form.process.id, {
+    const request = {
       supporterId: form.supporter.id,
       round: form.round.trim(),
       mode: form.mode.trim(),
@@ -197,11 +222,16 @@ export function ScheduleSessionDrawer({ open, onOpenChange, initialProcess = nul
       description: form.description.trim() || undefined,
       // The picker yields a local-time Date; toISOString sends the UTC instant the API expects.
       scheduledAt: form.scheduledAt.toISOString(),
-    });
+    };
+    const result = rescheduleFrom
+      ? await rescheduleSession(rescheduleFrom.id, request)
+      : await createSession((process as InterviewProcess).id, request);
     setSaving(false);
 
     if (!result.success || !result.data) {
-      setError(result.message ?? 'Could not schedule the session. Try again.');
+      setError(
+        result.message ?? `Could not ${rescheduleFrom ? 'reschedule' : 'schedule'} the session. Try again.`,
+      );
       return;
     }
 
@@ -215,8 +245,12 @@ export function ScheduleSessionDrawer({ open, onOpenChange, initialProcess = nul
     <Drawer direction="right" open={open} onOpenChange={(next) => !saving && onOpenChange(next)}>
       <DrawerContent>
         <DrawerHeader>
-          <DrawerTitle>Schedule session</DrawerTitle>
-          <DrawerDescription>Book an interview round and assign a supporter.</DrawerDescription>
+          <DrawerTitle>{rescheduleFrom ? 'Reschedule session' : 'Schedule session'}</DrawerTitle>
+          <DrawerDescription>
+            {rescheduleFrom
+              ? 'Book a new time. The current session will be marked rescheduled.'
+              : 'Book an interview round and assign a supporter.'}
+          </DrawerDescription>
         </DrawerHeader>
 
         <form
@@ -224,11 +258,25 @@ export function ScheduleSessionDrawer({ open, onOpenChange, initialProcess = nul
           onSubmit={onSubmit}
           className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 pb-5"
         >
-          <ProcessPicker
-            value={form.process}
-            onChange={(process) => set('process', process)}
-            disabled={saving}
-          />
+          {rescheduleFrom ? (
+            <div className="space-y-1.5">
+              <span className={fieldLabelClass}>Rescheduling</span>
+              <div className="border border-border bg-background px-3 py-2 text-sm">
+                <span className="block truncate font-medium text-foreground">
+                  {rescheduleFrom.candidateName ?? 'Unknown candidate'} · {rescheduleFrom.clientName ?? 'Unknown client'}
+                </span>
+                <span className="block truncate text-xs text-muted-foreground">
+                  Was {moment(rescheduleFrom.scheduledAt).format('MMM D, YYYY · h:mm A')}
+                </span>
+              </div>
+            </div>
+          ) : (
+            <ProcessPicker
+              value={form.process}
+              onChange={(process) => set('process', process)}
+              disabled={saving}
+            />
+          )}
 
           <UserLookupField
             label="Supporter"
@@ -317,7 +365,7 @@ export function ScheduleSessionDrawer({ open, onOpenChange, initialProcess = nul
           </Button>
           <Button type="submit" form="schedule-session-form" disabled={!canSubmit}>
             {saving && <Loader2Icon className="animate-spin" aria-hidden />}
-            Schedule
+            {rescheduleFrom ? 'Reschedule' : 'Schedule'}
           </Button>
         </DrawerFooter>
       </DrawerContent>

@@ -101,6 +101,21 @@ public class InterviewSessionService {
                 resolveUserName(session.getSupporterId()));
     }
 
+    /**
+     * Marks the session RESCHEDULED and books its replacement under the same process. Both happen in one
+     * transaction, so a failed create leaves the original session untouched.
+     */
+    @PreAuthorize("hasAnyRole('ADMIN','MARKETER')")
+    @Transactional
+    public InterviewSessionResponse reschedule(UUID sessionId, CreateSessionRequest request,
+                                               Authentication authentication) {
+        InterviewSession previous = sessionRepository.findById(sessionId)
+                .orElseThrow(() -> new NotFoundException("Session not found"));
+
+        transitionService.transition(sessionId, SessionStatus.RESCHEDULED, authentication);
+        return self.create(previous.getProcessId(), request);
+    }
+
     private void autoPassInReviewSessions(UUID processId) {
         sessionRepository.findByProcessIdAndStatus(processId, SessionStatus.IN_REVIEW)
                 .forEach(inReview -> transitionService.transitionByJob(inReview.getId(), SessionStatus.PASSED, null));

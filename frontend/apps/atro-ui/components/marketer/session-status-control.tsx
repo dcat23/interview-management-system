@@ -3,17 +3,25 @@
 import { useState } from 'react';
 import moment from 'moment';
 import { useQueryClient } from '@tanstack/react-query';
-import { Loader2Icon } from 'lucide-react';
+import { CalendarClockIcon, Loader2Icon } from 'lucide-react';
+import { toast } from 'sonner';
 import { useTransitionSessionStatus } from '@feature/backend/hooks/session/use-transition-session-status';
-import { MARKETER_SESSION_TRANSITIONS, type InterviewSession, type SessionStatus } from '@feature/base/server';
+import {
+  MARKETER_RESCHEDULABLE_STATUSES,
+  MARKETER_SESSION_TRANSITIONS,
+  type InterviewSession,
+  type SessionStatus,
+} from '@feature/base/server';
 import { Button } from '@app/atro-ui/components/ui/common/button';
 import { SESSION_STATUS_CONFIG } from '@app/atro-ui/components/supporter/session-status-badge';
+import { ScheduleSessionDrawer } from './schedule-session-drawer';
 
 // Final statuses can't be reversed by anyone, so their confirmation says so.
 const TERMINAL: SessionStatus[] = ['PASSED', 'REJECTED', 'CANCELLED'];
 
 interface Props {
   session: InterviewSession;
+  // Also called with the replacement session after a reschedule.
   onStatusChanged?: (session: InterviewSession) => void;
 }
 
@@ -21,8 +29,10 @@ export function SessionStatusControl({ session, onStatusChanged }: Props) {
   const queryClient = useQueryClient();
   const transition = useTransitionSessionStatus();
   const [target, setTarget] = useState<SessionStatus | null>(null);
+  const [rescheduling, setRescheduling] = useState(false);
 
   const targets = MARKETER_SESSION_TRANSITIONS[session.status];
+  const canReschedule = MARKETER_RESCHEDULABLE_STATUSES.includes(session.status);
 
   const apply = async () => {
     if (!target) return;
@@ -45,7 +55,7 @@ export function SessionStatusControl({ session, onStatusChanged }: Props) {
         )}
       </div>
 
-      {targets.length === 0 ? (
+      {targets.length === 0 && !canReschedule ? (
         <p className="text-sm text-muted-foreground">
           {SESSION_STATUS_CONFIG[session.status].label} is final — no further changes.
         </p>
@@ -79,7 +89,25 @@ export function SessionStatusControl({ session, onStatusChanged }: Props) {
               {SESSION_STATUS_CONFIG[status].label}
             </Button>
           ))}
+          {canReschedule && (
+            <Button variant="outline" size="sm" onClick={() => setRescheduling(true)}>
+              <CalendarClockIcon />
+              Reschedule
+            </Button>
+          )}
         </div>
+      )}
+
+      {canReschedule && (
+        <ScheduleSessionDrawer
+          open={rescheduling}
+          onOpenChange={setRescheduling}
+          rescheduleFrom={session}
+          onScheduled={(created) => {
+            toast.success(`${created.round} rescheduled to ${moment(created.scheduledAt).format('MMM D, h:mm A')}`);
+            onStatusChanged?.(created);
+          }}
+        />
       )}
     </div>
   );

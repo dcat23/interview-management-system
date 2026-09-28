@@ -9,14 +9,21 @@ import { SessionStatus } from '../types/session';
  * August 1st 2026, 8:50:20 pm
  */
 export const SESSION_STATUS_TRANSITIONS: Record<SessionStatus, SessionStatus[]> = {
-  SCHEDULED: ['SCHEDULED', 'IN_REVIEW', 'CANCELLED'],
+  SCHEDULED: ['SCHEDULED', 'IN_REVIEW', 'CANCELLED', 'RESCHEDULED'],
   IN_REVIEW: ['IN_REVIEW', 'PASSED', 'REJECTED', 'NO_SHOW', 'CANCELLED'],
   PASSED: ['PASSED'],
   REJECTED: ['REJECTED'],
-  NO_SHOW: ['NO_SHOW', 'IN_REVIEW', 'CANCELLED'],
+  NO_SHOW: ['NO_SHOW', 'IN_REVIEW', 'CANCELLED', 'RESCHEDULED'],
   CANCELLED: ['CANCELLED'],
   RESCHEDULED: ['RESCHEDULED', 'IN_REVIEW', 'CANCELLED'],
 };
+
+/**
+ * Statuses the MARKETER role may reschedule from (POST /sessions/:id/reschedule),
+ * which marks the session RESCHEDULED and books a replacement. Kept out of
+ * MARKETER_SESSION_TRANSITIONS because it isn't a plain status change.
+ */
+export const MARKETER_RESCHEDULABLE_STATUSES: SessionStatus[] = ['SCHEDULED', 'NO_SHOW', 'RESCHEDULED'];
 
 /**
  * Transitions the MARKETER role may apply, per SessionStatusTransitionService
