@@ -10,6 +10,7 @@ stay external; this stack only owns what runs in GCP.
 | `secrets.tf`           | Secret Manager secrets (containers only — values via `set-secrets.sh`)          |
 | `iam.tf`               | `ims-api` runtime service account, per-secret accessor, log/metric/trace writer |
 | `cloud_run.tf`         | `ims-api` Cloud Run v2 service + public invoker binding                         |
+| `github_actions.tf`    | GitHub OIDC pool/provider + `ims-api-deployer` SA for the deploy workflow        |
 
 Not managed here: API enablement and the state bucket (`bootstrap.sh`), secret values
 (`set-secrets.sh`), image rollouts (`gcloud run deploy`).
@@ -50,7 +51,15 @@ curl -f "$(terraform output -raw service_url)/actuator/health"
 
 ## Subsequent releases
 
-Terraform ignores image drift on the service, so ship new images with gcloud:
+Pushes to `main` that touch `backend/api/**` deploy automatically via
+`.github/workflows/api-deploy.yml`: `mvnw verify`, then build → push `api:<sha>` → roll the
+image onto `ims-api` → `/actuator/health` smoke test. It authenticates keylessly through
+Workload Identity Federation (`github_actions.tf`): only `refs/heads/main` of
+`github_repository` can mint tokens, as `ims-api-deployer`, which may push to the `ims` repo,
+deploy `ims-api`, and act as `ims-api` — nothing else. It can also be run by hand from the
+Actions tab (`workflow_dispatch`, still `main` only).
+
+Terraform ignores image drift on the service, so to ship by hand use gcloud:
 
 ```bash
 docker build -t "$REPO/api:$TAG" backend/api && docker push "$REPO/api:$TAG"

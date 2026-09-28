@@ -15,3 +15,12 @@ output "secret_ids" {
 output "service_url" {
   value = one(google_cloud_run_v2_service.api[*].uri)
 }
+
+output "github_workload_identity_provider" {
+  description = "workload_identity_provider for google-github-actions/auth."
+  value       = google_iam_workload_identity_pool_provider.github.name
+}
+
+output "github_deployer_service_account" {
+  value = google_service_account.deployer.email
+}

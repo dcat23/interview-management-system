@@ -1,0 +1,86 @@
+name: API deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - backend/api/**
+      - .github/workflows/api-deploy.yml
+  workflow_dispatch:
+
+# One deploy at a time; a newer push waits rather than cancelling a rollout mid-way.
+concurrency:
+  group: api-deploy
+  cancel-in-progress: false
+
+env:
+  PROJECT_ID: eva-packaging
+  REGION: us-east4
+  SERVICE: ims-api
+  IMAGE: us-east4-docker.pkg.dev/eva-packaging/ims/api
+  # From `terraform output` in infra/terraform (github_actions.tf) — identifiers, not secrets.
+  WORKLOAD_IDENTITY_PROVIDER: projects/95207592372/locations/global/workloadIdentityPools/github/providers/github-actions
+  DEPLOYER_SERVICE_ACCOUNT: ims-api-deployer@eva-packaging.iam.gserviceaccount.com
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend/api
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      # Testcontainers starts Postgres/Redis/Kafka on the runner's Docker daemon.
+      - name: Test
+        run: ./mvnw -B verify
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    environment:
+      name: prod
+      url: ${{ steps.deploy.outputs.url }}
+    permissions:
+      contents: read
+      id-token: write # OIDC token for Workload Identity Federation
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.DEPLOYER_SERVICE_ACCOUNT }}
+
+      - uses: google-github-actions/setup-gcloud@v3
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: backend/api
+          push: true
+          tags: ${{ env.IMAGE }}:${{ github.sha }}
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,scope=api,mode=max
+
+      # Only the image changes — env, secrets, probes and scaling stay as Terraform set them.
+      - id: deploy
+        uses: google-github-actions/deploy-cloudrun@v3
+        with:
+          service: ${{ env.SERVICE }}
+          region: ${{ env.REGION }}
+          image: ${{ env.IMAGE }}:${{ github.sha }}
+
+      - name: Smoke test
+        run: curl -fsS --retry 5 --retry-delay 5 --retry-all-errors "${{ steps.deploy.outputs.url }}/actuator/health"

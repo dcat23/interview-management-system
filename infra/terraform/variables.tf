@@ -118,3 +118,17 @@ variable "extra_env" {
   type        = map(string)
   default     = {}
 }
+
+# --- CI/CD -------------------------------------------------------------------
+
+variable "github_repository" {
+  description = "owner/repo allowed to deploy via Workload Identity Federation."
+  type        = string
+  default     = "dcat23/interview-management-system"
+}
+
+variable "github_deploy_ref" {
+  description = "Git ref allowed to deploy."
+  type        = string
+  default     = "refs/heads/main"
+}
