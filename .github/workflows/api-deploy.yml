@@ -41,6 +41,48 @@ jobs:
       - name: Test
         run: ./mvnw -B verify
 
+      # Turn Surefire results into annotations so failures show on the run summary (and via
+      # the public check-runs API) without digging through the raw log.
+      - name: Report test failures
+        if: failure()
+        shell: python
+        run: |
+          import glob, xml.etree.ElementTree as ET
+
+          def esc(s):
+              return s.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+
+          suites, failures = [], []
+          for path in glob.glob("target/surefire-reports/TEST-*.xml"):
+              suite = ET.parse(path).getroot()
+              suites.append((float(suite.get("time", 0)), suite.get("name")))
+              for case in suite.iter("testcase"):
+                  for kind in ("failure", "error"):
+                      node = case.find(kind)
+                      if node is None:
+                          continue
+                      cls = case.get("classname", "")
+                      detail = (node.get("message") or "") + "\n" + "\n".join((node.text or "").splitlines()[:15])
+                      failures.append((cls, case.get("name"), case.get("time"), kind, node.get("type", ""), detail))
+
+          if not suites:
+              print("::error title=No Surefire reports::target/surefire-reports is empty — the build failed before or outside the tests")
+          # GitHub keeps at most 10 error annotations per step; the first ones are the useful ones.
+          for cls, name, secs, kind, etype, detail in failures[:10]:
+              file = "backend/api/src/test/java/" + cls.split("$")[0].replace(".", "/") + ".java"
+              title = f"{cls.rsplit('.', 1)[-1]}.{name} {kind} ({secs}s): {etype}"
+              print(f"::error file={file},title={esc(title)}::{esc(detail.strip())}")
+          slowest = ", ".join(f"{n.rsplit('.', 1)[-1]} {t:.0f}s" for t, n in sorted(suites, reverse=True)[:8])
+          print(f"::notice title={len(failures)} failed of {len(suites)} suites; slowest::{esc(slowest)}")
+
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports
+          path: backend/api/target/surefire-reports/
+          retention-days: 7
+
   deploy:
     needs: test
     runs-on: ubuntu-latest
