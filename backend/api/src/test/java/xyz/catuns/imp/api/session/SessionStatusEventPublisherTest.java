@@ -15,6 +15,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.boot.autoconfigure.kafka.KafkaConnectionDetails;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
 import org.springframework.kafka.test.utils.KafkaTestUtils;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -60,8 +61,8 @@ class SessionStatusEventPublisherTest {
     @Autowired InterviewSessionRepository sessionRepository;
     @Autowired PasswordEncoder passwordEncoder;
 
-    @Value("${spring.kafka.bootstrap-servers}")
-    private String bootstrapServers;
+    // The Testcontainers broker's address — spring.kafka.bootstrap-servers still says localhost:9092.
+    @Autowired KafkaConnectionDetails kafkaConnectionDetails;
 
     @Value("${app.kafka.topics.session-status-changed}")
     private String topic;
@@ -174,7 +175,8 @@ class SessionStatusEventPublisherTest {
     }
 
     private Consumer<String, String> createConsumer(String groupId) {
-        Map<String, Object> props = KafkaTestUtils.consumerProps(bootstrapServers, groupId, "true");
+        Map<String, Object> props = KafkaTestUtils.consumerProps(
+                String.join(",", kafkaConnectionDetails.getConsumer().getBootstrapServers()), groupId, "true");
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         return new DefaultKafkaConsumerFactory<>(props, new StringDeserializer(), new StringDeserializer())
                 .createConsumer();

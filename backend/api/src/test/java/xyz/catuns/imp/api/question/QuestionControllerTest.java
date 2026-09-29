@@ -395,7 +395,8 @@ class QuestionControllerTest {
         @Test
         @DisplayName("admin links question to session → 201")
         void adminLinks() throws Exception {
-            var req = new LinkQuestionRequest(seededQuestionId, 1, "Pay attention");
+            UUID questionId = unlinkedQuestion();
+            var req = new LinkQuestionRequest(questionId, 1, "Pay attention");
 
             mockMvc.perform(post("/sessions/" + sessionId + "/questions")
                             .header("Authorization", "Bearer " + adminToken)
@@ -403,7 +404,7 @@ class QuestionControllerTest {
                             .content(objectMapper.writeValueAsString(req)))
                     .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.sessionId").value(sessionId.toString()))
-                    .andExpect(jsonPath("$.questionId").value(seededQuestionId.toString()))
+                    .andExpect(jsonPath("$.questionId").value(questionId.toString()))
                     .andExpect(jsonPath("$.displayOrder").value(1));
         }
 
@@ -438,7 +439,7 @@ class QuestionControllerTest {
         @Test
         @DisplayName("linking same question twice → 409")
         void duplicateLinkConflict() throws Exception {
-            var req = new LinkQuestionRequest(seededQuestionId, 1, null);
+            var req = new LinkQuestionRequest(unlinkedQuestion(), 1, null);
 
             mockMvc.perform(post("/sessions/" + sessionId + "/questions")
                             .header("Authorization", "Bearer " + adminToken)
@@ -679,6 +680,13 @@ class QuestionControllerTest {
                     s.setScheduledAt(Instant.now().plus(7, ChronoUnit.DAYS));
                     return sessionRepository.save(s);
                 });
+    }
+
+    // The seeded session and question are shared by every test, so tests that assert on a
+    // first-time link need a question nothing else has linked yet.
+    private UUID unlinkedQuestion() {
+        return seedQuestion(clientId, userRepository.findByEmail(ADMIN_EMAIL).get().getId(),
+                "Link " + UUID.randomUUID(), "Technical", "Fresh question for a link test").getId();
     }
 
     private Question seedQuestion(UUID clientId, UUID createdBy, String topic, String round, String body) {

@@ -71,6 +71,8 @@ class ApiKeyAuthFilterTest {
         owner.setEmail("supporter@example.com");
 
         when(apiKeyRepository.findByKeyHash(ApiKeyGenerator.hash(rawKey))).thenReturn(Optional.of(apiKey));
+        // The filter continues with save()'s return value, as with a real repository.
+        when(apiKeyRepository.save(apiKey)).thenReturn(apiKey);
         when(userRepository.findById(ownerId)).thenReturn(Optional.of(owner));
 
         MockHttpServletRequest request = new MockHttpServletRequest();

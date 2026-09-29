@@ -47,10 +47,14 @@ jobs:
         if: failure()
         shell: python
         run: |
-          import glob, xml.etree.ElementTree as ET
+          import glob, re, xml.etree.ElementTree as ET
 
           def esc(s):
               return s.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+
+          # Nested @DisplayName classes make testcase classname a display string, so locate the
+          # source from the first project frame in the stack trace instead.
+          FRAME = re.compile(r"at (xyz\.catuns\.[\w.]+?)(?:\$[\w$]+)?\.[\w$<>]+\(\w+\.java:(\d+)\)")
 
           suites, failures = [], []
           for path in glob.glob("target/surefire-reports/TEST-*.xml"):
@@ -61,17 +65,27 @@ jobs:
                       node = case.find(kind)
                       if node is None:
                           continue
-                      cls = case.get("classname", "")
-                      detail = (node.get("message") or "") + "\n" + "\n".join((node.text or "").splitlines()[:15])
-                      failures.append((cls, case.get("name"), case.get("time"), kind, node.get("type", ""), detail))
+                      trace = node.text or ""
+                      m = FRAME.search(trace)
+                      file = ("backend/api/src/test/java/" + m.group(1).replace(".", "/") + ".java") if m else None
+                      line = m.group(2) if m else None
+                      message = (node.get("message") or "").strip() or (trace.strip().splitlines() or [""])[0]
+                      failures.append(dict(cls=case.get("classname", ""), name=case.get("name"), secs=case.get("time"),
+                                           kind=kind, etype=node.get("type", ""), message=message,
+                                           detail=message + "\n" + "\n".join(trace.splitlines()[:15]),
+                                           file=file, line=line))
 
           if not suites:
               print("::error title=No Surefire reports::target/surefire-reports is empty — the build failed before or outside the tests")
-          # GitHub keeps at most 10 error annotations per step; the first ones are the useful ones.
-          for cls, name, secs, kind, etype, detail in failures[:10]:
-              file = "backend/api/src/test/java/" + cls.split("$")[0].replace(".", "/") + ".java"
-              title = f"{cls.rsplit('.', 1)[-1]}.{name} {kind} ({secs}s): {etype}"
-              print(f"::error file={file},title={esc(title)}::{esc(detail.strip())}")
+          # GitHub keeps at most 10 error annotations per step; the full list goes in the notice below.
+          for f in failures[:10]:
+              loc = f"file={f['file']},line={f['line']}," if f["file"] else ""
+              title = f"{f['cls'].rsplit('.', 1)[-1]}.{f['name']} {f['kind']} ({f['secs']}s): {f['etype']}"
+              print(f"::error {loc}title={esc(title)}::{esc(f['detail'].strip())}")
+          if failures:
+              listing = "\n".join(f"{f['cls'].rsplit('.', 1)[-1]} > {f['name']} ({f['secs']}s): {f['message'].splitlines()[0][:200] if f['message'] else f['etype']}"
+                                   for f in failures)
+              print(f"::notice title=All {len(failures)} failures::{esc(listing)}")
           slowest = ", ".join(f"{n.rsplit('.', 1)[-1]} {t:.0f}s" for t, n in sorted(suites, reverse=True)[:8])
           print(f"::notice title={len(failures)} failed of {len(suites)} suites; slowest::{esc(slowest)}")
 
