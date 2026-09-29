@@ -9,25 +9,26 @@ import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.kafka.KafkaContainer;
 import org.testcontainers.utility.DockerImageName;
 
+// Pinned rather than :latest so a new upstream release cannot change the test run underneath us.
 @TestConfiguration(proxyBeanMethods = false)
 public class TestcontainersConfiguration {
 
     @Bean
     @ServiceConnection
     KafkaContainer kafkaContainer() {
-        return new KafkaContainer(DockerImageName.parse("apache/kafka-native:latest"));
+        return new KafkaContainer(DockerImageName.parse("apache/kafka-native:4.3.1"));
     }
 
     @Bean
     @ServiceConnection
     PostgreSQLContainer<?> postgresContainer() {
-        return new PostgreSQLContainer<>(DockerImageName.parse("postgres:latest"));
+        return new PostgreSQLContainer<>(DockerImageName.parse("postgres:17-alpine"));
     }
 
     @Bean
     @ServiceConnection(name = "redis")
     GenericContainer<?> redisContainer() {
-        return new GenericContainer<>(DockerImageName.parse("redis:latest"))
+        return new GenericContainer<>(DockerImageName.parse("redis:7-alpine"))
                 .withExposedPorts(6379)
                 .waitingFor(Wait.forLogMessage(".*Ready to accept connections.*\\n", 1));
     }

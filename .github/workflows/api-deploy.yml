@@ -56,6 +56,10 @@ jobs:
           # source from the first project frame in the stack trace instead.
           FRAME = re.compile(r"at (xyz\.catuns\.[\w.]+?)(?:\$[\w$]+)?\.[\w$<>]+\(\w+\.java:(\d+)\)")
 
+          # Context-load failures wrap the real error several levels down; keep the last causes.
+          def causes(trace):
+              return [l.strip()[:400] for l in trace.splitlines() if l.startswith("Caused by:")][-3:]
+
           suites, failures = [], []
           for path in glob.glob("target/surefire-reports/TEST-*.xml"):
               suite = ET.parse(path).getroot()
@@ -72,7 +76,7 @@ jobs:
                       message = (node.get("message") or "").strip() or (trace.strip().splitlines() or [""])[0]
                       failures.append(dict(cls=case.get("classname", ""), name=case.get("name"), secs=case.get("time"),
                                            kind=kind, etype=node.get("type", ""), message=message,
-                                           detail=message + "\n" + "\n".join(trace.splitlines()[:15]),
+                                           detail=message + "\n" + "\n".join(trace.splitlines()[:8] + causes(trace)),
                                            file=file, line=line))
 
           if not suites:
