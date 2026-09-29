@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.junit.jupiter.api.BeforeEach;
@@ -104,12 +105,9 @@ class SessionStatusEventPublisherTest {
                         .content(objectMapper.writeValueAsString(new TransitionRequest(SessionStatus.IN_REVIEW))))
                 .andExpect(status().isOk());
 
-        ConsumerRecords<String, String> records = KafkaTestUtils.getRecords(consumer, Duration.ofSeconds(10));
+        String payload = awaitEventFor(consumer, session.getId());
         consumer.close();
 
-        assertThat(records).isNotEmpty();
-
-        String payload = records.iterator().next().value();
         JsonNode event = objectMapper.readTree(payload);
 
         assertThat(event.get("sessionId").asText()).isEqualTo(session.getId().toString());
@@ -153,11 +151,9 @@ class SessionStatusEventPublisherTest {
         // null actor, as SessionAutoTransitionJob passes — status_history.changed_by must reference a real user.
         transitionService.transitionByJob(session.getId(), SessionStatus.IN_REVIEW, null);
 
-        ConsumerRecords<String, String> records = KafkaTestUtils.getRecords(consumer, Duration.ofSeconds(10));
+        JsonNode event = objectMapper.readTree(awaitEventFor(consumer, session.getId()));
         consumer.close();
 
-        assertThat(records).isNotEmpty();
-        JsonNode event = objectMapper.readTree(records.iterator().next().value());
         assertThat(event.get("changeSource").asText()).isEqualTo("BACKGROUND_JOB");
         assertThat(event.get("fromStatus").asText()).isEqualTo("SCHEDULED");
         assertThat(event.get("toStatus").asText()).isEqualTo("IN_REVIEW");
@@ -172,6 +168,20 @@ class SessionStatusEventPublisherTest {
         session.setDurationMinutes(60);
         session.setScheduledAt(Instant.now().plus(7, ChronoUnit.DAYS));
         return sessionRepository.save(session);
+    }
+
+    // Consumers start from the earliest offset, so the topic also holds other tests' events;
+    // wait for the one keyed by this session (the publisher keys by sessionId).
+    private String awaitEventFor(Consumer<String, String> consumer, UUID sessionId) {
+        long deadline = System.nanoTime() + Duration.ofSeconds(10).toNanos();
+        while (System.nanoTime() < deadline) {
+            for (ConsumerRecord<String, String> record : consumer.poll(Duration.ofMillis(500))) {
+                if (sessionId.toString().equals(record.key())) {
+                    return record.value();
+                }
+            }
+        }
+        throw new AssertionError("No session.status.changed event for session " + sessionId + " within 10s");
     }
 
     private Consumer<String, String> createConsumer(String groupId) {
