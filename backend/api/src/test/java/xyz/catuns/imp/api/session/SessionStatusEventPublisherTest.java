@@ -146,12 +146,12 @@ class SessionStatusEventPublisherTest {
     @DisplayName("background job transition publishes event with BACKGROUND_JOB change_source")
     void backgroundJobTransitionPublishesEvent(@Autowired SessionStatusTransitionService transitionService) throws Exception {
         InterviewSession session = freshSession();
-        UUID systemActorId = UUID.randomUUID();
 
         Consumer<String, String> consumer = createConsumer("event-test-group-job-" + UUID.randomUUID());
         consumer.subscribe(List.of(topic));
 
-        transitionService.transitionByJob(session.getId(), SessionStatus.IN_REVIEW, systemActorId);
+        // null actor, as SessionAutoTransitionJob passes — status_history.changed_by must reference a real user.
+        transitionService.transitionByJob(session.getId(), SessionStatus.IN_REVIEW, null);
 
         ConsumerRecords<String, String> records = KafkaTestUtils.getRecords(consumer, Duration.ofSeconds(10));
         consumer.close();

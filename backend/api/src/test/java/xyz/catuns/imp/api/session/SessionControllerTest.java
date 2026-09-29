@@ -72,6 +72,7 @@ class SessionControllerTest {
     private UUID marketerId;
     private UUID supporter1Id;
     private UUID supporter2Id;
+    private UUID clientId;
     private UUID candidate1ProcessId;
     private UUID candidate2ProcessId;
     private UUID sessionForCandidate1;
@@ -94,7 +95,7 @@ class SessionControllerTest {
         candidate1Token = login(CANDIDATE1_EMAIL, CANDIDATE1_PASSWORD);
         candidate2Token = login(CANDIDATE2_EMAIL, CANDIDATE2_PASSWORD);
 
-        UUID clientId = seedClient("Session Test Corp", "Finance").getId();
+        clientId = seedClient("Session Test Corp", "Finance").getId();
         candidate1ProcessId = seedProcess(candidate1Id, clientId, marketerId, "Java").getId();
         candidate2ProcessId = seedProcess(candidate2Id, clientId, marketerId, "Python").getId();
 
@@ -458,7 +459,11 @@ class SessionControllerTest {
         @Test
         @DisplayName("supporter lists sessions across all processes, not just their own")
         void supporterListsAll() throws Exception {
+            // Scoped to this class's client: other test classes share the database, so an
+            // unfiltered first page may not reach supporter2's session.
             mockMvc.perform(get("/sessions")
+                            .param("clientId", clientId.toString())
+                            .param("limit", "100")
                             .header("Authorization", "Bearer " + supporter1Token))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.data[*].supporterId",

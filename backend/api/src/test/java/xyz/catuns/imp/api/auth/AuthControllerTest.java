@@ -68,7 +68,7 @@ class AuthControllerTest {
                     .andExpect(jsonPath("$.accessToken").isNotEmpty())
                     .andExpect(jsonPath("$.refreshToken").isNotEmpty())
                     .andExpect(jsonPath("$.role").value("supporter"))
-                    .andExpect(jsonPath("$.expiresIn").isNumber());
+                    .andExpect(jsonPath("$.expiration").isNumber());
         }
 
         @Test
@@ -131,7 +131,7 @@ class AuthControllerTest {
                             .content(objectMapper.writeValueAsString(new RefreshRequest(refreshToken))))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.accessToken").isNotEmpty())
-                    .andExpect(jsonPath("$.expiresIn").isNumber());
+                    .andExpect(jsonPath("$.expiration").isNumber());
         }
 
         @Test

@@ -214,7 +214,7 @@ class QuestionControllerTest {
             mockMvc.perform(get("/questions")
                             .header("Authorization", "Bearer " + adminToken))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.content", hasSize(greaterThanOrEqualTo(1))));
+                    .andExpect(jsonPath("$.data", hasSize(greaterThanOrEqualTo(1))));
         }
 
         @Test
@@ -224,7 +224,7 @@ class QuestionControllerTest {
                             .param("clientId", clientId.toString())
                             .header("Authorization", "Bearer " + adminToken))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.content[*].clientId", everyItem(is(clientId.toString()))));
+                    .andExpect(jsonPath("$.data[*].clientId", everyItem(is(clientId.toString()))));
         }
 
         @Test
@@ -253,8 +253,8 @@ class QuestionControllerTest {
                             .param("q", "java concurrency")
                             .header("Authorization", "Bearer " + adminToken))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.content", hasSize(1)))
-                    .andExpect(jsonPath("$.content[0].topic").value("Concurrency"));
+                    .andExpect(jsonPath("$.data", hasSize(1)))
+                    .andExpect(jsonPath("$.data[0].topic").value("Concurrency"));
         }
 
         @Test
@@ -264,7 +264,7 @@ class QuestionControllerTest {
                             .param("q", "kubernetes-operator-xyz-nonexistent")
                             .header("Authorization", "Bearer " + adminToken))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.content", hasSize(0)));
+                    .andExpect(jsonPath("$.data", hasSize(0)));
         }
 
         @Test
@@ -282,7 +282,7 @@ class QuestionControllerTest {
                             .param("clientId", clientId.toString())
                             .header("Authorization", "Bearer " + adminToken))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.content[*].clientId", everyItem(is(clientId.toString()))));
+                    .andExpect(jsonPath("$.data[*].clientId", everyItem(is(clientId.toString()))));
         }
 
         @Test
@@ -301,7 +301,7 @@ class QuestionControllerTest {
                             .param("q", "   ")
                             .header("Authorization", "Bearer " + adminToken))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.content", hasSize(greaterThanOrEqualTo(1))));
+                    .andExpect(jsonPath("$.data", hasSize(greaterThanOrEqualTo(1))));
         }
 
         @Test
@@ -323,7 +323,7 @@ class QuestionControllerTest {
         void adminUpdates() throws Exception {
             var req = new UpdateQuestionRequest("Spring DI Updated", null, "Updated body content");
 
-            mockMvc.perform(patch("/questions/" + seededQuestionId)
+            mockMvc.perform(patch("/questions/" + freshQuestion())
                             .header("Authorization", "Bearer " + adminToken)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(req)))
@@ -395,7 +395,7 @@ class QuestionControllerTest {
         @Test
         @DisplayName("admin links question to session → 201")
         void adminLinks() throws Exception {
-            UUID questionId = unlinkedQuestion();
+            UUID questionId = freshQuestion();
             var req = new LinkQuestionRequest(questionId, 1, "Pay attention");
 
             mockMvc.perform(post("/sessions/" + sessionId + "/questions")
@@ -439,7 +439,7 @@ class QuestionControllerTest {
         @Test
         @DisplayName("linking same question twice → 409")
         void duplicateLinkConflict() throws Exception {
-            var req = new LinkQuestionRequest(unlinkedQuestion(), 1, null);
+            var req = new LinkQuestionRequest(freshQuestion(), 1, null);
 
             mockMvc.perform(post("/sessions/" + sessionId + "/questions")
                             .header("Authorization", "Bearer " + adminToken)
@@ -682,11 +682,11 @@ class QuestionControllerTest {
                 });
     }
 
-    // The seeded session and question are shared by every test, so tests that assert on a
-    // first-time link need a question nothing else has linked yet.
-    private UUID unlinkedQuestion() {
+    // The seeded session and question are shared by every test, so tests that assert on
+    // first-time state (a first link, version 1 → 2) need a question no other test has touched.
+    private UUID freshQuestion() {
         return seedQuestion(clientId, userRepository.findByEmail(ADMIN_EMAIL).get().getId(),
-                "Link " + UUID.randomUUID(), "Technical", "Fresh question for a link test").getId();
+                "Fresh " + UUID.randomUUID(), "Technical", "Question owned by a single test").getId();
     }
 
     private Question seedQuestion(UUID clientId, UUID createdBy, String topic, String round, String body) {
