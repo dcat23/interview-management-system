@@ -37,9 +37,12 @@ function buildSessionSummary(session: InterviewSession) {
     `Mode: ${session.mode}`,
     '',
     'Give me answers — like, exactly what I have to say in the interview.',
-    'Make it real, you know? How you\'d actually talk, how a real person talks.',
-    ''
-,    'Introduction about yourself, technical skills, work experience and current project',
+    "Make it real, you know? How you'd actually talk, how a real person talks.",
+    'Can you try to keep the tone conversational.',
+    'Like for example ask clarifying questions',
+    'or throw in comments like a developer would talk to another developer.',
+    '',
+    'So tell me a little about yourself in a brief introduction, technical skills, work experience and current project',
   ].join('\n');
 }
 
