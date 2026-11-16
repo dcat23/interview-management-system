@@ -42,7 +42,9 @@ function buildSessionSummary(session: InterviewSession) {
     'Like for example ask clarifying questions',
     'or throw in comments like a developer would talk to another developer.',
     '',
-    'So tell me a little about yourself in a brief introduction, technical skills, work experience and current project',
+    'Also can you keep short and not over explain, the interviewers get bored and stop listening.',
+    'Speak casually as a developer would to another would to another developer but keep short responses.',
+    'So tell me a little about yourself in a brief introduction, your technical skills, work experience and current project',
   ].join('\n');
 }
 
